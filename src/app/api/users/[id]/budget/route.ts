@@ -4,9 +4,11 @@ import { parse } from 'cookie';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     // Get session from cookie
     const cookie = request.headers.get('cookie');
     if (!cookie) {
@@ -43,7 +45,7 @@ export async function PATCH(
 
     // Get current user data
     const currentUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { budget: true }
     });
 
@@ -55,13 +57,12 @@ export async function PATCH(
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { budget },
       select: {
         id: true,
-        name: true,
-        email: true,
-        phone: true,
+        fullName: true,
+        phoneNumber: true,
         role: true,
         status: true,
         province: true,
@@ -73,7 +74,7 @@ export async function PATCH(
     // Create log entry
     await prisma.userLog.create({
       data: {
-        userId: params.id,
+        userId: id,
         type: 'BUDGET_UPDATE',
         details: `User budget updated from ${currentUser.budget} to ${budget}`,
         oldValue: currentUser.budget.toString(),
