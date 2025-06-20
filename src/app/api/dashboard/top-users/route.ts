@@ -6,9 +6,8 @@ export async function GET() {
     const topUsers = await prisma.user.findMany({
       select: {
         id: true,
-        name: true,
-        email: true,
-        phone: true,
+        fullName: true,
+        phoneNumber: true,
         _count: {
           select: {
             taxiRequests: true,
@@ -25,9 +24,8 @@ export async function GET() {
 
     const formattedUsers = topUsers.map(user => ({
       id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
+      name: user.fullName,
+      phone: user.phoneNumber,
       requestCount: user._count.taxiRequests,
     }));
 
