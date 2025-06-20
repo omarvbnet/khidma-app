@@ -5,21 +5,22 @@ import Navigation from '@/components/Navigation';
 
 export default function CreateUserPage() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('USER');
   const [status, setStatus] = useState('ACTIVE');
+  const [province, setProvince] = useState('');
+  const [budget, setBudget] = useState('0');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [phone, setPhone] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    if (!name || !email || !password) {
-      setError('Name, email, and password are required');
+    if (!fullName || !phoneNumber || !password) {
+      setError('Full name, phone number, and password are required');
       setLoading(false);
       return;
     }
@@ -27,7 +28,15 @@ export default function CreateUserPage() {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role, status, phone }),
+        body: JSON.stringify({ 
+          fullName, 
+          phoneNumber, 
+          password, 
+          role, 
+          status, 
+          province: province || 'Unknown',
+          budget: parseFloat(budget) || 0
+        }),
       });
       if (res.ok) {
         router.push('/users');
@@ -49,32 +58,44 @@ export default function CreateUserPage() {
         {error && <div className="mb-4 text-red-500">{error}</div>}
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow-md">
           <div className="mb-4">
-            <label className="block mb-1 font-medium">Name</label>
+            <label className="block mb-1 font-medium">Full Name</label>
             <input
               type="text"
               className="w-full border px-3 py-2 rounded"
-              value={name}
-              onChange={e => setName(e.target.value)}
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
               required
             />
           </div>
           <div className="mb-4">
-            <label className="block mb-1 font-medium">Email</label>
+            <label className="block mb-1 font-medium">Phone Number</label>
             <input
-              type="email"
+              type="tel"
               className="w-full border px-3 py-2 rounded"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              value={phoneNumber}
+              onChange={e => setPhoneNumber(e.target.value)}
               required
             />
           </div>
           <div className="mb-4">
-            <label className="block mb-1 font-medium">Phone</label>
+            <label className="block mb-1 font-medium">Province</label>
             <input
               type="text"
               className="w-full border px-3 py-2 rounded"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
+              value={province}
+              onChange={e => setProvince(e.target.value)}
+              placeholder="e.g., Riyadh, Jeddah"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block mb-1 font-medium">Budget</label>
+            <input
+              type="number"
+              step="0.01"
+              className="w-full border px-3 py-2 rounded"
+              value={budget}
+              onChange={e => setBudget(e.target.value)}
+              placeholder="0.00"
             />
           </div>
           <div className="mb-4">
@@ -96,6 +117,7 @@ export default function CreateUserPage() {
             >
               <option value="USER">User</option>
               <option value="ADMIN">Admin</option>
+              <option value="DRIVER">Driver</option>
             </select>
           </div>
           <div className="mb-6">
@@ -106,8 +128,9 @@ export default function CreateUserPage() {
               onChange={e => setStatus(e.target.value)}
             >
               <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
+              <option value="PENDING">Pending</option>
               <option value="SUSPENDED">Suspended</option>
+              <option value="BLOCKED">Blocked</option>
             </select>
           </div>
           <button
