@@ -5,7 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Overview } from '@/components/ui/overview-chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Users, Car, Package, Taxi, MapPin } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, Car, Package, MapPin } from 'lucide-react';
 
 interface DashboardStats {
   totalUsers: number;
@@ -187,7 +187,7 @@ export default function DashboardPage() {
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Taxi Requests
                 </CardTitle>
-                <Taxi className="h-4 w-4 text-muted-foreground" />
+                <MapPin className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-foreground">{data.stats.totalRequests}</div>
