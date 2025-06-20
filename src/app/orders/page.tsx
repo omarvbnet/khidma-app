@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { Search } from '@/components/ui/Search';
 import { StatusFilter } from '@/components/ui/StatusFilter';
@@ -25,7 +25,7 @@ const orderStatusOptions = [
   { label: 'Cancelled', value: 'CANCELLED' },
 ];
 
-export default function OrdersPage() {
+function OrdersContent() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -196,5 +196,24 @@ export default function OrdersPage() {
         </table>
       </div>
     </div>
+  );
+}
+
+export default function OrdersPage() {
+  return (
+    <Suspense fallback={
+      <div className="py-12">
+        <div className="animate-pulse max-w-4xl mx-auto">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-12 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    }>
+      <OrdersContent />
+    </Suspense>
   );
 } 
