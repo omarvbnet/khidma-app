@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Navigation from '@/components/Navigation';
 
 interface User {
   id: string;
@@ -81,7 +80,6 @@ function EditUserClient({ userId }: { userId: string }) {
   if (loading) {
     return (
       <div>
-        <Navigation />
         <main className="p-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
@@ -100,7 +98,6 @@ function EditUserClient({ userId }: { userId: string }) {
   if (!user) {
     return (
       <div>
-        <Navigation />
         <main className="p-8">
           <div className="text-red-500">User not found</div>
         </main>
@@ -110,7 +107,6 @@ function EditUserClient({ userId }: { userId: string }) {
 
   return (
     <div>
-      <Navigation />
       <main className="p-8">
         <h1 className="text-3xl font-bold mb-6">Edit User</h1>
         {error && <div className="mb-4 text-red-500">{error}</div>}

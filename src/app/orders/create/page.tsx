@@ -1,7 +1,6 @@
 "use client";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Navigation from '@/components/Navigation';
 
 export default function CreateOrderPage() {
   const router = useRouter();
@@ -40,7 +39,6 @@ export default function CreateOrderPage() {
 
   return (
     <div>
-      <Navigation />
       <main className="p-8">
         <h1 className="text-3xl font-bold mb-6">Create Order</h1>
         {error && <div className="mb-4 text-red-500">{error}</div>}

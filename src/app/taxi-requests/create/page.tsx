@@ -1,7 +1,6 @@
 "use client";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Navigation from '@/components/Navigation';
 
 export default function CreateTaxiRequestPage() {
   const router = useRouter();
@@ -46,7 +45,6 @@ export default function CreateTaxiRequestPage() {
 
   return (
     <div>
-      <Navigation />
       <main className="p-8">
         <h1 className="text-3xl font-bold mb-6">Create Taxi Request</h1>
         {error && <div className="mb-4 text-red-500">{error}</div>}

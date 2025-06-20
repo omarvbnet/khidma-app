@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Navigation from '@/components/Navigation';
 
 interface Product {
   id: string;
@@ -79,7 +78,6 @@ function EditProductClient({ productId }: { productId: string }) {
   if (loading) {
     return (
       <div>
-        <Navigation />
         <main className="p-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
@@ -97,7 +95,6 @@ function EditProductClient({ productId }: { productId: string }) {
   if (!product) {
     return (
       <div>
-        <Navigation />
         <main className="p-8">
           <div className="text-red-500">Product not found</div>
         </main>
@@ -107,7 +104,6 @@ function EditProductClient({ productId }: { productId: string }) {
 
   return (
     <div>
-      <Navigation />
       <main className="p-8">
         <h1 className="text-3xl font-bold mb-6">Edit Product</h1>
         {error && <div className="mb-4 text-red-500">{error}</div>}

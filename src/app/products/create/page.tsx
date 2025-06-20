@@ -1,7 +1,6 @@
 "use client";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Navigation from '@/components/Navigation';
 
 export default function CreateProductPage() {
   const router = useRouter();
@@ -44,7 +43,6 @@ export default function CreateProductPage() {
 
   return (
     <div>
-      <Navigation />
       <main className="p-8">
         <h1 className="text-3xl font-bold mb-6">Create Product</h1>
         {error && <div className="mb-4 text-red-500">{error}</div>}

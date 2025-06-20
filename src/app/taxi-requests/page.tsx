@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Search } from '@/components/ui/Search';
 import { StatusFilter } from '@/components/ui/StatusFilter';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Navigation from '@/components/Navigation';
 import { PlusIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 interface TaxiRequest {
@@ -111,7 +110,6 @@ function TaxiRequestsContent() {
   if (loading) {
     return (
       <div>
-        <Navigation />
         <main className="p-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
@@ -309,7 +307,6 @@ export default function TaxiRequestsPage() {
   return (
     <Suspense fallback={
       <div>
-        <Navigation />
         <main className="p-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
