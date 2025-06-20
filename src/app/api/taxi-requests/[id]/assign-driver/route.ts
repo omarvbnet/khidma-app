@@ -3,9 +3,10 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { driverId } = await request.json();
     if (!driverId) {
       return NextResponse.json(
@@ -32,7 +33,7 @@ export async function POST(
     }
 
     const taxiRequest = await prisma.taxiRequest.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         driverId: driver.id,
         driverName: driver.fullName,

@@ -3,11 +3,12 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -23,15 +24,16 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
-    const { name, email, role, status, phone } = body;
+    const { fullName, phoneNumber, role, status, province } = body;
 
     const user = await prisma.user.update({
-      where: { id: params.id },
-      data: { name, email, role, status, phone },
+      where: { id },
+      data: { fullName, phoneNumber, role, status, province },
     });
 
     return NextResponse.json(user);
@@ -45,11 +47,12 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await prisma.user.delete({
-      where: { id: params.id },
+      where: { id },
     });
     return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error) {
