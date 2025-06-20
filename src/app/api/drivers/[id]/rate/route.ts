@@ -3,14 +3,15 @@ import { prisma } from '@/lib/prisma';
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { rate } = await request.json();
 
     const driver = await prisma.driver.update({
       where: {
-        userId: params.id,
+        userId: id,
       },
       data: {
         rate,

@@ -87,9 +87,10 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { status } = await req.json();
 
     if (!status) {
@@ -108,7 +109,7 @@ export async function PATCH(
     }
 
     const taxiRequest = await prisma.taxiRequest.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!taxiRequest) {
@@ -119,7 +120,7 @@ export async function PATCH(
     }
 
     const updatedRequest = await prisma.taxiRequest.update({
-      where: { id: params.id },
+      where: { id },
       data: { 
         status: status as TaxiRequest_status,
         updatedAt: new Date()
