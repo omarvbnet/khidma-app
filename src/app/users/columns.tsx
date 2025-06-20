@@ -19,9 +19,8 @@ import { UserStatus } from "@prisma/client";
 
 export type User = {
   id: string;
-  name: string;
-  email: string;
-  phone: string;
+  fullName: string;
+  phoneNumber: string;
   status: UserStatus;
   role: string;
   province: string;
@@ -55,7 +54,7 @@ export const columns: ColumnDef<User>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "name",
+    accessorKey: "fullName",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Name" />
     ),
@@ -67,7 +66,7 @@ export const columns: ColumnDef<User>[] = [
     ),
   },
   {
-    accessorKey: "phone",
+    accessorKey: "phoneNumber",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Phone" />
     ),
@@ -120,17 +119,9 @@ export const columns: ColumnDef<User>[] = [
             throw new Error(error.error || 'Failed to update status');
           }
 
-          // Update the table data directly
-          const tableData = table.options.data as User[];
-          const updatedData = tableData.map((user) => {
-            if (user.id === row.original.id) {
-              return { ...user, status: newStatus };
-            }
-            return user;
-          });
-          table.options.meta?.updateData(updatedData);
-
           toast.success('Status updated successfully');
+          // Refresh the page to show updated data
+          router.refresh();
         } catch (error) {
           console.error('Error updating status:', error);
           toast.error(error instanceof Error ? error.message : 'Failed to update status');
@@ -150,9 +141,9 @@ export const columns: ColumnDef<User>[] = [
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={UserStatus.ACTIVE}>Active</SelectItem>
-            <SelectItem value={UserStatus.INACTIVE}>Inactive</SelectItem>
             <SelectItem value={UserStatus.SUSPENDED}>Suspended</SelectItem>
             <SelectItem value={UserStatus.PENDING}>Pending</SelectItem>
+            <SelectItem value={UserStatus.BLOCKED}>Blocked</SelectItem>
           </SelectContent>
         </Select>
       );
@@ -174,6 +165,7 @@ export const columns: ColumnDef<User>[] = [
       const [isEditing, setIsEditing] = useState(false);
       const [newBudget, setNewBudget] = useState(budget?.toString() ?? '0');
       const [isUpdating, setIsUpdating] = useState(false);
+      const router = useRouter();
 
       const handleUpdateBudget = async () => {
         setIsUpdating(true);
@@ -191,18 +183,10 @@ export const columns: ColumnDef<User>[] = [
             throw new Error(error.error || 'Failed to update budget');
           }
 
-          // Update the table data directly
-          const tableData = table.options.data as User[];
-          const updatedData = tableData.map((user) => {
-            if (user.id === row.original.id) {
-              return { ...user, budget: parseFloat(newBudget) };
-            }
-            return user;
-          });
-          table.options.meta?.updateData(updatedData);
-
           setIsEditing(false);
           toast.success('Budget updated successfully');
+          // Refresh the page to show updated data
+          router.refresh();
         } catch (error) {
           console.error('Error updating budget:', error);
           toast.error(error instanceof Error ? error.message : 'Failed to update budget');
