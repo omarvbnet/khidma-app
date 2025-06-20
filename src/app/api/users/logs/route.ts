@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
     if (phone) {
       where.user = {
-        phone: {
+        phoneNumber: {
           contains: phone,
         },
       };
@@ -39,15 +39,13 @@ export async function GET(request: Request) {
       include: {
         user: {
           select: {
-            name: true,
-            email: true,
-            phone: true,
+            fullName: true,
+            phoneNumber: true,
           },
         },
         changedBy: {
           select: {
-            name: true,
-            email: true,
+            fullName: true,
           },
         },
       },
