@@ -14,7 +14,13 @@ interface Order {
   };
 }
 
-export default function EditOrderPage({ params }: { params: { id: string } }) {
+export default async function EditOrderPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  
+  return <EditOrderClient orderId={id} />;
+}
+
+function EditOrderClient({ orderId }: { orderId: string }) {
   const router = useRouter();
   const [order, setOrder] = useState<Order | null>(null);
   const [userId, setUserId] = useState('');
@@ -26,11 +32,11 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     fetchOrder();
-  }, [params.id]);
+  }, [orderId]);
 
   const fetchOrder = async () => {
     try {
-      const res = await fetch(`/api/orders/${params.id}`);
+      const res = await fetch(`/api/orders/${orderId}`);
       if (!res.ok) throw new Error('Failed to fetch order');
       const data = await res.json();
       setOrder(data);
@@ -53,7 +59,7 @@ export default function EditOrderPage({ params }: { params: { id: string } }) {
       return;
     }
     try {
-      const res = await fetch(`/api/orders/${params.id}`, {
+      const res = await fetch(`/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

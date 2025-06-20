@@ -12,7 +12,13 @@ interface User {
   status: string;
 }
 
-export default function EditUserPage({ params }: { params: { id: string } }) {
+export default async function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  
+  return <EditUserClient userId={id} />;
+}
+
+function EditUserClient({ userId }: { userId: string }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [name, setName] = useState('');
@@ -26,11 +32,11 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     fetchUser();
-  }, [params.id]);
+  }, [userId]);
 
   const fetchUser = async () => {
     try {
-      const res = await fetch(`/api/users/${params.id}`);
+      const res = await fetch(`/api/users/${userId}`);
       if (!res.ok) throw new Error('Failed to fetch user');
       const data = await res.json();
       setUser(data);
@@ -55,7 +61,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
       return;
     }
     try {
-      const res = await fetch(`/api/users/${params.id}`, {
+      const res = await fetch(`/api/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, role, status, phone }),

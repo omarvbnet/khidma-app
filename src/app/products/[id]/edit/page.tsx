@@ -10,7 +10,13 @@ interface Product {
   price: number;
 }
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
+export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  
+  return <EditProductClient productId={id} />;
+}
+
+function EditProductClient({ productId }: { productId: string }) {
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [name, setName] = useState('');
@@ -22,11 +28,11 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
   useEffect(() => {
     fetchProduct();
-  }, [params.id]);
+  }, [productId]);
 
   const fetchProduct = async () => {
     try {
-      const res = await fetch(`/api/products/${params.id}`);
+      const res = await fetch(`/api/products/${productId}`);
       if (!res.ok) throw new Error('Failed to fetch product');
       const data = await res.json();
       setProduct(data);
@@ -49,7 +55,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       return;
     }
     try {
-      const res = await fetch(`/api/products/${params.id}`, {
+      const res = await fetch(`/api/products/${productId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
