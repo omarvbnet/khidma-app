@@ -83,10 +83,10 @@ export const columns: ColumnDef<TaxiRequest>[] = [
         <Badge
           variant={
             status === "COMPLETED"
-              ? "success"
+              ? "default"
               : status === "CANCELLED"
               ? "destructive"
-              : "default"
+              : "secondary"
           }
         >
           {status}
