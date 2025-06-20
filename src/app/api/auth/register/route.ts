@@ -16,14 +16,10 @@ export async function POST(request: NextRequest) {
       password,
       role,
       province,
-      budget,
       // Driver specific fields
       carId,
       carType,
       licenseId,
-      carImage,
-      licenseImage,
-      driverImage,
     } = body;
 
     if (!fullName || !phoneNumber || !password || !role) {
@@ -80,16 +76,14 @@ export async function POST(request: NextRequest) {
         role: role as Role,
         status: 'ACTIVE',
         province,
-        budget,
         ...(role === 'DRIVER' && {
           driver: {
             create: {
+              fullName,
+              phoneNumber,
               carId,
               carType,
               licenseId,
-              carImage,
-              licenseImage,
-              driverImage,
               rate: 0,
             },
           },
