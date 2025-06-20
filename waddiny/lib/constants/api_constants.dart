@@ -1,6 +1,5 @@
 class ApiConstants {
-  static const String baseUrl =
-      'https://khidma-app-git-main-omars-projects-b2f93a9f.vercel.app/api/flutter';
+  static const String baseUrl = 'https://khidma-app1.vercel.app/api/flutter';
 
   // Auth endpoints
   static const String login = '/auth/login';

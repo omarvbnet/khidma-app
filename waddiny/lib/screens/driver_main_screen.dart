@@ -12,6 +12,7 @@ class DriverMainScreen extends StatefulWidget {
 
 class _DriverMainScreenState extends State<DriverMainScreen> {
   int _selectedIndex = 0;
+  Widget? _currentScreen;
 
   final List<Widget> _screens = [
     const DriverHomeScreen(),
@@ -20,16 +21,34 @@ class _DriverMainScreenState extends State<DriverMainScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _currentScreen = _screens[_selectedIndex];
+  }
+
+  void _onScreenChanged(Widget newScreen) {
+    setState(() {
+      _currentScreen = newScreen;
+    });
+  }
+
+  void _onTabTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+      _currentScreen = _screens[index];
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: _currentScreen ?? _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+        onTap: _onTabTapped,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),

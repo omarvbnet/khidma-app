@@ -623,213 +623,189 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
 
   Future<void> _initializeMap() async {
     try {
-      // Request location permission first
-      final hasPermission = await _locationService.requestLocationPermission();
-      if (!hasPermission) {
-        if (mounted) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text('Location Permission Required'),
-                content: const Text(
-                  'This app needs location permission to provide navigation. '
-                  'Please enable location services in your device settings.',
-                ),
-                actions: [
-                  TextButton(
-                    child: const Text('Open Settings'),
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      await Geolocator.openAppSettings();
-                    },
-                  ),
-                  TextButton(
-                    child: const Text('Cancel'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context); // Return to previous screen
-                    },
-                  ),
-                ],
-              );
-            },
-          );
-        }
-        return;
+      print('Initializing map...');
+
+      // Validate trip coordinates before proceeding
+      if (!_validateTripCoordinates()) {
+        throw Exception('Invalid trip coordinates detected');
       }
 
-      // Check if location services are enabled
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        if (mounted) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text('Location Services Disabled'),
-                content: const Text(
-                  'Please enable location services to use navigation features.',
-                ),
-                actions: [
-                  TextButton(
-                    child: const Text('Open Settings'),
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      await Geolocator.openLocationSettings();
-                    },
-                  ),
-                  TextButton(
-                    child: const Text('Cancel'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context); // Return to previous screen
-                    },
-                  ),
-                ],
-              );
-            },
-          );
-        }
-        return;
-      }
-
-      // Get current location with high accuracy
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 5),
-      );
-
+      // Get current location
+      final position = await _locationService.getCurrentLocation();
       _currentLocation = LatLng(position.latitude, position.longitude);
-      _currentHeading = position.heading;
+      print(
+          'Current location: ${_currentLocation!.latitude}, ${_currentLocation!.longitude}');
 
-      // Get routes
-      await _updateRoutes();
+      // Set up markers
+      _setupMarkers();
 
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
+      // Get route details
+      await _getRouteDetails();
 
-      // Start location updates
-      _startLocationUpdates();
-    } catch (e) {
-      print('Error in _initializeMap: $e');
       if (mounted) {
         setState(() {
-          _error = e.toString();
           _isLoading = false;
         });
       }
-    }
-  }
-
-  Future<void> _updateRoutes() async {
-    if (_currentLocation == null) return;
-
-    try {
-      // Get route from current location to pickup
-      final pickupRoute = await _mapService.getRouteDetails(
-        _currentLocation!,
-        LatLng(widget.trip.pickupLat, widget.trip.pickupLng),
-      );
-
-      // Get route from pickup to dropoff
-      final dropoffRoute = await _mapService.getRouteDetails(
-        LatLng(widget.trip.pickupLat, widget.trip.pickupLng),
-        LatLng(widget.trip.dropoffLat, widget.trip.dropoffLng),
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        _polylines = {
-          // Current to pickup route (blue)
-          Polyline(
-            polylineId: const PolylineId('current_to_pickup'),
-            points: pickupRoute['points'] as List<LatLng>,
-            color: Colors.blue,
-            width: 5,
-          ),
-          // Pickup to dropoff route (green)
-          Polyline(
-            polylineId: const PolylineId('pickup_to_dropoff'),
-            points: dropoffRoute['points'] as List<LatLng>,
-            color: Colors.green,
-            width: 5,
-            patterns: [PatternItem.dash(30), PatternItem.gap(10)],
-          ),
-        };
-      });
-
-      // Update markers
-      _updateMarkers();
-
-      // Fit map to show both routes
-      if (_mapController.future != null) {
-        final bounds = _getBoundsForRoutes();
-        if (bounds != null) {
-          _mapController.future.then((controller) {
-            controller.animateCamera(
-              CameraUpdate.newLatLngBounds(bounds, 50.0),
-            );
-          });
-        }
-      }
     } catch (e) {
-      print('Error updating routes: $e');
+      print('Error initializing map: $e');
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = e.toString();
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error getting routes: ${e.toString()}'),
+            content: Text('Error initializing map: $e'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: 'Retry',
-              textColor: Colors.white,
-              onPressed: _updateRoutes,
-            ),
           ),
         );
       }
     }
   }
 
-  LatLngBounds? _getBoundsForRoutes() {
-    if (_polylines.isEmpty) return null;
-
-    double minLat = double.infinity;
-    double maxLat = -double.infinity;
-    double minLng = double.infinity;
-    double maxLng = -double.infinity;
-
-    for (var polyline in _polylines) {
-      for (var point in polyline.points) {
-        if (point.latitude < minLat) minLat = point.latitude;
-        if (point.latitude > maxLat) maxLat = point.latitude;
-        if (point.longitude < minLng) minLng = point.longitude;
-        if (point.longitude > maxLng) maxLng = point.longitude;
+  bool _validateTripCoordinates() {
+    try {
+      // Validate pickup coordinates
+      if (widget.isPickup) {
+        if (!_isValidCoordinate(
+            LatLng(widget.trip.pickupLat, widget.trip.pickupLng))) {
+          print(
+              'Invalid pickup coordinates: ${widget.trip.pickupLat}, ${widget.trip.pickupLng}');
+          return false;
+        }
+      } else {
+        // Validate dropoff coordinates
+        if (!_isValidCoordinate(
+            LatLng(widget.trip.dropoffLat, widget.trip.dropoffLng))) {
+          print(
+              'Invalid dropoff coordinates: ${widget.trip.dropoffLat}, ${widget.trip.dropoffLng}');
+          return false;
+        }
       }
+      return true;
+    } catch (e) {
+      print('Error validating coordinates: $e');
+      return false;
+    }
+  }
+
+  bool _isValidCoordinate(LatLng coordinate) {
+    // Check for null coordinates
+    if (coordinate == null) {
+      return false;
     }
 
-    // Add current location to bounds if available
-    if (_currentLocation != null) {
-      if (_currentLocation!.latitude < minLat)
-        minLat = _currentLocation!.latitude;
-      if (_currentLocation!.latitude > maxLat)
-        maxLat = _currentLocation!.latitude;
-      if (_currentLocation!.longitude < minLng)
-        minLng = _currentLocation!.longitude;
-      if (_currentLocation!.longitude > maxLng)
-        maxLng = _currentLocation!.longitude;
+    // Check for NaN values
+    if (coordinate.latitude.isNaN ||
+        coordinate.longitude.isNaN ||
+        coordinate.latitude.isInfinite ||
+        coordinate.longitude.isInfinite) {
+      return false;
     }
 
-    return LatLngBounds(
-      southwest: LatLng(minLat, minLng),
-      northeast: LatLng(maxLat, maxLng),
-    );
+    // Check for zero coordinates (common invalid value)
+    if (coordinate.latitude == 0.0 && coordinate.longitude == 0.0) {
+      return false;
+    }
+
+    // Check if coordinates are within valid ranges
+    if (coordinate.latitude < -90 ||
+        coordinate.latitude > 90 ||
+        coordinate.longitude < -180 ||
+        coordinate.longitude > 180) {
+      return false;
+    }
+
+    return true;
+  }
+
+  void _setupMarkers() {
+    final markers = <Marker>{};
+
+    // Add pickup marker
+    if (widget.isPickup) {
+      markers.add(Marker(
+        markerId: const MarkerId('pickup'),
+        position: LatLng(widget.trip.pickupLat, widget.trip.pickupLng),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: InfoWindow(title: 'Pickup Location'),
+      ));
+    }
+
+    // Add dropoff marker
+    markers.add(Marker(
+      markerId: const MarkerId('dropoff'),
+      position: LatLng(widget.trip.dropoffLat, widget.trip.dropoffLng),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+      infoWindow: InfoWindow(title: 'Dropoff Location'),
+    ));
+
+    // Add car marker if we have current location
+    if (_currentLocation != null && _carIcon != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('car'),
+        position: _currentLocation!,
+        icon: _carIcon!,
+        rotation: _currentHeading,
+        flat: true,
+      ));
+    }
+
+    setState(() {
+      _markers = markers;
+    });
+  }
+
+  Future<void> _getRouteDetails() async {
+    try {
+      if (_currentLocation == null) {
+        throw Exception('Current location not available');
+      }
+
+      final destination = widget.isPickup
+          ? LatLng(widget.trip.pickupLat, widget.trip.pickupLng)
+          : LatLng(widget.trip.dropoffLat, widget.trip.dropoffLng);
+
+      final routeDetails = await _mapService.getRouteDetails(
+        _currentLocation!,
+        destination,
+      );
+
+      final points = routeDetails['points'] as List<LatLng>;
+      final polyline = Polyline(
+        polylineId: PolylineId('route'),
+        points: points,
+        color: Colors.blue,
+        width: 5,
+      );
+
+      setState(() {
+        _polylines = {polyline};
+        _distanceToDestination = _parseDistance(routeDetails['distance']);
+        _estimatedTime = routeDetails['duration'];
+      });
+
+      // Start location updates after route is loaded
+      _startLocationUpdates();
+    } catch (e) {
+      print('Error getting route details: $e');
+      // Continue without route if there's an error
+      _startLocationUpdates();
+    }
+  }
+
+  double _parseDistance(String distanceText) {
+    try {
+      // Extract numeric value from distance text (e.g., "2.5 km" -> 2.5)
+      final match = RegExp(r'(\d+\.?\d*)').firstMatch(distanceText);
+      if (match != null) {
+        return double.parse(match.group(1)!);
+      }
+      return 0.0;
+    } catch (e) {
+      return 0.0;
+    }
   }
 
   void _startLocationUpdates() {

@@ -149,10 +149,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
 
     if (_isLoading) {
       print('Showing loading screen');
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
+      return const Center(
+        child: CircularProgressIndicator(),
       );
     }
 

@@ -1,151 +1,168 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-interface ProvinceStats {
-  [key: string]: {
-    users: number;
-    drivers: number;
-    orders: number;
-    requests: number;
-  };
-}
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Get total counts
+    // Get basic stats
     const [totalUsers, totalDrivers, totalOrders, totalRequests] = await Promise.all([
-      prisma.user.count(),
+      prisma.user.count({ where: { role: 'USER' } }),
       prisma.user.count({ where: { role: 'DRIVER' } }),
       prisma.order.count(),
       prisma.taxiRequest.count(),
     ]);
 
-    // Get province-wise statistics
-    const users = await prisma.user.groupBy({
-      by: ['province'],
-      _count: {
-        _all: true,
-      },
-    });
-
-    const drivers = await prisma.user.groupBy({
-      by: ['province'],
-      where: { role: 'DRIVER' },
-      _count: {
-        _all: true,
-      },
-    });
-
-    // Get orders with user province data
-    const ordersWithUsers = await prisma.order.findMany({
-      include: {
-        user: {
-          select: {
-            province: true,
-          },
-        },
-      },
-    });
-
-    const requests = await prisma.taxiRequest.findMany({
-      include: {
-        user: {
-          select: {
-            province: true,
-          },
-        },
-      },
-    });
-
-    // Combine province statistics
-    const provinceStats: ProvinceStats = {};
-    const orderProvinces = ordersWithUsers.map(o => o.user.province).filter(Boolean) as string[];
-    const requestProvinces = requests.map(r => r.user.province).filter(Boolean) as string[];
-    const provinces = new Set([
-      ...users.map((u) => u.province).filter(Boolean) as string[],
-      ...drivers.map((d) => d.province).filter(Boolean) as string[],
-      ...orderProvinces,
-      ...requestProvinces,
-    ]);
-
-    provinces.forEach(province => {
-      if (!province) return;
-      provinceStats[province] = {
-        users: users.find((u) => u.province === province)?._count._all || 0,
-        drivers: drivers.find((d) => d.province === province)?._count._all || 0,
-        orders: orderProvinces.filter(p => p === province).length,
-        requests: requestProvinces.filter(p => p === province).length,
-      };
-    });
-
-    // Get trends for the last 7 days
+    // Get recent trends (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const [requestTrends, userTrends, orderTrends] = await Promise.all([
-      prisma.taxiRequest.groupBy({
-        by: ['createdAt'],
+    const [recentUsers, recentDrivers, recentOrders, recentRequests] = await Promise.all([
+      prisma.user.count({
         where: {
-          createdAt: {
-            gte: sevenDaysAgo,
-          },
-        },
-        _count: {
-          _all: true,
-        },
-        orderBy: {
-          createdAt: 'asc',
-        },
+          role: 'USER',
+          createdAt: { gte: sevenDaysAgo }
+        }
       }),
-      prisma.user.groupBy({
-        by: ['createdAt'],
+      prisma.user.count({
         where: {
-          createdAt: {
-            gte: sevenDaysAgo,
-          },
-        },
-        _count: {
-          _all: true,
-        },
-        orderBy: {
-          createdAt: 'asc',
-        },
+          role: 'DRIVER',
+          createdAt: { gte: sevenDaysAgo }
+        }
       }),
-      prisma.order.groupBy({
-        by: ['createdAt'],
+      prisma.order.count({
         where: {
-          createdAt: {
-            gte: sevenDaysAgo,
-          },
-        },
-        _count: {
-          _all: true,
-        },
-        orderBy: {
-          createdAt: 'asc',
-        },
+          createdAt: { gte: sevenDaysAgo }
+        }
+      }),
+      prisma.taxiRequest.count({
+        where: {
+          createdAt: { gte: sevenDaysAgo }
+        }
       }),
     ]);
 
-    const formatTrends = (trends: any[]) => trends.map(trend => ({
-      date: trend.createdAt.toISOString().split('T')[0],
-      count: trend._count._all,
+    // Get top 10 users by request count
+    const topUsers = await prisma.user.findMany({
+      where: { role: 'USER' },
+      select: {
+        id: true,
+        fullName: true,
+        phoneNumber: true,
+        province: true,
+        _count: {
+          select: {
+            taxiRequests: true
+          }
+        }
+      },
+      orderBy: {
+        taxiRequests: {
+          _count: 'desc'
+        }
+      },
+      take: 10
+    });
+
+    // Get all users and requests for province statistics
+    const [allUsers, allRequests] = await Promise.all([
+      prisma.user.findMany({
+        select: {
+          role: true,
+          province: true
+        }
+      }),
+      prisma.taxiRequest.findMany({
+        select: {
+          userProvince: true
+        }
+      })
+    ]);
+
+    // Calculate province statistics
+    const provinceMap = new Map();
+    
+    // Process users
+    allUsers.forEach(user => {
+      if (user.province) {
+        if (!provinceMap.has(user.province)) {
+          provinceMap.set(user.province, {
+            province: user.province,
+            totalUsers: 0,
+            totalDrivers: 0,
+            totalRequests: 0
+          });
+        }
+        
+        const stats = provinceMap.get(user.province);
+        if (user.role === 'USER') {
+          stats.totalUsers++;
+        } else if (user.role === 'DRIVER') {
+          stats.totalDrivers++;
+        }
+      }
+    });
+
+    // Process requests
+    allRequests.forEach(request => {
+      if (request.userProvince && provinceMap.has(request.userProvince)) {
+        provinceMap.get(request.userProvince).totalRequests++;
+      }
+    });
+
+    const provinceData = Array.from(provinceMap.values());
+
+    // Get daily trends for the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const dailyTrends = await prisma.taxiRequest.findMany({
+      where: {
+        createdAt: { gte: thirtyDaysAgo }
+      },
+      select: {
+        createdAt: true
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+
+    // Group by date
+    const trendsMap = new Map();
+    dailyTrends.forEach(trend => {
+      const date = trend.createdAt.toISOString().split('T')[0];
+      trendsMap.set(date, (trendsMap.get(date) || 0) + 1);
+    });
+
+    const trendsData = Array.from(trendsMap.entries()).map(([date, count]) => ({
+      date,
+      count
     }));
 
     return NextResponse.json({
-      totalUsers,
-      totalDrivers,
-      totalOrders,
-      totalRequests,
-      provinceStats,
-      requestTrends: formatTrends(requestTrends),
-      userTrends: formatTrends(userTrends),
-      orderTrends: formatTrends(orderTrends),
+      stats: {
+        totalUsers,
+        totalDrivers,
+        totalOrders,
+        totalRequests,
+        recentUsers,
+        recentDrivers,
+        recentOrders,
+        recentRequests
+      },
+      topUsers: topUsers.map(user => ({
+        id: user.id,
+        name: user.fullName,
+        phone: user.phoneNumber,
+        province: user.province,
+        requestCount: user._count.taxiRequests
+      })),
+      provinces: provinceData,
+      trends: trendsData
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch dashboard stats' },
+      { error: 'Failed to fetch dashboard statistics' },
       { status: 500 }
     );
   }

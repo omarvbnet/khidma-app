@@ -41,24 +41,10 @@ class MapService {
 
     while (attempts < maxAttempts) {
       try {
-        // Validate coordinates
-        if (origin.latitude.isNaN ||
-            origin.longitude.isNaN ||
-            destination.latitude.isNaN ||
-            destination.longitude.isNaN) {
-          throw Exception('Invalid coordinates provided: NaN values detected');
-        }
-
-        // Check if coordinates are within valid ranges
-        if (origin.latitude < -90 ||
-            origin.latitude > 90 ||
-            origin.longitude < -180 ||
-            origin.longitude > 180 ||
-            destination.latitude < -90 ||
-            destination.latitude > 90 ||
-            destination.longitude < -180 ||
-            destination.longitude > 180) {
-          throw Exception('Invalid coordinates provided: Out of valid range');
+        // Validate coordinates more thoroughly
+        if (!_isValidCoordinate(origin) || !_isValidCoordinate(destination)) {
+          throw Exception(
+              'Invalid coordinates provided: Coordinates are out of valid range or contain invalid values');
         }
 
         // Check if coordinates are too close to each other
@@ -453,13 +439,32 @@ class MapService {
   }
 
   bool _isValidCoordinate(LatLng coordinate) {
-    return coordinate.latitude != 0 &&
-        coordinate.longitude != 0 &&
-        !coordinate.latitude.isNaN &&
-        !coordinate.longitude.isNaN &&
-        coordinate.latitude >= -90 &&
-        coordinate.latitude <= 90 &&
-        coordinate.longitude >= -180 &&
-        coordinate.longitude <= 180;
+    // Check for null coordinates
+    if (coordinate == null) {
+      return false;
+    }
+
+    // Check for NaN values
+    if (coordinate.latitude.isNaN ||
+        coordinate.longitude.isNaN ||
+        coordinate.latitude.isInfinite ||
+        coordinate.longitude.isInfinite) {
+      return false;
+    }
+
+    // Check for zero coordinates (common invalid value)
+    if (coordinate.latitude == 0.0 && coordinate.longitude == 0.0) {
+      return false;
+    }
+
+    // Check if coordinates are within valid ranges
+    if (coordinate.latitude < -90 ||
+        coordinate.latitude > 90 ||
+        coordinate.longitude < -180 ||
+        coordinate.longitude > 180) {
+      return false;
+    }
+
+    return true;
   }
 }

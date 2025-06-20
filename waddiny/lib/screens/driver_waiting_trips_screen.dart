@@ -140,12 +140,11 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
 
   Future<void> _showTripDetails(TaxiRequest request) async {
     try {
-      // Validate coordinates
-      if (request.pickupLat == 0.0 ||
-          request.pickupLng == 0.0 ||
-          request.dropoffLat == 0.0 ||
-          request.dropoffLng == 0.0) {
-        throw Exception('Invalid coordinates in trip data');
+      // Validate coordinates more thoroughly
+      if (!_isValidCoordinate(request.pickupLat, request.pickupLng) ||
+          !_isValidCoordinate(request.dropoffLat, request.dropoffLng)) {
+        throw Exception(
+            'Invalid coordinates in trip data. Please contact support.');
       }
 
       if (!mounted) return;
@@ -160,9 +159,32 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading trip details: $e')),
+        SnackBar(
+          content: Text('Error loading trip details: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
       );
     }
+  }
+
+  bool _isValidCoordinate(double lat, double lng) {
+    // Check for NaN values
+    if (lat.isNaN || lng.isNaN || lat.isInfinite || lng.isInfinite) {
+      return false;
+    }
+
+    // Check for zero coordinates (common invalid value)
+    if (lat == 0.0 && lng == 0.0) {
+      return false;
+    }
+
+    // Check if coordinates are within valid ranges
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return false;
+    }
+
+    return true;
   }
 
   @override
