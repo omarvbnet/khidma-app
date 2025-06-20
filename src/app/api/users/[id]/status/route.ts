@@ -12,9 +12,11 @@ interface SessionUser {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     // Get session from cookie
     const cookie = request.headers.get('cookie');
     if (!cookie) {
@@ -55,7 +57,6 @@ export async function PATCH(
     }
 
     const { status } = await request.json();
-    const { id } = params;
     console.log('Updating status for user:', id, 'to:', status);
 
     // Validate status
@@ -89,8 +90,7 @@ export async function PATCH(
       data: { status: status as UserStatus },
       select: {
         id: true,
-        name: true,
-        email: true,
+        fullName: true,
         status: true,
         role: true
       }
