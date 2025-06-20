@@ -32,15 +32,11 @@ export async function GET(req: NextRequest) {
         carId: true,
         carType: true,
         licenseId: true,
-        carImage: true,
-        licenseImage: true,
-        driverImage: true,
         rate: true,
         user: {
           select: {
             fullName: true,
             phoneNumber: true,
-            email: true,
             province: true,
           },
         },
@@ -51,10 +47,22 @@ export async function GET(req: NextRequest) {
 
     if (!driver) {
       console.log('No driver found for user ID:', userId);
+      // Get user data first
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { fullName: true, phoneNumber: true }
+      });
+      
+      if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+
       // Create a default driver record
       const newDriver = await prisma.driver.create({
         data: {
           userId,
+          fullName: user.fullName,
+          phoneNumber: user.phoneNumber,
           carId: 'N/A',
           carType: 'N/A',
           licenseId: 'N/A',
@@ -65,15 +73,11 @@ export async function GET(req: NextRequest) {
           carId: true,
           carType: true,
           licenseId: true,
-          carImage: true,
-          licenseImage: true,
-          driverImage: true,
           rate: true,
           user: {
             select: {
               fullName: true,
               phoneNumber: true,
-              email: true,
               province: true,
             },
           },
@@ -89,13 +93,9 @@ export async function GET(req: NextRequest) {
       carId: driver.carId,
       carType: driver.carType,
       licenseId: driver.licenseId,
-      carImage: driver.carImage,
-      licenseImage: driver.licenseImage,
-      driverImage: driver.driverImage,
       rate: driver.rate,
       driverName: driver.user.fullName,
       phoneNumber: driver.user.phoneNumber,
-      email: driver.user.email,
       province: driver.user.province,
     };
 
