@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { Role, UserStatus } from '@prisma/client';
+import { Role, UserStatus, Prisma } from '@prisma/client';
 
 export async function GET(request: Request) {
   try {
@@ -13,9 +13,9 @@ export async function GET(request: Request) {
       role: 'DRIVER' as Role,
       status: 'PENDING' as UserStatus,
       ...(phone ? {
-        phone: {
+        phoneNumber: {
           contains: phone,
-          mode: 'insensitive',
+          mode: 'insensitive' as Prisma.QueryMode,
         },
       } : {}),
       ...(from && to ? {
@@ -30,9 +30,8 @@ export async function GET(request: Request) {
       where,
       select: {
         id: true,
-        name: true,
-        email: true,
-        phone: true,
+        fullName: true,
+        phoneNumber: true,
         status: true,
         role: true,
         createdAt: true,
@@ -46,7 +45,6 @@ export async function GET(request: Request) {
     const headers = [
       'ID',
       'Name',
-      'Email',
       'Phone',
       'Status',
       'Role',
@@ -55,9 +53,8 @@ export async function GET(request: Request) {
 
     const rows = users.map((user) => [
       user.id,
-      user.name,
-      user.email,
-      user.phone || '',
+      user.fullName,
+      user.phoneNumber || '',
       user.status,
       user.role,
       user.createdAt.toISOString(),
