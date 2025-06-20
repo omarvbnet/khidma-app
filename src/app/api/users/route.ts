@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     }
 
     if (phone) {
-      where.phone = {
+      where.phoneNumber = {
         contains: phone,
       };
     }
@@ -27,9 +27,8 @@ export async function GET(request: Request) {
       where,
       select: {
         id: true,
-        name: true,
-        email: true,
-        phone: true,
+        fullName: true,
+        phoneNumber: true,
         role: true,
         status: true,
         province: true,
@@ -62,18 +61,18 @@ export async function GET(request: Request) {
 }
 
 export async function POST(req: NextRequest) {
-  const { name, email, password, role, status, phone, budget } = await req.json();
-  if (!name || !email || !password) {
+  const { fullName, phoneNumber, password, role, status, province, budget } = await req.json();
+  if (!fullName || !phoneNumber || !password) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
   const user = await prisma.user.create({
     data: {
-      name,
-      email,
+      fullName,
+      phoneNumber,
       password, // Note: In production, hash the password before saving
       role: role || 'USER',
       status: status || 'ACTIVE',
-      phone,
+      province: province || '',
       budget: budget || 0,
     },
   });
