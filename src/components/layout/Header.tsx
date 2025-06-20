@@ -101,7 +101,7 @@ export default function Header() {
                       <span className="sr-only">Open user menu</span>
                       <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
                         <span className="text-primary-600 font-medium">
-                          {user?.name?.[0]?.toUpperCase() || 'U'}
+                          {user?.fullName?.[0]?.toUpperCase() || 'U'}
                         </span>
                       </div>
                     </Menu.Button>
@@ -179,13 +179,13 @@ export default function Header() {
                 <div className="flex-shrink-0">
                   <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
                     <span className="text-primary-600 font-medium">
-                      {user?.name?.[0]?.toUpperCase() || 'U'}
+                      {user?.fullName?.[0]?.toUpperCase() || 'U'}
                     </span>
                   </div>
                 </div>
                 <div className="ml-3">
-                  <div className="text-base font-medium text-gray-800">{user?.name}</div>
-                  <div className="text-sm font-medium text-gray-500">{user?.email}</div>
+                  <div className="text-base font-medium text-gray-800">{user?.fullName}</div>
+                  <div className="text-sm font-medium text-gray-500">{user?.phoneNumber}</div>
                 </div>
               </div>
               <div className="mt-3 space-y-1">
