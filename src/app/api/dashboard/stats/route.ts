@@ -36,10 +36,14 @@ export async function GET() {
       },
     });
 
-    const orders = await prisma.order.groupBy({
-      by: ['province'],
-      _count: {
-        _all: true,
+    // Get orders with user province data
+    const ordersWithUsers = await prisma.order.findMany({
+      include: {
+        user: {
+          select: {
+            province: true,
+          },
+        },
       },
     });
 
@@ -55,11 +59,12 @@ export async function GET() {
 
     // Combine province statistics
     const provinceStats: ProvinceStats = {};
+    const orderProvinces = ordersWithUsers.map(o => o.user.province).filter(Boolean) as string[];
     const requestProvinces = requests.map(r => r.user.province).filter(Boolean) as string[];
     const provinces = new Set([
       ...users.map((u) => u.province).filter(Boolean) as string[],
       ...drivers.map((d) => d.province).filter(Boolean) as string[],
-      ...orders.map((o) => o.province).filter(Boolean) as string[],
+      ...orderProvinces,
       ...requestProvinces,
     ]);
 
@@ -68,7 +73,7 @@ export async function GET() {
       provinceStats[province] = {
         users: users.find((u) => u.province === province)?._count._all || 0,
         drivers: drivers.find((d) => d.province === province)?._count._all || 0,
-        orders: orders.find((o) => o.province === province)?._count._all || 0,
+        orders: orderProvinces.filter(p => p === province).length,
         requests: requestProvinces.filter(p => p === province).length,
       };
     });
