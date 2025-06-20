@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "690659070480",
+    "project_id": "wadiny-13e7a",
+    "storage_bucket": "wadiny-13e7a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:690659070480:android:9aa7cac5048f8a7d5cb095",
+        "android_client_info": {
+          "package_name": "com.waddiny.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOlYe3ui-PCKtO_YsmYrOUuIlWDQYaLHk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

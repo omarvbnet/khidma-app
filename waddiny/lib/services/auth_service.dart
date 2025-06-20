@@ -1,0 +1,331 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waddiny/services/location_service.dart';
+import '../constants/api_constants.dart';
+import '../models/user_model.dart';
+
+class AuthService {
+  User? _currentUser;
+
+  User? get currentUser => _currentUser;
+
+  // Helper method to format phone number
+  String _formatPhoneNumber(String phoneNumber) {
+    // Remove any non-numeric characters
+    String cleaned = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // If the number starts with 0, remove it
+    if (cleaned.startsWith('0')) {
+      cleaned = cleaned.substring(1);
+    }
+
+    // If the number starts with 964, remove it to avoid duplication
+    if (cleaned.startsWith('964')) {
+      cleaned = cleaned.substring(3);
+    }
+
+    // Add 964 prefix
+    cleaned = '964$cleaned';
+
+    print('Original phone number: $phoneNumber'); // Debug log
+    print('Formatted phone number: $cleaned'); // Debug log
+    return cleaned;
+  }
+
+  Future<Map<String, dynamic>> login(
+      String phoneNumber, String password) async {
+    try {
+      final formattedPhone = _formatPhoneNumber(phoneNumber);
+      print('Login attempt with phone: $formattedPhone');
+
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/auth/login'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'phoneNumber': formattedPhone,
+          'password': password,
+        }),
+      );
+
+      print('Login response status: ${response.statusCode}');
+      print('Login response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('Login successful, saving token: ${data['token']}');
+        await _saveUserData(data);
+        _currentUser = User.fromJson(data['user']);
+
+        // Get current location and update province
+        try {
+          final locationService = LocationService();
+          final position = await locationService.getCurrentLocation();
+          final province = await locationService.getProvinceFromCoordinates(
+            position.latitude,
+            position.longitude,
+          );
+          await locationService.updateUserProvince(data['token'], province);
+          print('Updated user province to: $province');
+        } catch (e) {
+          print('Error updating province: $e');
+          // Continue even if province update fails
+        }
+
+        return data;
+      } else {
+        throw Exception('Login failed: ${response.body}');
+      }
+    } catch (e) {
+      if (e.toString().contains('Connection refused')) {
+        throw Exception(
+            'Cannot connect to server. Please check if the server is running.');
+      }
+      throw Exception('Error during login: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> registerUser({
+    required String phoneNumber,
+    required String password,
+    required String fullName,
+  }) async {
+    try {
+      final formattedPhone = _formatPhoneNumber(phoneNumber);
+      print('Registration attempt with:');
+      print('Phone: $formattedPhone');
+      print('Full Name: $fullName');
+      print('Password length: ${password.length}');
+
+      final requestBody = {
+        'phoneNumber': formattedPhone,
+        'password': password,
+        'fullName': fullName,
+        'role': 'USER',
+      };
+      print('Request body: $requestBody');
+
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/auth/register'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode(requestBody),
+      );
+
+      print('Registration response status: ${response.statusCode}');
+      print('Registration response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        try {
+          final data = json.decode(response.body);
+          await _saveUserData(data);
+          return data;
+        } catch (e) {
+          throw Exception('Invalid response format from server');
+        }
+      } else {
+        throw Exception('Registration failed: ${response.body}');
+      }
+    } catch (e) {
+      if (e.toString().contains('Connection refused')) {
+        throw Exception(
+            'Cannot connect to server. Please check if the server is running.');
+      }
+      throw Exception('Error during registration: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> registerDriver({
+    required String phoneNumber,
+    required String password,
+    required String fullName,
+    required String carId,
+    required String carType,
+    required String licenseId,
+  }) async {
+    try {
+      final formattedPhone = _formatPhoneNumber(phoneNumber);
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/auth/register'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'phoneNumber': formattedPhone,
+          'password': password,
+          'fullName': fullName,
+          'role': 'DRIVER',
+          'carId': carId,
+          'carType': carType,
+          'licenseId': licenseId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        try {
+          final data = json.decode(response.body);
+          await _saveUserData(data);
+          return data;
+        } catch (e) {
+          throw Exception('Invalid response format from server');
+        }
+      } else {
+        throw Exception('Driver registration failed: ${response.body}');
+      }
+    } catch (e) {
+      if (e.toString().contains('Connection refused')) {
+        throw Exception(
+            'Cannot connect to server. Please check if the server is running.');
+      }
+      throw Exception('Error during driver registration: $e');
+    }
+  }
+
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  }
+
+  Future<void> _saveUserData(Map<String, dynamic> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    print('Saving token: ${data['token']}'); // Debug print
+    await prefs.setString('token', data['token']);
+    await prefs.setString('userData', json.encode(data['user']));
+    print('Token saved successfully'); // Debug print
+  }
+
+  Future<Map<String, dynamic>> getCurrentUser() async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    print('Getting current user with token: $token'); // Debug print
+
+    final response = await http.get(
+      Uri.parse('${ApiConstants.baseUrl}/auth/current-user'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    print(
+        'Current user response status: ${response.statusCode}'); // Debug print
+    print('Current user response body: ${response.body}'); // Debug print
+
+    if (response.statusCode == 401) {
+      throw Exception('Authentication failed');
+    }
+
+    final data = await _handleResponse(response);
+    _currentUser = User.fromJson(data['user']);
+    return data['user'] as Map<String, dynamic>;
+  }
+
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    print('Retrieved token: $token'); // Debug print
+    return token;
+  }
+
+  Future<Map<String, dynamic>> sendOTP(String phoneNumber) async {
+    try {
+      final formattedPhone = _formatPhoneNumber(phoneNumber);
+      print('Sending OTP to: $formattedPhone');
+
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/auth/otp/send'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'phoneNumber': formattedPhone,
+        }),
+      );
+
+      print('OTP send response status: ${response.statusCode}');
+      print('OTP send response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to send OTP: ${response.body}');
+      }
+    } catch (e) {
+      print('OTP send error: $e');
+      throw Exception('Error sending OTP: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyOTP(String phoneNumber, String otp) async {
+    print('Starting login process...');
+    try {
+      final formattedPhone = _formatPhoneNumber(phoneNumber);
+      print('Verifying OTP for: $formattedPhone');
+
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/auth/otp/verify'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'phoneNumber': formattedPhone,
+          'otp': otp,
+        }),
+      );
+
+      print('Login response status: ${response.statusCode}');
+      print('Login response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final token = data['token'];
+        print('Got token: ${token.substring(0, 10)}...');
+
+        await _saveUserData(data);
+        print('User data saved successfully');
+
+        // Get location and update province
+        try {
+          print('Getting location for province update...');
+          final locationService = LocationService();
+          final position = await locationService.getCurrentLocation();
+          final province = await locationService.getProvinceFromCoordinates(
+            position.latitude,
+            position.longitude,
+          );
+          print('Got province: $province');
+          await locationService.updateUserProvince(token, province);
+          print('Province updated successfully');
+        } catch (e) {
+          print('Error updating province: $e');
+          // Continue with login even if province update fails
+        }
+
+        return data;
+      } else {
+        final error = json.decode(response.body)['error'] ?? 'Failed to login';
+        throw Exception(error);
+      }
+    } catch (e) {
+      print('Login error: $e');
+      throw Exception('Login failed: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> _handleResponse(http.Response response) async {
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to handle response: ${response.body}');
+    }
+  }
+}
