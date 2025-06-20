@@ -14,8 +14,8 @@ export async function GET(req: NextRequest) {
 
     if (query) {
       where.OR = [
-        { user: { name: { contains: query, mode: 'insensitive' } } },
-        { user: { email: { contains: query, mode: 'insensitive' } } },
+        { user: { fullName: { contains: query, mode: 'insensitive' } } },
+        { user: { phoneNumber: { contains: query, mode: 'insensitive' } } },
         { id: { contains: query, mode: 'insensitive' } },
       ];
     }
@@ -44,8 +44,8 @@ export async function GET(req: NextRequest) {
       include: {
         user: {
           select: {
-            name: true,
-            email: true,
+            fullName: true,
+            phoneNumber: true,
           },
         },
       },
