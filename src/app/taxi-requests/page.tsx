@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { Search } from '@/components/ui/Search';
 import { StatusFilter } from '@/components/ui/StatusFilter';
@@ -41,7 +41,7 @@ const tripTypeOptions = [
   { label: 'SPECIAL', value: 'SPECIAL' },
 ];
 
-export default function TaxiRequestsPage() {
+function TaxiRequestsContent() {
   const [taxiRequests, setTaxiRequests] = useState<TaxiRequest[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -201,21 +201,17 @@ export default function TaxiRequestsPage() {
               </div>
             </div>
           </div>
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={handleExport}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-            >
-              <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-              Export
-            </button>
-            <Link
-              href="/taxi-requests/create"
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Create Request
-            </Link>
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              <Link href="/taxi-requests/create" className="btn-primary">
+                <PlusIcon className="h-5 w-5 mr-2" />
+                Create Request
+              </Link>
+              <button onClick={handleExport} className="btn-secondary">
+                <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+                Export CSV
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -225,56 +221,78 @@ export default function TaxiRequestsPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trip ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requester ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requester Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Driver Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Province</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trip Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Requests</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trip Time</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trip Cost</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ID
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Trip Type
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Pickup
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Destination
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {taxiRequests.map((request) => (
-                <tr key={request.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.requester_id || request.userId}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.requester_name || request.userName || 'N/A'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.driverName || 'Not assigned'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.province || 'N/A'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.tripType}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        request.status === 'ARRIVED'
-                          ? 'bg-green-100 text-green-800'
-                          : request.status === 'CHECK_OUT'
-                          ? 'bg-blue-100 text-blue-800'
-                          : request.status === 'IN_WAY'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {request.status.replace('_', ' ')}
+                <tr key={request.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {request.id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <div>
+                      <div className="font-medium">{request.userName || request.userId}</div>
+                      <div className="text-gray-500">{request.userPhone || 'N/A'}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      request.tripType === 'VIP' ? 'bg-purple-100 text-purple-800' :
+                      request.tripType === 'SPECIAL' ? 'bg-orange-100 text-orange-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {request.tripType}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.totalRequests}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.tripTime ? `${request.tripTime} min` : 'N/A'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{request.tripCost ? `IQD ${request.tripCost}` : 'N/A'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(request.createdAt).toLocaleDateString()}
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      request.status === 'WAITING' ? 'bg-yellow-100 text-yellow-800' :
+                      request.status === 'IN_WAY' ? 'bg-blue-100 text-blue-800' :
+                      request.status === 'ARRIVED' ? 'bg-green-100 text-green-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {request.status}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {request.pickup}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {request.destination}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(request.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <Link
                       href={`/taxi-requests/${request.id}`}
-                      className="text-blue-600 hover:text-blue-900 transition-colors"
+                      className="text-blue-600 hover:text-blue-900"
                     >
-                      View
+                      View Details
                     </Link>
                   </td>
                 </tr>
@@ -284,6 +302,28 @@ export default function TaxiRequestsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TaxiRequestsPage() {
+  return (
+    <Suspense fallback={
+      <div>
+        <Navigation />
+        <main className="p-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-12 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
+    }>
+      <TaxiRequestsContent />
+    </Suspense>
   );
 }
 
