@@ -13,7 +13,6 @@ export async function POST(request: NextRequest) {
     const {
       fullName,
       phoneNumber,
-      email,
       password,
       role,
       province,
@@ -77,7 +76,6 @@ export async function POST(request: NextRequest) {
       data: {
         fullName,
         phoneNumber,
-        email,
         password: hashedPassword,
         role: role as Role,
         status: 'ACTIVE',
