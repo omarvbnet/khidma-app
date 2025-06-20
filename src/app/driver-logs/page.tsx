@@ -14,14 +14,12 @@ import { DateRange } from "react-day-picker";
 interface DriverLog {
   id: string;
   driverId: string;
-  type: string;
-  details: string;
-  oldValue: string | null;
-  newValue: string | null;
+  action: string;
+  details: string | null;
   createdAt: string;
   driver: {
-    name: string;
-    phone: string | null;
+    fullName: string;
+    phoneNumber: string;
   };
 }
 
@@ -55,9 +53,9 @@ export default function DriverLogsPage() {
 
   const filteredLogs = logs.filter((log) => {
     const matchesQuery = query
-      ? log.driver.name.toLowerCase().includes(query.toLowerCase()) ||
-        (log.driver.phone?.toLowerCase().includes(query.toLowerCase()) || false) ||
-        log.details.toLowerCase().includes(query.toLowerCase())
+      ? log.driver.fullName.toLowerCase().includes(query.toLowerCase()) ||
+        log.driver.phoneNumber.toLowerCase().includes(query.toLowerCase()) ||
+        (log.details?.toLowerCase().includes(query.toLowerCase()) || false)
       : true;
 
     return matchesQuery;
