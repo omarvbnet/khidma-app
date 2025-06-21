@@ -23,6 +23,7 @@ model User {
   taxiRequests TaxiRequest[]
   changedLogs  UserLog[]     @relation("ChangedBy")
   userLogs     UserLog[]     @relation("User")
+  notifications Notification[]
 }
 
 model Driver {
@@ -114,6 +115,18 @@ model UserLog {
   user        User     @relation("User", fields: [userId], references: [id])
 }
 
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id])
+}
+
 model OTP {
   id          String   @id @default(cuid())
   phoneNumber String   @unique
@@ -151,4 +164,15 @@ enum TaxiRequest_status {
   DRIVER_IN_PROGRESS
   TRIP_COMPLETED
   TRIP_CANCELLED
+}
+
+enum NotificationType {
+  TRIP_STATUS_CHANGE
+  DRIVER_ACCEPTED
+  DRIVER_ARRIVED
+  USER_PICKED_UP
+  TRIP_COMPLETED
+  NEW_TRIP_AVAILABLE
+  TRIP_CANCELLED
+  SYSTEM_MESSAGE
 }

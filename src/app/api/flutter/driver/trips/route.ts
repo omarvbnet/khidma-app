@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verify } from 'jsonwebtoken';
 import { TaxiRequest_status, TaxiRequest, Prisma } from '@prisma/client';
+import { sendTripStatusNotification } from '@/lib/notification-service';
 
 // Middleware to verify JWT token
 async function verifyToken(req: NextRequest) {
@@ -261,6 +262,14 @@ export async function PUT(req: NextRequest) {
       status: updatedTrip.status,
       completedAt: updatedTrip.completedAt
     });
+
+    // Send notifications based on status change
+    try {
+      await sendTripStatusNotification(updatedTrip, trip.status, status);
+    } catch (notificationError) {
+      console.error('❌ Error sending notification:', notificationError);
+      // Don't fail the request if notification fails
+    }
 
     return NextResponse.json({
       id: updatedTrip.id,
