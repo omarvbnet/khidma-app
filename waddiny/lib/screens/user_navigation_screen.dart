@@ -98,15 +98,30 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
     try {
       final updatedTrip = await _tripService.getTripById(widget.trip.id);
       if (updatedTrip != null && updatedTrip['driverLocation'] != null) {
-        final location = updatedTrip['driverLocation'].split(',');
+        final driverLocationStr = updatedTrip['driverLocation'].toString();
+        final location = driverLocationStr.split(',');
+
+        // Ensure we have exactly 2 elements before accessing them
         if (location.length == 2) {
-          final lat = double.parse(location[0]);
-          final lng = double.parse(location[1]);
-          setState(() {
-            _driverLocation = LatLng(lat, lng);
-          });
-          _updateMarkers();
-          _checkDriverDistance();
+          try {
+            final lat = double.parse(location[0].trim());
+            final lng = double.parse(location[1].trim());
+
+            // Validate coordinates
+            if (_isValidCoordinate(lat, lng)) {
+              setState(() {
+                _driverLocation = LatLng(lat, lng);
+              });
+              _updateMarkers();
+              _checkDriverDistance();
+            } else {
+              print('Invalid driver coordinates: $lat, $lng');
+            }
+          } catch (e) {
+            print('Error parsing driver location coordinates: $e');
+          }
+        } else {
+          print('Invalid driver location format: $driverLocationStr');
         }
       }
     } catch (e) {

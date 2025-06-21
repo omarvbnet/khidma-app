@@ -36,17 +36,33 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         offset: _offset,
       );
 
+      // Validate notifications data
+      final validNotifications = notifications.where((notification) {
+        try {
+          // Check if required fields exist
+          final hasId = notification['id'] != null;
+          final hasTitle = notification['title'] != null;
+          final hasMessage = notification['message'] != null;
+
+          return hasId && hasTitle && hasMessage;
+        } catch (e) {
+          print('Error validating notification: $e');
+          return false;
+        }
+      }).toList();
+
       setState(() {
         if (refresh) {
-          _notifications = notifications;
+          _notifications = validNotifications;
         } else {
-          _notifications.addAll(notifications);
+          _notifications.addAll(validNotifications);
         }
         _offset += _limit;
-        _hasMore = notifications.length == _limit;
+        _hasMore = validNotifications.length == _limit;
         _isLoading = false;
       });
     } catch (e) {
+      print('Error loading notifications: $e');
       setState(() {
         _isLoading = false;
       });
@@ -198,8 +214,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       final type = notification['type'] ?? 'TRIP_STATUS_CHANGE';
                       final title = notification['title'] ?? '';
                       final message = notification['message'] ?? '';
-                      final createdAt =
-                          DateTime.parse(notification['createdAt']);
+
+                      // Safely parse the createdAt date
+                      DateTime createdAt;
+                      try {
+                        final createdAtStr =
+                            notification['createdAt']?.toString();
+                        if (createdAtStr != null && createdAtStr.isNotEmpty) {
+                          createdAt = DateTime.parse(createdAtStr);
+                        } else {
+                          createdAt = DateTime.now();
+                        }
+                      } catch (e) {
+                        print('Error parsing notification date: $e');
+                        createdAt = DateTime.now();
+                      }
 
                       return Card(
                         margin: const EdgeInsets.symmetric(

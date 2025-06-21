@@ -229,11 +229,22 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
     // For distances under 90km, use the predefined ranges
     for (var entry in AppConstants.tripCosts.entries) {
       final range = entry.key.split('-');
-      final min = double.parse(range[0]);
-      final max = double.parse(range[1]);
+      // Ensure we have exactly 2 elements before accessing them
+      if (range.length != 2) {
+        print('Invalid range format: ${entry.key}');
+        continue;
+      }
 
-      if (distance >= min && distance <= max) {
-        return entry.value.toDouble();
+      try {
+        final min = double.parse(range[0]);
+        final max = double.parse(range[1]);
+
+        if (distance >= min && distance <= max) {
+          return entry.value.toDouble();
+        }
+      } catch (e) {
+        print('Error parsing range values: ${entry.key}, error: $e');
+        continue;
       }
     }
     // If distance is greater than the maximum range but less than 90km

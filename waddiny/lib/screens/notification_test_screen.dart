@@ -65,7 +65,23 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
 
   void _addLog(String message) {
     setState(() {
-      _logs.add('${DateTime.now().toString().substring(11, 19)}: $message');
+      final now = DateTime.now();
+      final timeString = now.toString();
+      // Safely extract time part (HH:MM:SS)
+      String timePart;
+      try {
+        if (timeString.length >= 19) {
+          timePart = timeString.substring(11, 19);
+        } else {
+          timePart =
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        timePart =
+            '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+      }
+
+      _logs.add('$timePart: $message');
       if (_logs.length > 20) {
         _logs.removeAt(0);
       }
@@ -99,7 +115,7 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
 
       // Send test notification via Firebase
       final response = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}/api/notifications/send-simple'),
+        Uri.parse('${ApiConstants.baseUrl}/notifications/send-simple'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${prefs.getString('token')}',
@@ -114,6 +130,8 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
 
       if (response.statusCode == 200) {
         _addLog('✅ Firebase notification sent successfully');
+        final responseData = jsonDecode(response.body);
+        _addLog('Response: ${responseData['message']}');
       } else {
         _addLog('❌ Firebase notification failed: ${response.statusCode}');
         _addLog('Response: ${response.body}');
@@ -141,7 +159,7 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
       }
 
       final response = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}/api/notifications/send'),
+        Uri.parse('${ApiConstants.baseUrl}/notifications/send'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${prefs.getString('token')}',
@@ -149,7 +167,7 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
         body: jsonEncode({
           'userId': prefs.getString('user_id'),
           'title': 'Trip Status Update',
-          'body':
+          'message':
               'Your trip status has been updated to: ${_currentTrip!.status}',
           'type': 'TRIP_STATUS',
           'data': {
@@ -162,6 +180,8 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
 
       if (response.statusCode == 200) {
         _addLog('✅ Trip status notification sent successfully');
+        final responseData = jsonDecode(response.body);
+        _addLog('Response: ${responseData['success']}');
       } else {
         _addLog('❌ Trip status notification failed: ${response.statusCode}');
         _addLog('Response: ${response.body}');
@@ -196,7 +216,9 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
     try {
       final token = await NotificationService.getDeviceToken();
       if (token != null) {
-        _addLog('✅ New device token: ${token.substring(0, 20)}...');
+        final tokenPreview =
+            token.length > 20 ? '${token.substring(0, 20)}...' : token;
+        _addLog('✅ New device token: $tokenPreview');
         await _loadDeviceTokens();
       } else {
         _addLog('❌ Failed to get new device token');
@@ -235,9 +257,9 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                        'Device Token: ${_deviceToken.isEmpty ? 'Not found' : '${_deviceToken.substring(0, 20)}...'}'),
+                        'Device Token: ${_deviceToken.isEmpty ? 'Not found' : _deviceToken.length > 20 ? '${_deviceToken.substring(0, 20)}...' : _deviceToken}'),
                     Text(
-                        'FCM Token: ${_fcmToken.isEmpty ? 'Not found' : '${_fcmToken.substring(0, 20)}...'}'),
+                        'FCM Token: ${_fcmToken.isEmpty ? 'Not found' : _fcmToken.length > 20 ? '${_fcmToken.substring(0, 20)}...' : _fcmToken}'),
                     const SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: _refreshDeviceToken,

@@ -303,7 +303,7 @@ class NotificationService {
       if (token == null) return;
 
       final response = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}/notifications/send-simple'),
+        Uri.parse('${ApiConstants.baseUrl}/notifications/send'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -357,7 +357,21 @@ class NotificationService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data['notifications']);
+
+        // Safely extract notifications from response
+        if (data != null && data['notifications'] != null) {
+          final notifications = data['notifications'];
+          if (notifications is List) {
+            return List<Map<String, dynamic>>.from(notifications);
+          } else {
+            print(
+                'Invalid notifications format: expected List, got ${notifications.runtimeType}');
+            return [];
+          }
+        } else {
+          print('No notifications found in response');
+          return [];
+        }
       } else {
         throw Exception('Failed to fetch notifications: ${response.body}');
       }
