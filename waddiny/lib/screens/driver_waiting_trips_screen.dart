@@ -9,6 +9,7 @@ import 'dart:async';
 import '../services/map_service.dart';
 import '../screens/driver_trip_details_screen.dart';
 import '../screens/driver_home_screen.dart';
+import '../screens/notification_test_screen.dart';
 
 class DriverWaitingTripsScreen extends StatefulWidget {
   const DriverWaitingTripsScreen({super.key});
@@ -248,6 +249,18 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
           foregroundColor: Colors.black,
           actions: [
             IconButton(
+              icon: const Icon(Icons.notifications),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationTestScreen(),
+                  ),
+                );
+              },
+              tooltip: 'Test Notifications',
+            ),
+            IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _loadTrips,
               tooltip: 'Refresh',
@@ -285,6 +298,23 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
                       color: Colors.grey[600],
                     ),
               ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationTestScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.notifications),
+                label: const Text('Test Notifications'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+              ),
             ],
           ),
         ),
@@ -298,6 +328,18 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationTestScreen(),
+                ),
+              );
+            },
+            tooltip: 'Test Notifications',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadTrips,

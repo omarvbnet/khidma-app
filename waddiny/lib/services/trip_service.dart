@@ -368,6 +368,10 @@ class TripService {
 
   Future<Trip> updateTripStatus(String tripId, String newStatus) async {
     try {
+      if (_authService.currentUser == null) {
+        throw Exception('No current user found');
+      }
+
       final trips = await getUserTrips(_authService.currentUser!.id);
       final trip = trips.firstWhere((trip) => trip.id == tripId);
       trip.status = newStatus;
@@ -655,6 +659,11 @@ class TripService {
       print('\n=== GETTING TRIP BY ID ===');
       print('Trip ID: $tripId');
 
+      if (_authService.currentUser == null) {
+        print('No current user found');
+        return null;
+      }
+
       final trips = await getUserTrips(_authService.currentUser!.id);
       print('Found ${trips.length} trips for user');
 
@@ -686,6 +695,11 @@ class TripService {
 
   Future<List<Map<String, dynamic>>> getDriverTripsWithAuth() async {
     try {
+      if (_authService.currentUser == null) {
+        print('No current user found');
+        return [];
+      }
+
       final trips = await getUserTrips(_authService.currentUser!.id);
       return trips.map((trip) => trip.toJson()).toList();
     } catch (e) {

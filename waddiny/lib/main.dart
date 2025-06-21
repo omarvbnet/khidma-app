@@ -18,6 +18,7 @@ import 'screens/driver_main_screen.dart';
 import 'services/auth_service.dart';
 import 'screens/otp_verification_screen.dart';
 import 'screens/search_trip_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +50,15 @@ void main() async {
       iOS: initializationSettingsIOS,
     );
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+    print('✅ Firebase initialized successfully');
+  } catch (e) {
+    print('⚠️ Firebase initialization failed: $e');
+    print('📱 Continuing without Firebase');
   }
 
   // Initialize notification service

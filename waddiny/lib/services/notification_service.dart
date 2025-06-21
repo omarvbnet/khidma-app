@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io' show Platform;
@@ -11,13 +12,25 @@ import 'package:flutter/material.dart';
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+  static final FirebaseMessaging _firebaseMessaging =
+      FirebaseMessaging.instance;
 
   static bool _isInitialized = false;
   static String? _deviceToken;
 
-  // Initialize local notifications
+  // Initialize local notifications and Firebase
   static Future<void> initialize() async {
     if (_isInitialized) return;
+
+    print('\n🚀 INITIALIZING NOTIFICATION SERVICE');
+
+    // Initialize Firebase Messaging
+    try {
+      await _initializeFirebaseMessaging();
+    } catch (e) {
+      print('⚠️ Firebase Messaging initialization failed: $e');
+      print('📱 Continuing with local notifications only');
+    }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -54,6 +67,117 @@ class NotificationService {
     _isInitialized = true;
   }
 
+  // Initialize Firebase Messaging
+  static Future<void> _initializeFirebaseMessaging() async {
+    print('\n🔥 INITIALIZING FIREBASE MESSAGING');
+
+    // Request permission for iOS
+    if (Platform.isIOS) {
+      NotificationSettings settings =
+          await _firebaseMessaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      print('📱 iOS Notification Settings:');
+      print('- Authorization Status: ${settings.authorizationStatus}');
+      print('- Alert: ${settings.alert}');
+      print('- Badge: ${settings.badge}');
+      print('- Sound: ${settings.sound}');
+    }
+
+    // Get FCM token
+    String? fcmToken = await _firebaseMessaging.getToken();
+    if (fcmToken != null) {
+      print('🔥 FCM Token: $fcmToken');
+      _deviceToken = fcmToken;
+
+      // Save token to shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('fcm_token', fcmToken);
+
+      // Send token to server
+      await _sendDeviceTokenToServer(fcmToken);
+    } else {
+      print('❌ Failed to get FCM token');
+    }
+
+    // Listen for token refresh
+    _firebaseMessaging.onTokenRefresh.listen((newToken) {
+      print('🔄 FCM Token refreshed: $newToken');
+      _deviceToken = newToken;
+      _sendDeviceTokenToServer(newToken);
+    });
+
+    // Handle background messages
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    // Handle foreground messages
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('\n📨 RECEIVED FOREGROUND MESSAGE');
+      print('Title: ${message.notification?.title}');
+      print('Body: ${message.notification?.body}');
+      print('Data: ${message.data}');
+
+      // Show local notification
+      _showLocalNotificationFromFirebase(message);
+    });
+
+    // Handle notification tap when app is in background
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print('\n👆 NOTIFICATION TAPPED (Background)');
+      print('Data: ${message.data}');
+      _handleNotificationTap(message.data);
+    });
+
+    print('✅ Firebase Messaging initialized successfully');
+  }
+
+  // Background message handler
+  static Future<void> _firebaseMessagingBackgroundHandler(
+      RemoteMessage message) async {
+    print('\n📨 BACKGROUND MESSAGE RECEIVED');
+    print('Title: ${message.notification?.title}');
+    print('Body: ${message.notification?.body}');
+    print('Data: ${message.data}');
+  }
+
+  // Show local notification from Firebase message
+  static void _showLocalNotificationFromFirebase(RemoteMessage message) {
+    if (message.notification != null) {
+      showLocalNotification(
+        title: message.notification!.title ?? 'New Notification',
+        body: message.notification!.body ?? '',
+        payload: jsonEncode(message.data),
+        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+    }
+  }
+
+  // Handle notification tap
+  static void _onNotificationTapped(NotificationResponse response) {
+    print('👆 Local notification tapped: ${response.payload}');
+    if (response.payload != null) {
+      try {
+        final data = jsonDecode(response.payload!);
+        _handleNotificationTap(data);
+      } catch (e) {
+        print('❌ Error parsing notification payload: $e');
+      }
+    }
+  }
+
+  // Handle notification tap
+  static void _handleNotificationTap(Map<String, dynamic> data) {
+    print('👆 Handling notification tap with data: $data');
+    // You can add navigation logic here based on the notification data
+  }
+
   // Request iOS permissions
   static Future<void> _requestIOSPermissions() async {
     try {
@@ -82,11 +206,6 @@ class NotificationService {
     } catch (e) {
       print('Error requesting iOS permissions: $e');
     }
-  }
-
-  // Handle notification tap
-  static void _onNotificationTapped(NotificationResponse response) {
-    print('Notification tapped: ${response.payload}');
   }
 
   // Show local notification
@@ -642,33 +761,6 @@ class NotificationService {
     }
   }
 
-  // Get device token for push notifications
-  static Future<String?> getDeviceToken() async {
-    try {
-      print('\n📱 GETTING DEVICE TOKEN');
-
-      // For now, we'll use a mock token for testing
-      // In production, you would integrate with Firebase Messaging
-      if (_deviceToken == null) {
-        _deviceToken =
-            'mock_device_token_${DateTime.now().millisecondsSinceEpoch}';
-        print('Generated mock device token: $_deviceToken');
-      }
-
-      // Save token to shared preferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('device_token', _deviceToken!);
-
-      // Send token to server
-      await _sendDeviceTokenToServer(_deviceToken!);
-
-      return _deviceToken;
-    } catch (e) {
-      print('❌ Error getting device token: $e');
-      return null;
-    }
-  }
-
   // Send device token to server
   static Future<void> _sendDeviceTokenToServer(String token) async {
     try {
@@ -708,12 +800,67 @@ class NotificationService {
     }
   }
 
+  // Get device token for push notifications
+  static Future<String?> getDeviceToken() async {
+    try {
+      print('\n📱 GETTING DEVICE TOKEN');
+
+      if (_deviceToken != null) {
+        print('📱 Using existing device token: $_deviceToken');
+        return _deviceToken;
+      }
+
+      // Try to get FCM token
+      if (_firebaseMessaging != null) {
+        String? fcmToken = await _firebaseMessaging.getToken();
+        if (fcmToken != null) {
+          print('🔥 Got FCM token: $fcmToken');
+          _deviceToken = fcmToken;
+
+          // Save token to shared preferences
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('fcm_token', fcmToken);
+
+          // Send token to server
+          await _sendDeviceTokenToServer(fcmToken);
+
+          return fcmToken;
+        }
+      }
+
+      // Fallback to mock token for testing
+      _deviceToken =
+          'mock_device_token_${DateTime.now().millisecondsSinceEpoch}';
+      print('📱 Generated mock device token: $_deviceToken');
+
+      // Save token to shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('device_token', _deviceToken!);
+
+      // Send token to server
+      await _sendDeviceTokenToServer(_deviceToken!);
+
+      return _deviceToken;
+    } catch (e) {
+      print('❌ Error getting device token: $e');
+      return null;
+    }
+  }
+
   // Load saved device token
   static Future<String?> loadDeviceToken() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _deviceToken = prefs.getString('device_token');
 
+      // Try to load FCM token first
+      _deviceToken = prefs.getString('fcm_token');
+      if (_deviceToken != null) {
+        print('🔥 Loaded saved FCM token: $_deviceToken');
+        return _deviceToken;
+      }
+
+      // Fallback to regular device token
+      _deviceToken = prefs.getString('device_token');
       if (_deviceToken != null) {
         print('📱 Loaded saved device token: $_deviceToken');
       } else {

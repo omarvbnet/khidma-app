@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../services/notification_service.dart';
 import '../services/trip_service.dart';
+import '../constants/api_constants.dart';
 import '../models/trip_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io' show Platform;
-import 'dart:convert';
 
 class NotificationTestScreen extends StatefulWidget {
   const NotificationTestScreen({Key? key}) : super(key: key);
@@ -13,378 +16,193 @@ class NotificationTestScreen extends StatefulWidget {
 }
 
 class _NotificationTestScreenState extends State<NotificationTestScreen> {
-  String _status = 'Ready to test';
-  bool _isLoading = false;
-  Trip? _currentTrip;
-  String? _deviceToken;
   final TripService _tripService = TripService();
+  Trip? _currentTrip;
+  bool _isLoading = false;
+  String _deviceToken = '';
+  String _fcmToken = '';
+  String _notificationStatus = '';
+  List<String> _logs = [];
 
   @override
   void initState() {
     super.initState();
     _loadCurrentTrip();
-    _loadDeviceToken();
+    _loadDeviceTokens();
   }
 
   Future<void> _loadCurrentTrip() async {
+    setState(() => _isLoading = true);
     try {
-      setState(() {
-        _isLoading = true;
-        _status = 'Loading current trip...';
-      });
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('user_id');
 
-      // Get current user's trips
-      final user = await _tripService.checkUserStatus();
-      if (user != null) {
-        final trips = await _tripService.getUserTrips(user.id);
-        if (trips.isNotEmpty) {
+      if (userId != null) {
+        final response = await _tripService.getUserTrips(userId);
+        if (response.isNotEmpty) {
           setState(() {
-            _currentTrip = trips.first;
-            _status = 'Current trip: ${_currentTrip!.status}';
-          });
-        } else {
-          setState(() {
-            _status = 'No active trips found';
+            _currentTrip = response.first;
           });
         }
-      } else {
-        setState(() {
-          _status = 'User not authenticated';
-        });
       }
     } catch (e) {
-      setState(() {
-        _status = 'Error loading trip: $e';
-      });
+      _addLog('❌ Error loading trip: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _loadDeviceToken() async {
+  Future<void> _loadDeviceTokens() async {
     try {
-      final token = await NotificationService.getDeviceToken();
-      setState(() {
-        _deviceToken = token;
-      });
+      final prefs = await SharedPreferences.getInstance();
+      _deviceToken = prefs.getString('device_token') ?? 'Not found';
+      _fcmToken = prefs.getString('fcm_token') ?? 'Not found';
+      setState(() {});
     } catch (e) {
-      print('Error loading device token: $e');
+      _addLog('❌ Error loading device tokens: $e');
     }
   }
 
-  Future<void> _testNotification() async {
+  void _addLog(String message) {
     setState(() {
-      _isLoading = true;
-      _status = 'Testing notification...';
+      _logs.add('${DateTime.now().toString().substring(11, 19)}: $message');
+      if (_logs.length > 20) {
+        _logs.removeAt(0);
+      }
     });
-
-    try {
-      await NotificationService.testNotification();
-      setState(() {
-        _status = 'Test notification sent! Check if you received it.';
-      });
-    } catch (e) {
-      setState(() {
-        _status = 'Error: $e';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
   }
 
-  Future<void> _checkPermissions() async {
-    setState(() {
-      _isLoading = true;
-      _status = 'Checking permissions...';
-    });
-
-    try {
-      await NotificationService.checkPermissions();
-      setState(() {
-        _status = 'Permissions checked. Check console for details.';
-      });
-    } catch (e) {
-      setState(() {
-        _status = 'Error checking permissions: $e';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _testTripNotification() async {
-    setState(() {
-      _isLoading = true;
-      _status = 'Testing trip notification...';
-    });
-
+  Future<void> _testLocalNotification() async {
+    _addLog('🔔 Testing local notification...');
     try {
       await NotificationService.showLocalNotification(
-        title: 'Driver Accepted Your Trip!',
-        body:
-            'A driver has accepted your trip request. They will be on their way soon.',
-        payload: '{"tripId": "test123", "type": "DRIVER_ACCEPTED"}',
-        id: 1001,
+        title: 'Test Notification',
+        body: 'This is a test local notification!',
+        payload: '{"type": "test", "message": "Local notification test"}',
       );
-      setState(() {
-        _status = 'Trip notification sent!';
-      });
+      _addLog('✅ Local notification sent successfully');
     } catch (e) {
-      setState(() {
-        _status = 'Error: $e';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      _addLog('❌ Local notification failed: $e');
     }
   }
 
-  Future<void> _testCurrentTripNotification() async {
+  Future<void> _testFirebaseNotification() async {
+    _addLog('🔥 Testing Firebase notification...');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('fcm_token');
+
+      if (token == null || token.isEmpty) {
+        _addLog('❌ No FCM token available');
+        return;
+      }
+
+      // Send test notification via Firebase
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/api/notifications/send-simple'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${prefs.getString('token')}',
+        },
+        body: jsonEncode({
+          'title': 'Firebase Test',
+          'body': 'This is a Firebase push notification test!',
+          'deviceToken': token,
+          'data': {'type': 'test', 'message': 'Firebase notification test'}
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        _addLog('✅ Firebase notification sent successfully');
+      } else {
+        _addLog('❌ Firebase notification failed: ${response.statusCode}');
+        _addLog('Response: ${response.body}');
+      }
+    } catch (e) {
+      _addLog('❌ Firebase notification error: $e');
+    }
+  }
+
+  Future<void> _testTripStatusNotification() async {
     if (_currentTrip == null) {
-      setState(() {
-        _status = 'No current trip to test with';
-      });
+      _addLog('❌ No current trip available');
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _status = 'Testing current trip notification...';
-    });
-
+    _addLog('🚕 Testing trip status notification...');
     try {
-      // Test notification based on current trip status
-      String title = '';
-      String body = '';
-      String notificationType = '';
+      final prefs = await SharedPreferences.getInstance();
+      final token =
+          prefs.getString('fcm_token') ?? prefs.getString('device_token');
 
-      switch (_currentTrip!.status.toUpperCase()) {
-        case 'USER_WAITING':
-          title = 'Trip Request Sent';
-          body =
-              'Your trip request has been sent. Waiting for a driver to accept.';
-          notificationType = 'USER_WAITING';
-          break;
-        case 'DRIVER_ACCEPTED':
-          title = 'Driver Accepted Your Trip!';
-          body =
-              'A driver has accepted your trip request. They will be on their way soon.';
-          notificationType = 'DRIVER_ACCEPTED';
-          break;
-        case 'DRIVER_IN_WAY':
-          title = 'Driver is on the Way!';
-          body = 'Your driver is heading to your pickup location.';
-          notificationType = 'DRIVER_IN_WAY';
-          break;
-        case 'DRIVER_ARRIVED':
-          title = 'Driver Has Arrived!';
-          body = 'Your driver has arrived at your pickup location.';
-          notificationType = 'DRIVER_ARRIVED';
-          break;
-        case 'USER_PICKED_UP':
-          title = 'Trip Started!';
-          body = 'You have been picked up. Enjoy your ride!';
-          notificationType = 'USER_PICKED_UP';
-          break;
-        case 'DRIVER_IN_PROGRESS':
-          title = 'Trip in Progress';
-          body = 'Your trip is currently in progress.';
-          notificationType = 'DRIVER_IN_PROGRESS';
-          break;
-        case 'TRIP_COMPLETED':
-          title = 'Trip Completed!';
-          body = 'Your trip has been completed successfully.';
-          notificationType = 'TRIP_COMPLETED';
-          break;
-        case 'TRIP_CANCELLED':
-          title = 'Trip Cancelled';
-          body = 'Your trip has been cancelled.';
-          notificationType = 'TRIP_CANCELLED';
-          break;
-        default:
-          title = 'Trip Status Update';
-          body =
-              'Your trip status has been updated to: ${_currentTrip!.status}';
-          notificationType = 'STATUS_UPDATE';
+      if (token == null || token.isEmpty) {
+        _addLog('❌ No device token available');
+        return;
       }
 
-      await NotificationService.showLocalNotification(
-        title: title,
-        body: body,
-        payload: jsonEncode({
-          'tripId': _currentTrip!.id,
-          'type': notificationType,
-          'status': _currentTrip!.status,
-          'pickupLocation': _currentTrip!.pickupLocation,
-          'dropoffLocation': _currentTrip!.dropoffLocation,
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/api/notifications/send'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${prefs.getString('token')}',
+        },
+        body: jsonEncode({
+          'userId': prefs.getString('user_id'),
+          'title': 'Trip Status Update',
+          'body':
+              'Your trip status has been updated to: ${_currentTrip!.status}',
+          'type': 'TRIP_STATUS',
+          'data': {
+            'tripId': _currentTrip!.id,
+            'status': _currentTrip!.status,
+            'type': 'trip_status'
+          }
         }),
-        id: 1002,
       );
 
-      setState(() {
-        _status =
-            'Current trip notification sent! Status: ${_currentTrip!.status}';
-      });
-    } catch (e) {
-      setState(() {
-        _status = 'Error: $e';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _testAllTripNotifications() async {
-    setState(() {
-      _isLoading = true;
-      _status = 'Testing all trip notifications...';
-    });
-
-    try {
-      // Test all possible trip status notifications
-      final statuses = [
-        'USER_WAITING',
-        'DRIVER_ACCEPTED',
-        'DRIVER_IN_WAY',
-        'DRIVER_ARRIVED',
-        'USER_PICKED_UP',
-        'DRIVER_IN_PROGRESS',
-        'TRIP_COMPLETED',
-        'TRIP_CANCELLED',
-      ];
-
-      for (int i = 0; i < statuses.length; i++) {
-        final status = statuses[i];
-        String title = '';
-        String body = '';
-
-        switch (status) {
-          case 'USER_WAITING':
-            title = 'Trip Request Sent';
-            body =
-                'Your trip request has been sent. Waiting for a driver to accept.';
-            break;
-          case 'DRIVER_ACCEPTED':
-            title = 'Driver Accepted Your Trip!';
-            body =
-                'A driver has accepted your trip request. They will be on their way soon.';
-            break;
-          case 'DRIVER_IN_WAY':
-            title = 'Driver is on the Way!';
-            body = 'Your driver is heading to your pickup location.';
-            break;
-          case 'DRIVER_ARRIVED':
-            title = 'Driver Has Arrived!';
-            body = 'Your driver has arrived at your pickup location.';
-            break;
-          case 'USER_PICKED_UP':
-            title = 'Trip Started!';
-            body = 'You have been picked up. Enjoy your ride!';
-            break;
-          case 'DRIVER_IN_PROGRESS':
-            title = 'Trip in Progress';
-            body = 'Your trip is currently in progress.';
-            break;
-          case 'TRIP_COMPLETED':
-            title = 'Trip Completed!';
-            body = 'Your trip has been completed successfully.';
-            break;
-          case 'TRIP_CANCELLED':
-            title = 'Trip Cancelled';
-            body = 'Your trip has been cancelled.';
-            break;
-        }
-
-        await NotificationService.showLocalNotification(
-          title: title,
-          body: body,
-          payload: jsonEncode({
-            'tripId': _currentTrip?.id ?? 'test123',
-            'type': status,
-            'status': status,
-          }),
-          id: 2000 + i,
-        );
-
-        // Wait a bit between notifications
-        await Future.delayed(Duration(milliseconds: 500));
+      if (response.statusCode == 200) {
+        _addLog('✅ Trip status notification sent successfully');
+      } else {
+        _addLog('❌ Trip status notification failed: ${response.statusCode}');
+        _addLog('Response: ${response.body}');
       }
-
-      setState(() {
-        _status = 'All trip notifications sent! Check your notification panel.';
-      });
     } catch (e) {
-      setState(() {
-        _status = 'Error: $e';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      _addLog('❌ Trip status notification error: $e');
     }
   }
 
-  Future<void> _testForceNotification() async {
-    setState(() {
-      _isLoading = true;
-      _status = 'Testing force notification...';
-    });
-
+  Future<void> _checkNotificationPermissions() async {
+    _addLog('🔐 Checking notification permissions...');
     try {
-      await NotificationService.forceNotification(
-        title: '🚨 URGENT: Test Notification',
-        body:
-            'This is a high-priority test notification. If you see this, notifications are working!',
-        payload: jsonEncode({
-          'type': 'FORCE_TEST',
-          'timestamp': DateTime.now().toIso8601String(),
-        }),
-        id: 9999,
-      );
-
-      setState(() {
-        _status = 'Force notification sent! Check your device immediately.';
-      });
+      await NotificationService.checkPermissions();
+      _addLog('✅ Permission check completed');
     } catch (e) {
-      setState(() {
-        _status = 'Error: $e';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      _addLog('❌ Permission check failed: $e');
     }
   }
 
-  Future<void> _testDeviceToken() async {
-    setState(() {
-      _isLoading = true;
-      _status = 'Testing device token...';
-    });
+  Future<void> _requestNotificationPermissions() async {
+    _addLog('🔐 Requesting notification permissions...');
+    try {
+      await NotificationService.checkPermissions();
+      _addLog('✅ Permission request completed');
+    } catch (e) {
+      _addLog('❌ Permission request failed: $e');
+    }
+  }
 
+  Future<void> _refreshDeviceToken() async {
+    _addLog('🔄 Refreshing device token...');
     try {
       final token = await NotificationService.getDeviceToken();
-      setState(() {
-        _deviceToken = token;
-        _status = 'Device token: ${token ?? "Not available"}';
-      });
+      if (token != null) {
+        _addLog('✅ New device token: ${token.substring(0, 20)}...');
+        await _loadDeviceTokens();
+      } else {
+        _addLog('❌ Failed to get new device token');
+      }
     } catch (e) {
-      setState(() {
-        _status = 'Error: $e';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      _addLog('❌ Error refreshing device token: $e');
     }
   }
 
@@ -394,246 +212,237 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
       appBar: AppBar(
         title: const Text('Notification Test'),
         backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Device Token Information
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Platform: ${Platform.isIOS ? "iOS" : "Android"}',
-                      style: Theme.of(context).textTheme.titleMedium,
+                    const Text(
+                      'Device Tokens',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Status: $_status',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                        'Device Token: ${_deviceToken.isEmpty ? 'Not found' : '${_deviceToken.substring(0, 20)}...'}'),
+                    Text(
+                        'FCM Token: ${_fcmToken.isEmpty ? 'Not found' : '${_fcmToken.substring(0, 20)}...'}'),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: _refreshDeviceToken,
+                      child: const Text('Refresh Token'),
                     ),
-                    if (_currentTrip != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue.shade200),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Current Trip Info:',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue.shade700,
-                                  ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text('ID: ${_currentTrip!.id}'),
-                            Text('Status: ${_currentTrip!.status}'),
-                            Text('Pickup: ${_currentTrip!.pickupLocation}'),
-                            Text('Dropoff: ${_currentTrip!.dropoffLocation}'),
-                            if (_currentTrip!.driverName != null)
-                              Text('Driver: ${_currentTrip!.driverName}'),
-                          ],
-                        ),
-                      ),
-                    ],
-                    if (_deviceToken != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.green.shade200),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Device Token:',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green.shade700,
-                                  ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _deviceToken!,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontFamily: 'monospace',
-                                color: Colors.green.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _loadCurrentTrip,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Refresh Trip Data'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _checkPermissions,
-              icon: const Icon(Icons.security),
-              label: const Text('Check Permissions'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _testNotification,
-              icon: const Icon(Icons.notifications),
-              label: const Text('Test Basic Notification'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _testTripNotification,
-              icon: const Icon(Icons.directions_car),
-              label: const Text('Test Trip Notification'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _testCurrentTripNotification,
-              icon: const Icon(Icons.directions_car),
-              label: const Text('Test Current Trip Notification'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _testAllTripNotifications,
-              icon: const Icon(Icons.directions_car),
-              label: const Text('Test All Trip Notifications'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _testForceNotification,
-              icon: const Icon(Icons.notifications),
-              label: const Text('Test Force Notification'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _testDeviceToken,
-              icon: const Icon(Icons.notifications),
-              label: const Text('Test Device Token'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
-            ),
-            const SizedBox(height: 20),
-            if (Platform.isIOS) ...[
-              const Card(
-                color: Colors.orange,
+
+            const SizedBox(height: 16),
+
+            // Current Trip Information
+            if (_currentTrip != null)
+              Card(
                 child: Padding(
-                  padding: EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'iOS Troubleshooting Tips:',
+                      const Text(
+                        'Current Trip',
                         style: TextStyle(
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        '1. Make sure notifications are enabled in iOS Settings\n'
-                        '2. Check if "Do Not Disturb" is enabled\n'
-                        '3. Verify app has notification permissions\n'
-                        '4. Try testing in different app states (foreground/background)',
-                        style: TextStyle(color: Colors.white),
-                      ),
+                      const SizedBox(height: 8),
+                      Text('ID: ${_currentTrip!.id}'),
+                      Text('Status: ${_currentTrip!.status}'),
+                      Text('From: ${_currentTrip!.pickupLocation}'),
+                      Text('To: ${_currentTrip!.dropoffLocation}'),
                     ],
                   ),
                 ),
               ),
-            ],
-            const Card(
-              color: Colors.red,
+
+            const SizedBox(height: 16),
+
+            // Test Buttons
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '🔧 NOTIFICATION TROUBLESHOOTING GUIDE',
+                    const Text(
+                      'Test Notifications',
                       style: TextStyle(
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontSize: 16,
                       ),
                     ),
-                    SizedBox(height: 12),
-                    Text(
-                      'If notifications are not working:\n\n'
-                      '1. 📱 Check Device Settings:\n'
-                      '   • Go to Settings > Notifications > Waddiny\n'
-                      '   • Enable "Allow Notifications"\n'
-                      '   • Enable "Alert", "Badge", and "Sound"\n\n'
-                      '2. 🔕 Check Do Not Disturb:\n'
-                      '   • Go to Settings > Focus > Do Not Disturb\n'
-                      '   • Make sure it\'s OFF or Waddiny is allowed\n\n'
-                      '3. 🔄 Test Different States:\n'
-                      '   • Try with app in foreground\n'
-                      '   • Try with app in background\n'
-                      '   • Try with app completely closed\n\n'
-                      '4. 🚨 Use Force Notification:\n'
-                      '   • Tap "Test Force Notification" above\n'
-                      '   • This uses maximum priority settings\n\n'
-                      '5. 📞 Check Console Logs:\n'
-                      '   • Look for "✅" success messages\n'
-                      '   • Look for "❌" error messages',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    const SizedBox(height: 16),
+
+                    // Local Notification Test
+                    ElevatedButton.icon(
+                      onPressed: _testLocalNotification,
+                      icon: const Icon(Icons.notifications),
+                      label: const Text('Test Local Notification'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Firebase Notification Test
+                    ElevatedButton.icon(
+                      onPressed: _testFirebaseNotification,
+                      icon: const Icon(Icons.cloud),
+                      label: const Text('Test Firebase Notification'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Trip Status Notification Test
+                    if (_currentTrip != null)
+                      ElevatedButton.icon(
+                        onPressed: _testTripStatusNotification,
+                        icon: const Icon(Icons.local_taxi),
+                        label: const Text('Test Trip Status Notification'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+
+                    const SizedBox(height: 8),
+
+                    // Permission Tests
+                    ElevatedButton.icon(
+                      onPressed: _checkNotificationPermissions,
+                      icon: const Icon(Icons.security),
+                      label: const Text('Check Permissions'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    ElevatedButton.icon(
+                      onPressed: _requestNotificationPermissions,
+                      icon: const Icon(Icons.verified_user),
+                      label: const Text('Request Permissions'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo,
+                        foregroundColor: Colors.white,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-            const Spacer(),
-            if (_isLoading)
-              const Center(
-                child: CircularProgressIndicator(),
+
+            const SizedBox(height: 16),
+
+            // Logs
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Test Logs',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => setState(() => _logs.clear()),
+                          child: const Text('Clear'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ListView.builder(
+                        itemCount: _logs.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            child: Text(
+                              _logs[index],
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Troubleshooting Guide
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Troubleshooting Guide',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'If notifications are not working:\n'
+                      '1. Check device settings for notification permissions\n'
+                      '2. Ensure Firebase is properly configured\n'
+                      '3. Verify device token is being sent to server\n'
+                      '4. Check server logs for notification delivery\n'
+                      '5. Test with both local and Firebase notifications',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
