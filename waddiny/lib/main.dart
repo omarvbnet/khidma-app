@@ -54,6 +54,10 @@ void main() async {
   // Initialize notification service
   await NotificationService.initialize();
 
+  // Load and get device token for push notifications
+  await NotificationService.loadDeviceToken();
+  await NotificationService.getDeviceToken();
+
   // Test notification permissions on iOS
   if (Platform.isIOS) {
     await NotificationService.checkPermissions();

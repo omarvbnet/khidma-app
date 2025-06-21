@@ -3,14 +3,17 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io' show Platform;
+import 'dart:typed_data';
 import '../constants/api_constants.dart';
 import '../models/trip_model.dart';
+import 'package:flutter/material.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
   static bool _isInitialized = false;
+  static String? _deviceToken;
 
   // Initialize local notifications
   static Future<void> initialize() async {
@@ -93,22 +96,31 @@ class NotificationService {
     String? payload,
     int id = 0,
   }) async {
-    if (!_isInitialized) await initialize();
+    if (!_isInitialized) {
+      print('⚠️ Notification service not initialized, initializing now...');
+      await initialize();
+    }
 
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
       'trip_notifications',
       'Trip Notifications',
       channelDescription: 'Notifications for trip status updates',
-      importance: Importance.high,
+      importance: Importance.max,
       priority: Priority.high,
       showWhen: true,
       enableVibration: true,
       playSound: true,
       icon: '@mipmap/ic_launcher',
+      sound: RawResourceAndroidNotificationSound('notification_sound'),
+      vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+      enableLights: true,
+      ledColor: Color(0xFF2196F3),
+      ledOnMs: 1000,
+      ledOffMs: 500,
     );
 
-    const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+    final DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
@@ -117,14 +129,22 @@ class NotificationService {
       attachments: null,
       categoryIdentifier: 'trip_notifications',
       threadIdentifier: 'trip_notifications',
+      sound: 'default',
+      interruptionLevel: InterruptionLevel.active,
     );
 
-    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       iOS: iOSPlatformChannelSpecifics,
     );
 
     try {
+      print('\n🔔 SENDING NOTIFICATION');
+      print('Title: $title');
+      print('Body: $body');
+      print('ID: $id');
+      print('Platform: ${Platform.isIOS ? "iOS" : "Android"}');
+
       await _localNotifications.show(
         id,
         title,
@@ -132,9 +152,16 @@ class NotificationService {
         platformChannelSpecifics,
         payload: payload,
       );
-      print('✅ Local notification shown: $title');
+
+      print('✅ Local notification sent successfully');
+
+      // Additional verification for iOS
+      if (Platform.isIOS) {
+        await _verifyIOSNotificationDelivery();
+      }
     } catch (e) {
       print('❌ Error showing local notification: $e');
+      print('Error details: ${e.toString()}');
     }
   }
 
@@ -511,6 +538,192 @@ class NotificationService {
       print('✅ New trip notification sent to drivers');
     } catch (e) {
       print('❌ Error notifying drivers about new trip: $e');
+    }
+  }
+
+  // Additional verification for iOS notification delivery
+  static Future<void> _verifyIOSNotificationDelivery() async {
+    try {
+      print('\n📱 VERIFYING iOS NOTIFICATION DELIVERY');
+
+      // Check if notifications are enabled in system settings
+      final IOSFlutterLocalNotificationsPlugin? iosImplementation =
+          _localNotifications.resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>();
+
+      if (iosImplementation != null) {
+        // Request permissions again to ensure they're granted
+        final bool? permissionsGranted =
+            await iosImplementation.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
+        print('iOS Permissions Status: $permissionsGranted');
+
+        if (permissionsGranted == true) {
+          print('✅ iOS notifications should be working');
+        } else {
+          print(
+              '❌ iOS notifications may not be working - permissions not granted');
+        }
+      }
+    } catch (e) {
+      print('❌ Error verifying iOS notification delivery: $e');
+    }
+  }
+
+  // Force notification with maximum priority
+  static Future<void> forceNotification({
+    required String title,
+    required String body,
+    String? payload,
+    int id = 9999,
+  }) async {
+    print('\n🚨 FORCING NOTIFICATION WITH MAXIMUM PRIORITY');
+
+    if (!_isInitialized) {
+      print('⚠️ Initializing notification service...');
+      await initialize();
+    }
+
+    final AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'urgent_notifications',
+      'Urgent Notifications',
+      channelDescription: 'High priority notifications',
+      importance: Importance.max,
+      priority: Priority.max,
+      showWhen: true,
+      enableVibration: true,
+      playSound: true,
+      icon: '@mipmap/ic_launcher',
+      sound: RawResourceAndroidNotificationSound('notification_sound'),
+      vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
+      enableLights: true,
+      ledColor: Color(0xFFFF0000),
+      ledOnMs: 2000,
+      ledOffMs: 1000,
+      timeoutAfter: 30000, // 30 seconds
+    );
+
+    final DarwinNotificationDetails iOSDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      badgeNumber: 1,
+      categoryIdentifier: 'urgent_notifications',
+      threadIdentifier: 'urgent_notifications',
+      sound: 'default',
+      interruptionLevel: InterruptionLevel.critical,
+    );
+
+    final NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+      iOS: iOSDetails,
+    );
+
+    try {
+      await _localNotifications.show(
+        id,
+        title,
+        body,
+        details,
+        payload: payload,
+      );
+
+      print('✅ Force notification sent successfully');
+
+      // Show a snackbar or alert to confirm delivery
+      print('🔔 NOTIFICATION SENT - CHECK YOUR DEVICE');
+    } catch (e) {
+      print('❌ Error sending force notification: $e');
+    }
+  }
+
+  // Get device token for push notifications
+  static Future<String?> getDeviceToken() async {
+    try {
+      print('\n📱 GETTING DEVICE TOKEN');
+
+      // For now, we'll use a mock token for testing
+      // In production, you would integrate with Firebase Messaging
+      if (_deviceToken == null) {
+        _deviceToken =
+            'mock_device_token_${DateTime.now().millisecondsSinceEpoch}';
+        print('Generated mock device token: $_deviceToken');
+      }
+
+      // Save token to shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('device_token', _deviceToken!);
+
+      // Send token to server
+      await _sendDeviceTokenToServer(_deviceToken!);
+
+      return _deviceToken;
+    } catch (e) {
+      print('❌ Error getting device token: $e');
+      return null;
+    }
+  }
+
+  // Send device token to server
+  static Future<void> _sendDeviceTokenToServer(String token) async {
+    try {
+      print('\n📤 SENDING DEVICE TOKEN TO SERVER');
+      print('Token: $token');
+
+      final prefs = await SharedPreferences.getInstance();
+      final userToken = prefs.getString('token');
+
+      if (userToken == null) {
+        print('❌ No user token found, skipping server update');
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/users/device-token'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $userToken',
+        },
+        body: jsonEncode({
+          'deviceToken': token,
+          'platform': Platform.isIOS ? 'ios' : 'android',
+          'appVersion': '1.0.0',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ Device token sent to server successfully');
+      } else {
+        print(
+            '❌ Failed to send device token to server: ${response.statusCode}');
+        print('Response: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error sending device token to server: $e');
+    }
+  }
+
+  // Load saved device token
+  static Future<String?> loadDeviceToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _deviceToken = prefs.getString('device_token');
+
+      if (_deviceToken != null) {
+        print('📱 Loaded saved device token: $_deviceToken');
+      } else {
+        print('📱 No saved device token found');
+      }
+
+      return _deviceToken;
+    } catch (e) {
+      print('❌ Error loading device token: $e');
+      return null;
     }
   }
 }
