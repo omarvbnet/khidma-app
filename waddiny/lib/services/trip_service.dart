@@ -616,6 +616,12 @@ class TripService {
   Future<Map<String, dynamic>?> getWaitingTrip() async {
     try {
       print('\n=== GETTING WAITING TRIP ===');
+
+      if (_authService.currentUser == null) {
+        print('No current user found');
+        return null;
+      }
+
       final trips = await getUserTrips(_authService.currentUser!.id);
       print('Found ${trips.length} trips');
 
@@ -646,9 +652,32 @@ class TripService {
 
   Future<Map<String, dynamic>?> getTripById(String tripId) async {
     try {
+      print('\n=== GETTING TRIP BY ID ===');
+      print('Trip ID: $tripId');
+
       final trips = await getUserTrips(_authService.currentUser!.id);
-      final trip = trips.firstWhere((trip) => trip.id == tripId);
-      return trip.toJson();
+      print('Found ${trips.length} trips for user');
+
+      // Find the trip with the given ID
+      Trip? foundTrip;
+      for (final trip in trips) {
+        if (trip.id == tripId) {
+          foundTrip = trip;
+          break;
+        }
+      }
+
+      if (foundTrip == null) {
+        print('Trip with ID $tripId not found');
+        return null;
+      }
+
+      print('Found trip:');
+      print('- ID: ${foundTrip.id}');
+      print('- Status: ${foundTrip.status}');
+      print('- Driver ID: ${foundTrip.driverId}');
+
+      return foundTrip.toJson();
     } catch (e) {
       print('Error getting trip by ID: $e');
       return null;

@@ -14,6 +14,8 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
+import '../constants/app_constants.dart';
 
 class DriverNavigationScreen extends StatefulWidget {
   final Trip trip;
@@ -320,6 +322,13 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
             _showPickupButton = true;
           }
         });
+
+        // Send local notification for status change
+        await NotificationService.handleTripStatusChangeForDriver(
+          trip: widget.trip,
+          previousStatus: widget.trip.status,
+          newStatus: newStatus,
+        );
 
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(

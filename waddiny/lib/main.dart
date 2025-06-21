@@ -8,6 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'services/api_service.dart';
 import 'services/taxi_request_service.dart';
 import 'services/driver_service.dart';
+import 'services/notification_service.dart';
 import 'constants/api_constants.dart';
 import 'dart:io' show Platform;
 import 'screens/login_screen.dart';
@@ -48,6 +49,14 @@ void main() async {
       iOS: initializationSettingsIOS,
     );
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  // Initialize notification service
+  await NotificationService.initialize();
+
+  // Test notification permissions on iOS
+  if (Platform.isIOS) {
+    await NotificationService.checkPermissions();
   }
 
   runApp(

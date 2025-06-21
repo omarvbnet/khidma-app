@@ -60,5 +60,10 @@
 	</array>
 	<key>io.flutter.embedded_views_preview</key>
 	<true/>
+	<!-- Notification permissions -->
+	<key>NSUserNotificationUsageDescription</key>
+	<string>This app needs to send you notifications about your trip status and updates.</string>
+	<key>NSUserNotificationAlertStyle</key>
+	<string>alert</string>
 </dict>
 </plist>

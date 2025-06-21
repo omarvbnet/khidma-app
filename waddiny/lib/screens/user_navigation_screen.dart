@@ -6,6 +6,8 @@ import '../models/trip_model.dart';
 import '../services/trip_service.dart';
 import '../services/map_service.dart';
 import '../services/location_service.dart';
+import '../services/notification_service.dart';
+import 'notification_test_screen.dart';
 import 'dart:math';
 import '../constants/app_constants.dart';
 
@@ -64,7 +66,16 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
       if (updatedTrip != null) {
         final newStatus = updatedTrip['status'] as String;
         if (newStatus != widget.trip.status) {
+          final previousStatus = widget.trip.status;
           widget.onTripStatusChanged(newStatus);
+
+          // Send local notification for status change
+          await NotificationService.handleTripStatusChangeForUser(
+            trip: widget.trip,
+            previousStatus: previousStatus,
+            newStatus: newStatus,
+          );
+
           if (newStatus == 'TRIP_COMPLETED' || newStatus == 'TRIP_CANCELLED') {
             _statusCheckTimer?.cancel();
             _driverLocationTimer?.cancel();
@@ -364,10 +375,22 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_getStatusText()),
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text('Trip in Progress'),
+        backgroundColor: Colors.blue,
+        actions: [
+          // Temporary test button for notifications
+          IconButton(
+            icon: Icon(Icons.notifications),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => NotificationTestScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [

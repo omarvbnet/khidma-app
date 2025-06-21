@@ -12,6 +12,7 @@ import 'dart:async';
 import '../services/api_service.dart';
 import 'driver_trip_details_screen.dart';
 import 'driver_arrived_screen.dart';
+import '../services/notification_service.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({Key? key}) : super(key: key);
@@ -24,6 +25,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   final _tripService = TripService();
   final _authService = AuthService();
   final _driverService = DriverService(ApiService());
+  final _apiService = ApiService();
   bool _isLoading = true;
   Trip? _currentTrip;
   Timer? _refreshTimer;
@@ -44,75 +46,31 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     super.dispose();
   }
 
-  Future<void> _loadCurrentTrip([String? status]) async {
+  Future<void> _loadCurrentTrip() async {
     try {
-      print('\n=== LOADING CURRENT TRIP ===');
-      final user = await _authService.getCurrentUser();
-      if (user == null) {
-        throw Exception('User not authenticated');
-      }
-      print('Current user:');
-      print('- ID: ${user['id']}');
-      print('- Role: ${user['role']}');
+      final trips = await _apiService.getDriverTrips();
+      print('\nLoaded ${trips.length} trips');
 
-      // Get driver profile (Driver entity) to get correct driver ID
-      final driverProfile = await _driverService.getDriverProfile();
-      final currentDriverId = driverProfile.id;
-      print('Driver profile:');
-      print('- Driver ID: $currentDriverId');
-
-      final trips = await _tripService.getDriverTrips(currentDriverId);
-      print('\nAll trips:');
-      for (var trip in trips) {
-        print('\nTrip ${trip.id}:');
-        print('- Status: ${trip.status}');
-        print('- Driver ID: ${trip.driverId}');
-        print('- User ID: ${trip.userId}');
-      }
-
-      if (trips.isEmpty) {
-        print('No trips found, showing waiting screen');
-        if (mounted) {
-          setState(() {
-            _currentTrip = null;
-            _isLoading = false;
-          });
+      // Find the most recent active trip
+      TaxiRequest? activeTrip;
+      for (final trip in trips) {
+        if ([
+          'DRIVER_ACCEPTED',
+          'DRIVER_IN_WAY',
+          'DRIVER_ARRIVED',
+          'USER_PICKED_UP',
+          'DRIVER_IN_PROGRESS',
+          'DRIVER_ARRIVED_DROPOFF',
+        ].contains(trip.status.toUpperCase())) {
+          activeTrip = trip;
+          break;
         }
-        return;
-      }
-
-      // Find the most recent active trip with updated status handling
-      final activeTrip = trips.firstWhereOrNull(
-        (trip) {
-          final isActive = trip.status == 'DRIVER_ACCEPTED' ||
-              trip.status == 'DRIVER_IN_WAY' ||
-              trip.status == 'DRIVER_ARRIVED' ||
-              trip.status == 'USER_PICKED_UP' ||
-              trip.status == 'DRIVER_IN_PROGRESS' ||
-              trip.status == 'DRIVER_ARRIVED_DROPOFF';
-          final isDriverMatch =
-              trip.driverId == null || trip.driverId == currentDriverId;
-          print('\nChecking trip ${trip.id}:');
-          print('- Status: ${trip.status}');
-          print('- Driver ID: ${trip.driverId}');
-          print('- Current driver ID: $currentDriverId');
-          print('- Is active: $isActive');
-          print('- Is driver match: $isDriverMatch');
-          return isActive && isDriverMatch;
-        },
-      );
-      print('\nActive trip found:');
-      if (activeTrip != null) {
-        print('- ID: ${activeTrip.id}');
-        print('- Status: ${activeTrip.status}');
-        print('- Driver ID: ${activeTrip.driverId}');
-      } else {
-        print('No active trip found');
       }
 
       if (mounted) {
         setState(() {
-          _currentTrip = activeTrip;
+          _currentTrip =
+              activeTrip != null ? Trip.fromJson(activeTrip.toJson()) : null;
           _isLoading = false;
         });
         print('\nState updated with trip:');
@@ -124,6 +82,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
           print('No trip set');
         }
       }
+
+      // Check for new trips and send notifications
+      await _checkForNewTrips();
     } catch (e) {
       print('Error in _loadCurrentTrip: $e');
       if (mounted) {
@@ -137,6 +98,32 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _checkForNewTrips() async {
+    try {
+      // Get current user to check if they're a driver
+      final user = await _authService.getCurrentUser();
+      if (user == null || user['role'] != 'DRIVER') return;
+
+      // Get waiting trips
+      final waitingTrips = await _apiService.getTaxiRequests();
+      final newTrips = waitingTrips
+          .where(
+              (trip) => trip.status == 'USER_WAITING' && trip.driverId == null)
+          .toList();
+
+      // Send notifications for new trips
+      for (final trip in newTrips) {
+        final tripModel = Trip.fromJson(trip.toJson());
+        await NotificationService.handleNewTripAvailableForDriver(
+          trip: tripModel,
+          driverId: user['id'],
+        );
+      }
+    } catch (e) {
+      print('Error checking for new trips: $e');
     }
   }
 
@@ -172,7 +159,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         return DriverNavigationScreen(
           trip: _currentTrip!,
           isPickup: true,
-          onTripStatusChanged: _loadCurrentTrip,
+          onTripStatusChanged: (String status) => _loadCurrentTrip(),
         );
 
       case 'DRIVER_ARRIVED':
@@ -186,7 +173,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         return DriverNavigationScreen(
           trip: _currentTrip!,
           isPickup: false,
-          onTripStatusChanged: _loadCurrentTrip,
+          onTripStatusChanged: (String status) => _loadCurrentTrip(),
         );
 
       case 'DRIVER_ARRIVED_DROPOFF':
