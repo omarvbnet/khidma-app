@@ -1,87 +1,167 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendPushNotification } from '@/lib/firebase-admin';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('\n=== TESTING NOTIFICATION CREATION ===');
+    console.log('\n=== TESTING NOTIFICATION CREATION DIRECTLY ===');
     
-    // Get a test driver
-    const testDriver = await prisma.user.findFirst({
-      where: { role: 'DRIVER' },
-      select: { id: true, fullName: true, deviceToken: true }
+    // Get the driver
+    const driver = await prisma.user.findFirst({
+      where: {
+        role: 'DRIVER',
+        status: 'ACTIVE'
+      },
+      select: {
+        id: true,
+        fullName: true,
+        deviceToken: true
+      }
     });
 
-    if (!testDriver) {
-      return NextResponse.json({ error: 'No test driver found' }, { status: 404 });
+    if (!driver) {
+      return NextResponse.json({
+        success: false,
+        error: 'No active driver found'
+      });
     }
 
-    console.log('Using test driver:', testDriver);
+    console.log(`Testing notification creation for driver: ${driver.fullName} (${driver.id})`);
 
-    // Try to create a notification directly
-    const notificationData = {
-      tripId: 'test-trip-id',
-      newStatus: 'NEW_TRIP_AVAILABLE',
-      pickupLocation: 'Test Pickup',
-      dropoffLocation: 'Test Dropoff',
-      fare: 5000,
-      distance: 5.0,
-      userFullName: 'Test User',
-      userPhone: '1234567890',
-    };
+    // Test 1: Create database notification
+    console.log('\n1. Testing database notification creation...');
+    let dbNotificationResult = 'failed';
+    let dbNotificationError = null;
+    let dbNotificationId = null;
 
-    console.log('Creating notification with data:', notificationData);
+    try {
+      const dbNotification = await prisma.notification.create({
+        data: {
+          userId: driver.id,
+          type: 'NEW_TRIP_AVAILABLE',
+          title: 'Test Notification',
+          message: 'This is a test notification',
+          data: {
+            tripId: 'test_trip_123',
+            pickupLocation: 'Test Pickup',
+            dropoffLocation: 'Test Dropoff',
+            fare: 1000
+          }
+        }
+      });
 
-    // Create notification in database
-    const notification = await prisma.notification.create({
-      data: {
-        userId: testDriver.id,
-        type: 'NEW_TRIP_AVAILABLE',
-        title: 'New Trip Available!',
-        message: 'A new trip request is available in your area. Tap to view details.',
-        data: notificationData,
-      },
-    });
+      dbNotificationId = dbNotification.id;
+      dbNotificationResult = 'success';
+      console.log('✅ Database notification created:', dbNotification.id);
+    } catch (error) {
+      dbNotificationError = error instanceof Error ? error.message : 'Unknown error';
+      console.error('❌ Database notification creation failed:', error);
+    }
 
-    console.log('✅ Notification created:', notification);
+    // Test 2: Test Firebase push notification
+    console.log('\n2. Testing Firebase push notification...');
+    let firebaseResult = 'failed';
+    let firebaseError = null;
 
-    // Get recent notifications
+    if (driver.deviceToken) {
+      try {
+        await sendPushNotification({
+          token: driver.deviceToken,
+          title: 'Test Push Notification',
+          body: 'This is a test push notification',
+          data: {
+            type: 'TEST',
+            timestamp: Date.now().toString()
+          }
+        });
+
+        firebaseResult = 'success';
+        console.log('✅ Firebase push notification sent successfully');
+      } catch (error) {
+        firebaseError = error instanceof Error ? error.message : 'Unknown error';
+        console.error('❌ Firebase push notification failed:', error);
+      }
+    } else {
+      firebaseError = 'No device token available';
+      console.log('⚠️ No device token available for Firebase test');
+    }
+
+    // Test 3: Test the full notification function
+    console.log('\n3. Testing full notification function...');
+    let fullFunctionResult = 'failed';
+    let fullFunctionError = null;
+
+    try {
+      const { notifyAvailableDriversAboutNewTrip } = await import('@/lib/notification-service');
+      
+      const mockTrip = {
+        id: `test_${Date.now()}`,
+        pickupLocation: 'Test Pickup Location',
+        dropoffLocation: 'Test Dropoff Location',
+        price: 1000,
+        distance: 2.0,
+        userFullName: 'Test User',
+        userPhone: '+1234567890'
+      };
+
+      await notifyAvailableDriversAboutNewTrip(mockTrip);
+      fullFunctionResult = 'success';
+      console.log('✅ Full notification function completed successfully');
+    } catch (error) {
+      fullFunctionError = error instanceof Error ? error.message : 'Unknown error';
+      console.error('❌ Full notification function failed:', error);
+    }
+
+    // Check if any notifications were created
     const recentNotifications = await prisma.notification.findMany({
       where: {
-        type: 'NEW_TRIP_AVAILABLE',
+        userId: driver.id,
         createdAt: {
           gte: new Date(Date.now() - 5 * 60 * 1000) // Last 5 minutes
         }
       },
-      include: {
-        user: {
-          select: { fullName: true, role: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 10
+      orderBy: { createdAt: 'desc' }
     });
+
+    // Clean up test notification
+    if (dbNotificationId) {
+      try {
+        await prisma.notification.delete({
+          where: { id: dbNotificationId }
+        });
+        console.log('✅ Test notification cleaned up');
+      } catch (error) {
+        console.log('⚠️ Could not clean up test notification');
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      notificationCreated: {
-        id: notification.id,
-        userId: notification.userId,
-        type: notification.type,
-        title: notification.title,
-        message: notification.message,
-        createdAt: notification.createdAt
+      driver: {
+        id: driver.id,
+        name: driver.fullName,
+        hasToken: !!driver.deviceToken,
+        tokenPreview: driver.deviceToken ? driver.deviceToken.substring(0, 20) + '...' : 'none'
       },
-      testDriver: {
-        id: testDriver.id,
-        name: testDriver.fullName,
-        hasToken: !!testDriver.deviceToken
+      testResults: {
+        databaseNotification: {
+          result: dbNotificationResult,
+          error: dbNotificationError,
+          notificationId: dbNotificationId
+        },
+        firebasePush: {
+          result: firebaseResult,
+          error: firebaseError
+        },
+        fullFunction: {
+          result: fullFunctionResult,
+          error: fullFunctionError
+        }
       },
       recentNotifications: recentNotifications.length,
       notificationDetails: recentNotifications.map(n => ({
         id: n.id,
-        userId: n.userId,
-        userName: n.user?.fullName,
-        userRole: n.user?.role,
+        type: n.type,
         title: n.title,
         message: n.message,
         createdAt: n.createdAt
@@ -89,11 +169,11 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Error in test notification creation:', error);
+    console.error('❌ Notification creation test failed:', error);
     return NextResponse.json({
+      success: false,
       error: 'Test failed',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : 'No stack trace'
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 } 
