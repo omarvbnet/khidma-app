@@ -53,7 +53,7 @@ export async function POST(req: Request) {
         password: hashedPassword,
         fullName,
         province,
-      status: role === 'DRIVER' ? 'PENDING' : 'ACTIVE' as UserStatus,
+      status: 'ACTIVE' as UserStatus,
       role: role as Role,
       deviceToken: deviceToken || null,
       platform: platform || null,

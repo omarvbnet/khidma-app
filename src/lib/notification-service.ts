@@ -288,10 +288,16 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
 
     console.log(`Found ${allActiveDrivers.length} total active drivers`);
 
+    // Log driver details for debugging
+    for (const driver of allActiveDrivers) {
+      console.log(`- Driver: ${driver.fullName} (${driver.id}) - Status: ${driver.status} - Has Token: ${!!driver.deviceToken}`);
+    }
+
     // Filter to only available drivers (those without active trips)
     const availableDrivers = [];
     for (const driver of allActiveDrivers) {
       const isAvailable = await isDriverAvailable(driver.id);
+      console.log(`Driver ${driver.fullName} (${driver.id}) - Available: ${isAvailable}`);
       if (isAvailable) {
         availableDrivers.push(driver);
       }
@@ -300,7 +306,7 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     console.log(`Found ${availableDrivers.length} available drivers to notify`);
 
     if (availableDrivers.length === 0) {
-      console.log('No available drivers found');
+      console.log('No available drivers found - no notifications will be sent');
       return;
     }
 
@@ -327,14 +333,20 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     for (const driver of availableDrivers) {
       if (driver.deviceToken) {
         deviceTokens.push(driver.deviceToken);
+        console.log(`✅ Driver ${driver.fullName} has device token: ${driver.deviceToken.substring(0, 20)}...`);
       } else {
         driversWithoutTokens.push(driver.id);
+        console.log(`⚠️ Driver ${driver.fullName} has no device token`);
       }
     }
+
+    console.log(`Drivers with tokens: ${deviceTokens.length}`);
+    console.log(`Drivers without tokens: ${driversWithoutTokens.length}`);
 
     // Send batch push notification if we have device tokens
     if (deviceTokens.length > 0) {
       try {
+        console.log('Sending batch push notification...');
         await sendMulticastNotification({
           tokens: deviceTokens,
           title,
@@ -348,6 +360,7 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
       } catch (firebaseError) {
         console.error('❌ Batch Firebase notification failed:', firebaseError);
         // Fall back to individual notifications
+        console.log('Falling back to individual notifications...');
         for (const driver of availableDrivers) {
           if (driver.deviceToken) {
             try {
@@ -369,6 +382,7 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     // Send individual notifications for drivers without device tokens
     for (const driverId of driversWithoutTokens) {
       try {
+        console.log(`Sending database notification to driver ${driverId} (no device token)`);
         await sendNotificationWithFallback(
           driverId,
           title,
