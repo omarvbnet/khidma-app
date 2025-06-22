@@ -83,7 +83,7 @@ export async function sendMulticastNotification({
       tokens,
     };
 
-    const response = await messaging.sendMulticast(message);
+    const response = await messaging.sendEachForMulticast(message);
     console.log('✅ Multicast notification sent:', {
       successCount: response.successCount,
       failureCount: response.failureCount,
