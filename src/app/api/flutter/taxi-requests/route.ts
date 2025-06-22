@@ -235,10 +235,24 @@ export async function POST(req: NextRequest) {
 
     // Notify all available drivers about the new trip
     try {
+      console.log('\n=== STARTING DRIVER NOTIFICATION PROCESS ===');
+      console.log('Trip details for notification:', {
+        id: taxiRequest.id,
+        pickupLocation: taxiRequest.pickupLocation,
+        dropoffLocation: taxiRequest.dropoffLocation,
+        price: taxiRequest.price,
+        userFullName: taxiRequest.userFullName,
+        userPhone: taxiRequest.userPhone
+      });
+      
       await notifyAvailableDriversAboutNewTrip(taxiRequest);
       console.log('✅ All available drivers notified about new trip');
     } catch (notificationError) {
       console.error('❌ Error notifying drivers about new trip:', notificationError);
+      console.error('Notification error details:', {
+        message: notificationError instanceof Error ? notificationError.message : 'Unknown error',
+        stack: notificationError instanceof Error ? notificationError.stack : 'No stack trace'
+      });
       // Don't fail the request if notification fails
     }
 

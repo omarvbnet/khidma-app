@@ -305,8 +305,15 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
 
     console.log(`Found ${availableDrivers.length} available drivers to notify`);
 
+    // If no available drivers found, notify ALL active drivers as fallback
+    let driversToNotify = availableDrivers;
     if (availableDrivers.length === 0) {
-      console.log('No available drivers found - no notifications will be sent');
+      console.log('⚠️ No available drivers found - falling back to notify ALL active drivers');
+      driversToNotify = allActiveDrivers;
+    }
+
+    if (driversToNotify.length === 0) {
+      console.log('❌ No drivers found at all - no notifications will be sent');
       return;
     }
 
@@ -330,7 +337,7 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     const deviceTokens: string[] = [];
     const driversWithoutTokens: string[] = [];
 
-    for (const driver of availableDrivers) {
+    for (const driver of driversToNotify) {
       if (driver.deviceToken) {
         deviceTokens.push(driver.deviceToken);
         console.log(`✅ Driver ${driver.fullName} has device token: ${driver.deviceToken.substring(0, 20)}...`);
@@ -356,12 +363,12 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
             type,
           },
         });
-        console.log(`✅ Batch push notification sent to ${deviceTokens.length} available drivers`);
+        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers`);
       } catch (firebaseError) {
         console.error('❌ Batch Firebase notification failed:', firebaseError);
         // Fall back to individual notifications
         console.log('Falling back to individual notifications...');
-        for (const driver of availableDrivers) {
+        for (const driver of driversToNotify) {
           if (driver.deviceToken) {
             try {
               await sendNotificationWithFallback(
@@ -395,10 +402,17 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
       }
     }
 
-    console.log('✅ All available drivers notified about new trip');
+    console.log(`✅ All ${driversToNotify.length} drivers notified about new trip`);
 
   } catch (error) {
     console.error('❌ Error notifying available drivers about new trip:', error);
+    // Try to notify all drivers as a last resort
+    try {
+      console.log('🔄 Attempting to notify all drivers as fallback...');
+      await notifyAllDriversAboutNewTrip(trip);
+    } catch (fallbackError) {
+      console.error('❌ Fallback notification also failed:', fallbackError);
+    }
   }
 }
 

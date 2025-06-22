@@ -1,91 +1,190 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendPushNotification } from '@/lib/firebase-admin';
 
-export async function GET(req: NextRequest) {
+// Helper function to check if a driver is available for new trips
+async function isDriverAvailable(driverId: string): Promise<boolean> {
   try {
-    console.log('\n=== SIMPLE NOTIFICATION TEST ===');
-
-    // Check if we have any drivers
-    const drivers = await prisma.user.findMany({
+    // Check if driver has any active trips
+    const activeTrips = await prisma.taxiRequest.findMany({
       where: {
-        role: 'DRIVER'
-      },
-      select: {
-        id: true,
-        fullName: true,
-        status: true,
-        deviceToken: true
+        driverId: driverId,
+        status: {
+          in: [
+            'DRIVER_ACCEPTED',
+            'DRIVER_IN_WAY', 
+            'DRIVER_ARRIVED',
+            'USER_PICKED_UP',
+            'DRIVER_IN_PROGRESS'
+          ]
+        }
       }
     });
 
-    console.log(`Found ${drivers.length} drivers in system`);
+    // Driver is available if they have no active trips
+    return activeTrips.length === 0;
+  } catch (error) {
+    console.error(`Error checking driver availability for ${driverId}:`, error);
+    return false;
+  }
+}
 
-    // Check if we have any active drivers
-    const activeDrivers = drivers.filter(d => d.status === 'ACTIVE');
-    console.log(`Found ${activeDrivers.length} active drivers`);
+export async function POST(req: NextRequest) {
+  try {
+    console.log('\n=== TESTING SIMPLE NOTIFICATION ===');
 
-    // Check if any drivers have device tokens
-    const driversWithTokens = drivers.filter(d => d.deviceToken);
-    console.log(`Found ${driversWithTokens.length} drivers with device tokens`);
+    // Get all drivers
+    const allDrivers = await prisma.user.findMany({
+      where: {
+        role: 'DRIVER'
+      },
+      include: {
+        driver: true
+      }
+    });
 
-    // Check Firebase environment variables
-    const hasFirebaseProjectId = !!process.env.FIREBASE_PROJECT_ID;
-    const hasFirebaseClientEmail = !!process.env.FIREBASE_CLIENT_EMAIL;
-    const hasFirebasePrivateKey = !!process.env.FIREBASE_PRIVATE_KEY;
+    console.log(`Found ${allDrivers.length} total drivers`);
 
-    console.log('Firebase Environment Variables:');
-    console.log(`- FIREBASE_PROJECT_ID: ${hasFirebaseProjectId ? '✅ Set' : '❌ Missing'}`);
-    console.log(`- FIREBASE_CLIENT_EMAIL: ${hasFirebaseClientEmail ? '✅ Set' : '❌ Missing'}`);
-    console.log(`- FIREBASE_PRIVATE_KEY: ${hasFirebasePrivateKey ? '✅ Set' : '❌ Missing'}`);
+    // Get active drivers
+    const activeDrivers = allDrivers.filter(d => d.status === 'ACTIVE');
+    console.log(`Active drivers: ${activeDrivers.length}`);
 
-    // Try to create a test notification in database
-    let testNotification = null;
-    if (activeDrivers.length > 0) {
+    // Check availability for each driver
+    const driverStatus = [];
+    for (const driver of activeDrivers) {
+      const isAvailable = await isDriverAvailable(driver.id);
+      
+      driverStatus.push({
+        id: driver.id,
+        name: driver.fullName,
+        phone: driver.phoneNumber,
+        status: driver.status,
+        isAvailable,
+        hasDeviceToken: !!driver.deviceToken,
+        deviceTokenPreview: driver.deviceToken ? 
+          `${driver.deviceToken.substring(0, 20)}...` : 'None'
+      });
+    }
+
+    const availableDrivers = driverStatus.filter(d => d.isAvailable);
+    const driversWithTokens = driverStatus.filter(d => d.hasDeviceToken);
+
+    console.log(`Available drivers: ${availableDrivers.length}`);
+    console.log(`Drivers with tokens: ${driversWithTokens.length}`);
+
+    // Send test notification to all drivers with tokens
+    const notificationResults = [];
+    for (const driver of driversWithTokens) {
       try {
-        testNotification = await prisma.notification.create({
-          data: {
-            userId: activeDrivers[0].id,
-            type: 'NEW_TRIP_AVAILABLE',
+        const driverUser = allDrivers.find(d => d.id === driver.id);
+        if (driverUser?.deviceToken) {
+          console.log(`Sending test notification to ${driver.name}...`);
+          
+          await sendPushNotification({
+            token: driverUser.deviceToken,
             title: 'Test Notification',
-            message: 'This is a test notification to verify the system is working',
+            body: 'This is a test notification from the server',
             data: {
-              tripId: 'test_123',
-              pickupLocation: 'Test Pickup',
-              dropoffLocation: 'Test Dropoff'
-            }
-          }
-        });
-        console.log('✅ Test notification created in database');
+              type: 'TEST',
+              message: 'Test notification sent successfully',
+              timestamp: new Date().toISOString()
+            },
+          });
+
+          notificationResults.push({
+            driverId: driver.id,
+            driverName: driver.name,
+            status: 'SUCCESS',
+            message: 'Notification sent successfully'
+          });
+
+          console.log(`✅ Test notification sent to ${driver.name}`);
+        }
       } catch (error) {
-        console.error('❌ Failed to create test notification:', error);
+        console.error(`❌ Failed to send test notification to ${driver.name}:`, error);
+        notificationResults.push({
+          driverId: driver.id,
+          driverName: driver.name,
+          status: 'FAILED',
+          message: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
 
-    const result = {
-      totalDrivers: drivers.length,
+    return NextResponse.json({
+      success: true,
+      totalDrivers: allDrivers.length,
       activeDrivers: activeDrivers.length,
+      availableDrivers: availableDrivers.length,
       driversWithTokens: driversWithTokens.length,
-      firebaseConfig: {
-        hasProjectId: hasFirebaseProjectId,
-        hasClientEmail: hasFirebaseClientEmail,
-        hasPrivateKey: hasFirebasePrivateKey
-      },
-      testNotification: testNotification ? 'Created' : 'Failed',
-      driverDetails: drivers.map(d => ({
-        id: d.id,
-        name: d.fullName,
-        status: d.status,
-        hasToken: !!d.deviceToken
-      }))
-    };
-
-    console.log('Test result:', result);
-    return NextResponse.json(result);
+      notificationResults,
+      driverDetails: driverStatus
+    });
 
   } catch (error) {
-    console.error('Error in simple test:', error);
+    console.error('Error testing simple notification:', error);
     return NextResponse.json(
-      { error: 'Failed to run simple test', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        success: false,
+        error: 'Failed to test notification',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    console.log('\n=== CHECKING DRIVER STATUS ===');
+
+    // Get all drivers with their status
+    const allDrivers = await prisma.user.findMany({
+      where: {
+        role: 'DRIVER'
+      },
+      include: {
+        driver: true
+      }
+    });
+
+    const driverStatus = [];
+    for (const driver of allDrivers) {
+      const isAvailable = await isDriverAvailable(driver.id);
+      
+      driverStatus.push({
+        id: driver.id,
+        name: driver.fullName,
+        phone: driver.phoneNumber,
+        status: driver.status,
+        isAvailable,
+        hasDeviceToken: !!driver.deviceToken,
+        deviceTokenPreview: driver.deviceToken ? 
+          `${driver.deviceToken.substring(0, 20)}...` : 'None'
+      });
+    }
+
+    const activeDrivers = driverStatus.filter(d => d.status === 'ACTIVE');
+    const availableDrivers = driverStatus.filter(d => d.isAvailable);
+    const driversWithTokens = driverStatus.filter(d => d.hasDeviceToken);
+
+    return NextResponse.json({
+      success: true,
+      totalDrivers: allDrivers.length,
+      activeDrivers: activeDrivers.length,
+      availableDrivers: availableDrivers.length,
+      driversWithTokens: driversWithTokens.length,
+      driverDetails: driverStatus
+    });
+
+  } catch (error) {
+    console.error('Error checking driver status:', error);
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Failed to check driver status',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
