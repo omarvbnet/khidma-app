@@ -400,19 +400,21 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
       }
     }
 
-    // Send individual notifications for drivers without device tokens
-    for (const driverId of driversWithoutTokens) {
+    // Create database notifications for ALL drivers (with or without device tokens)
+    console.log('Creating database notifications for all drivers...');
+    for (const driver of driversToNotify) {
       try {
-        console.log(`Sending database notification to driver ${driverId} (no device token)`);
+        console.log(`Creating database notification for driver ${driver.fullName} (${driver.id})`);
         await sendNotificationWithFallback(
-          driverId,
+          driver.id,
           title,
           message,
           notificationData,
           type
         );
+        console.log(`✅ Database notification created for driver ${driver.fullName}`);
       } catch (error) {
-        console.error(`❌ Failed to send notification to driver ${driverId}:`, error);
+        console.error(`❌ Failed to create database notification for driver ${driver.id}:`, error);
       }
     }
 
