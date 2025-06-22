@@ -70,7 +70,10 @@ void main() async {
 
   // Test notification permissions on iOS
   if (Platform.isIOS) {
-    await NotificationService.checkPermissions();
+    final hasPermissions =
+        await NotificationService.checkNotificationPermissions();
+    print(
+        '📱 iOS Notification Permissions: ${hasPermissions ? "Granted" : "Not Granted"}');
   }
 
   runApp(

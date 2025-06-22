@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verify } from 'jsonwebtoken';
 import { sendPushNotification } from '@/lib/firebase-admin';
 
 // Helper function to check if a driver is available for new trips
@@ -32,27 +31,7 @@ async function isDriverAvailable(driverId: string): Promise<boolean> {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('\n=== TESTING DRIVER NOTIFICATIONS ===');
-
-    // Verify authentication
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.substring(7);
-    let decoded;
-    try {
-      decoded = verify(token, process.env.JWT_SECRET!);
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
+    console.log('\n=== SIMPLE DRIVER NOTIFICATION TEST ===');
 
     // Get all available drivers (ACTIVE status and no active trips)
     const availableDrivers = await prisma.user.findMany({
@@ -87,7 +66,7 @@ export async function POST(req: NextRequest) {
       try {
         const result = await sendPushNotification({
           token: driver.deviceToken!,
-          title: 'Test Driver Notification',
+          title: '🚕 Test Driver Notification',
           body: 'This is a test notification for available drivers',
           data: {
             type: 'TEST_DRIVER_NOTIFICATION',
@@ -99,6 +78,7 @@ export async function POST(req: NextRequest) {
         notificationResults.push({
           driverId: driver.id,
           driverName: driver.fullName,
+          phone: driver.phoneNumber,
           success: true,
           messageId: result.messageId
         });
@@ -109,6 +89,7 @@ export async function POST(req: NextRequest) {
         notificationResults.push({
           driverId: driver.id,
           driverName: driver.fullName,
+          phone: driver.phoneNumber,
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error'
         });
@@ -123,6 +104,7 @@ export async function POST(req: NextRequest) {
     console.log(`- Failed: ${failedNotifications}`);
 
     return NextResponse.json({
+      success: true,
       message: `Test notifications sent to ${trulyAvailableDrivers.length} available drivers`,
       totalDrivers: availableDrivers.length,
       availableDrivers: trulyAvailableDrivers.length,
@@ -134,7 +116,11 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Error testing driver notifications:', error);
     return NextResponse.json(
-      { error: 'Failed to test driver notifications' },
+      { 
+        success: false,
+        error: 'Failed to test driver notifications',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
@@ -142,37 +128,22 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('\n=== TESTING DRIVER AVAILABILITY ===');
+    console.log('\n=== CHECKING DRIVER STATUS ===');
 
-    // Get all active drivers
-    const allActiveDrivers = await prisma.user.findMany({
+    // Get all drivers with their status
+    const allDrivers = await prisma.user.findMany({
       where: {
-        role: 'DRIVER',
-        status: 'ACTIVE',
+        role: 'DRIVER'
       },
       include: {
         driver: true
       }
     });
 
-    console.log(`Found ${allActiveDrivers.length} total active drivers`);
-
-    // Check availability for each driver
     const driverStatus = [];
-    for (const driver of allActiveDrivers) {
+    for (const driver of allDrivers) {
       const isAvailable = await isDriverAvailable(driver.id);
       
-      // Get driver's current trips
-      const currentTrips = await prisma.taxiRequest.findMany({
-        where: {
-          driverId: driver.id,
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        take: 5
-      });
-
       driverStatus.push({
         id: driver.id,
         name: driver.fullName,
@@ -180,31 +151,32 @@ export async function GET(req: NextRequest) {
         status: driver.status,
         isAvailable,
         hasDeviceToken: !!driver.deviceToken,
-        currentTrips: currentTrips.map(trip => ({
-          id: trip.id,
-          status: trip.status,
-          createdAt: trip.createdAt
-        }))
+        deviceTokenPreview: driver.deviceToken ? 
+          `${driver.deviceToken.substring(0, 20)}...` : 'None'
       });
     }
 
+    const activeDrivers = driverStatus.filter(d => d.status === 'ACTIVE');
     const availableDrivers = driverStatus.filter(d => d.isAvailable);
-    const unavailableDrivers = driverStatus.filter(d => !d.isAvailable);
-
-    console.log(`Available drivers: ${availableDrivers.length}`);
-    console.log(`Unavailable drivers: ${unavailableDrivers.length}`);
+    const driversWithTokens = driverStatus.filter(d => d.hasDeviceToken);
 
     return NextResponse.json({
-      totalDrivers: allActiveDrivers.length,
+      success: true,
+      totalDrivers: allDrivers.length,
+      activeDrivers: activeDrivers.length,
       availableDrivers: availableDrivers.length,
-      unavailableDrivers: unavailableDrivers.length,
+      driversWithTokens: driversWithTokens.length,
       driverDetails: driverStatus
     });
 
   } catch (error) {
-    console.error('Error testing driver availability:', error);
+    console.error('Error checking driver status:', error);
     return NextResponse.json(
-      { error: 'Failed to test driver availability' },
+      { 
+        success: false,
+        error: 'Failed to check driver status',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

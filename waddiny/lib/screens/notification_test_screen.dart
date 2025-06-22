@@ -191,11 +191,100 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
     }
   }
 
+  Future<void> _checkDriverStatus() async {
+    _addLog('👥 Checking driver status...');
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/notifications/test-drivers-simple'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        _addLog('✅ Driver status check completed');
+        _addLog('Total drivers: ${responseData['totalDrivers']}');
+        _addLog('Active drivers: ${responseData['activeDrivers']}');
+        _addLog('Available drivers: ${responseData['availableDrivers']}');
+        _addLog('Drivers with tokens: ${responseData['driversWithTokens']}');
+
+        // Show details for each driver
+        if (responseData['driverDetails'] != null) {
+          _addLog('📋 Driver Details:');
+          for (final driver in responseData['driverDetails']) {
+            _addLog(
+                '- ${driver['name']}: ${driver['status']} | Available: ${driver['isAvailable']} | Token: ${driver['hasDeviceToken'] ? 'Yes' : 'No'}');
+          }
+        }
+      } else {
+        _addLog('❌ Driver status check failed: ${response.statusCode}');
+        _addLog('Response: ${response.body}');
+      }
+    } catch (e) {
+      _addLog('❌ Driver status check error: $e');
+    }
+  }
+
+  Future<void> _testDriverNotification() async {
+    _addLog('🚕 Testing driver notification...');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Try the simple endpoint first (no auth required)
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/notifications/test-drivers-simple'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        _addLog('✅ Driver notification test sent');
+        final responseData = jsonDecode(response.body);
+        _addLog('Response: ${responseData['message']}');
+        _addLog('Available drivers: ${responseData['availableDrivers']}');
+        _addLog('Notifications sent: ${responseData['notificationsSent']}');
+        _addLog('Notifications failed: ${responseData['notificationsFailed']}');
+      } else {
+        _addLog('❌ Driver notification test failed: ${response.statusCode}');
+        _addLog('Response: ${response.body}');
+
+        // Try the authenticated endpoint as fallback
+        final token = prefs.getString('token');
+        if (token != null) {
+          _addLog('🔄 Trying authenticated endpoint...');
+          final authResponse = await http.post(
+            Uri.parse('${ApiConstants.baseUrl}/notifications/test-drivers'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          );
+
+          if (authResponse.statusCode == 200) {
+            _addLog('✅ Driver notification test sent (authenticated)');
+            final authResponseData = jsonDecode(authResponse.body);
+            _addLog('Response: ${authResponseData['message']}');
+          } else {
+            _addLog(
+                '❌ Authenticated endpoint also failed: ${authResponse.statusCode}');
+            _addLog('Response: ${authResponse.body}');
+          }
+        }
+      }
+    } catch (e) {
+      _addLog('❌ Driver notification test error: $e');
+    }
+  }
+
   Future<void> _checkNotificationPermissions() async {
     _addLog('🔐 Checking notification permissions...');
     try {
-      await NotificationService.checkPermissions();
-      _addLog('✅ Permission check completed');
+      final hasPermissions =
+          await NotificationService.checkNotificationPermissions();
+      _addLog(
+          '✅ Permission check completed: ${hasPermissions ? "Granted" : "Not Granted"}');
     } catch (e) {
       _addLog('❌ Permission check failed: $e');
     }
@@ -204,8 +293,10 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
   Future<void> _requestNotificationPermissions() async {
     _addLog('🔐 Requesting notification permissions...');
     try {
-      await NotificationService.checkPermissions();
-      _addLog('✅ Permission request completed');
+      final hasPermissions =
+          await NotificationService.checkNotificationPermissions();
+      _addLog(
+          '✅ Permission request completed: ${hasPermissions ? "Granted" : "Not Granted"}');
     } catch (e) {
       _addLog('❌ Permission request failed: $e');
     }
@@ -225,6 +316,130 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
       }
     } catch (e) {
       _addLog('❌ Error refreshing device token: $e');
+    }
+  }
+
+  Future<void> _forceNotification() async {
+    _addLog('🚨 Testing force notification...');
+    try {
+      await NotificationService.forceNotification(
+        title: 'Force Test',
+        body: 'This is a force notification test!',
+        payload: '{"type": "force_test"}',
+      );
+      _addLog('✅ Force notification sent');
+    } catch (e) {
+      _addLog('❌ Force notification failed: $e');
+    }
+  }
+
+  Future<void> _comprehensiveNotificationCheck() async {
+    _addLog('🔍 Starting comprehensive notification check...');
+    try {
+      final results = await NotificationService.checkNotificationSystem();
+
+      _addLog('✅ Comprehensive check completed');
+      _addLog('Firebase initialized: ${results['firebaseInitialized']}');
+      _addLog('Has device token: ${results['hasDeviceToken']}');
+      _addLog('Has permissions: ${results['hasPermissions']}');
+      _addLog(
+          'Local notifications ready: ${results['localNotificationsReady']}');
+      _addLog('Platform: ${results['platform']}');
+
+      // Server connectivity
+      if (results['serverConnectivity'] != null) {
+        final connectivity = results['serverConnectivity'];
+        _addLog('Server connectivity: ${connectivity['status']}');
+        _addLog('Can connect: ${connectivity['canConnect']}');
+      }
+
+      // Token registration
+      if (results['tokenRegistration'] != null) {
+        final registration = results['tokenRegistration'];
+        _addLog('Token registration: ${registration['status']}');
+        _addLog('Registered: ${registration['registered']}');
+      }
+
+      // Platform-specific settings
+      if (results['iosSettings'] != null) {
+        final iosSettings = results['iosSettings'];
+        _addLog('iOS Authorization: ${iosSettings['authorizationStatus']}');
+        _addLog('iOS Alert: ${iosSettings['alert']}');
+        _addLog('iOS Badge: ${iosSettings['badge']}');
+        _addLog('iOS Sound: ${iosSettings['sound']}');
+      }
+
+      if (results['androidSettings'] != null) {
+        final androidSettings = results['androidSettings'];
+        _addLog('Android Platform: ${androidSettings['platform']}');
+        _addLog('Has trip channel: ${androidSettings['hasTripChannel']}');
+        _addLog('Has urgent channel: ${androidSettings['hasUrgentChannel']}');
+      }
+    } catch (e) {
+      _addLog('❌ Comprehensive check failed: $e');
+    }
+  }
+
+  Future<void> _testNotificationWithDetails() async {
+    _addLog('🧪 Testing notification with detailed analysis...');
+    try {
+      final results = await NotificationService.testNotificationWithDetails(
+        title: 'Detailed Test',
+        body: 'This is a comprehensive notification test',
+        payload: '{"type": "detailed_test", "timestamp": "${DateTime.now()}"}',
+      );
+
+      _addLog('✅ Detailed test completed');
+      _addLog('Success: ${results['success']}');
+
+      if (results['localNotification'] != null) {
+        _addLog('Local notification: ${results['localNotification']}');
+      }
+
+      if (results['firebaseNotification'] != null) {
+        final firebase = results['firebaseNotification'];
+        _addLog(
+            'Firebase notification: ${firebase['success'] ? "Success" : "Failed"}');
+        if (!firebase['success']) {
+          _addLog('Firebase error: ${firebase['error']}');
+        }
+      }
+
+      if (results['systemCheck'] != null) {
+        final systemCheck = results['systemCheck'];
+        _addLog('System check - Permissions: ${systemCheck['hasPermissions']}');
+        _addLog(
+            'System check - Device token: ${systemCheck['hasDeviceToken']}');
+      }
+    } catch (e) {
+      _addLog('❌ Detailed test failed: $e');
+    }
+  }
+
+  Future<void> _getNotificationStatus() async {
+    _addLog('📊 Getting notification status...');
+    try {
+      final status = await NotificationService.getNotificationStatus();
+
+      _addLog('✅ Status retrieved');
+      _addLog('Initialized: ${status['isInitialized']}');
+      _addLog('Platform: ${status['platform']}');
+      _addLog('Permissions: ${status['permissions']}');
+      _addLog('Firebase ready: ${status['firebaseReady']}');
+      _addLog(
+          'Local notifications ready: ${status['localNotificationsReady']}');
+      _addLog('User token: ${status['userToken']}');
+
+      if (status['deviceToken'] != null) {
+        final token = status['deviceToken'];
+        final preview =
+            token.length > 20 ? '${token.substring(0, 20)}...' : token;
+        _addLog('Device token: $preview');
+      } else {
+        _addLog('Device token: None');
+      }
+    } catch (e) {
+      _addLog('❌ Status check failed: $e');
     }
   }
 
@@ -355,13 +570,78 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
 
                     const SizedBox(height: 8),
 
+                    // Comprehensive Notification Check
+                    ElevatedButton.icon(
+                      onPressed: _comprehensiveNotificationCheck,
+                      icon: const Icon(Icons.analytics),
+                      label: const Text('Comprehensive Check'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Detailed Notification Test
+                    ElevatedButton.icon(
+                      onPressed: _testNotificationWithDetails,
+                      icon: const Icon(Icons.science),
+                      label: const Text('Detailed Test'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Get Notification Status
+                    ElevatedButton.icon(
+                      onPressed: _getNotificationStatus,
+                      icon: const Icon(Icons.info),
+                      label: const Text('Get Status'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueGrey,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Driver Status Check
+                    ElevatedButton.icon(
+                      onPressed: _checkDriverStatus,
+                      icon: const Icon(Icons.people),
+                      label: const Text('Check Driver Status'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Driver Notification Test
+                    ElevatedButton.icon(
+                      onPressed: _testDriverNotification,
+                      icon: const Icon(Icons.person),
+                      label: const Text('Test Driver Notification'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
                     // Permission Tests
                     ElevatedButton.icon(
                       onPressed: _checkNotificationPermissions,
                       icon: const Icon(Icons.security),
                       label: const Text('Check Permissions'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple,
+                        backgroundColor: Colors.orange,
                         foregroundColor: Colors.white,
                       ),
                     ),

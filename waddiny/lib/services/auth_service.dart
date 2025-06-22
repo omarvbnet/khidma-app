@@ -90,6 +90,9 @@ class AuthService {
         await _saveUserData(data);
         _currentUser = User.fromJson(data['user']);
 
+        // Send device token to server after successful authentication
+        await NotificationService.sendDeviceTokenAfterAuth();
+
         // Get current location and update province
         try {
           final locationService = LocationService();
@@ -403,6 +406,9 @@ class AuthService {
 
         await _saveUserData(data);
         print('User data saved successfully');
+
+        // Send device token to server after successful authentication
+        await NotificationService.sendDeviceTokenAfterAuth();
 
         // Get location and update province
         try {
