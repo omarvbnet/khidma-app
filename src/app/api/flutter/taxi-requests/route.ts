@@ -245,8 +245,31 @@ export async function POST(req: NextRequest) {
         userPhone: taxiRequest.userPhone
       });
       
+      // Add a small delay to ensure the trip is fully committed
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log('Calling notifyAvailableDriversAboutNewTrip...');
       await notifyAvailableDriversAboutNewTrip(taxiRequest);
       console.log('✅ All available drivers notified about new trip');
+      
+      // Verify notifications were created
+      const recentNotifications = await prisma.notification.findMany({
+        where: {
+          type: 'NEW_TRIP_AVAILABLE',
+          createdAt: {
+            gte: new Date(Date.now() - 1 * 60 * 1000) // Last 1 minute
+          }
+        },
+        include: {
+          user: {
+            select: { fullName: true, role: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+      
+      console.log(`✅ Verification: ${recentNotifications.length} notifications created for this trip`);
+      
     } catch (notificationError) {
       console.error('❌ Error notifying drivers about new trip:', notificationError);
       console.error('Notification error details:', {
