@@ -180,4 +180,100 @@ export async function sendNewTripNotification(
   } catch (error) {
     console.error('Error sending new trip notification:', error);
   }
+}
+
+// New function to notify all active drivers about a new trip
+export async function notifyAllActiveDriversAboutNewTrip(trip: any) {
+  try {
+    console.log('\n=== NOTIFYING ALL ACTIVE DRIVERS ABOUT NEW TRIP ===');
+    console.log('Trip ID:', trip.id);
+    console.log('Pickup:', trip.pickupLocation);
+    console.log('Dropoff:', trip.dropoffLocation);
+    console.log('Fare:', trip.price);
+
+    // Get all active drivers (drivers who are not currently on a trip)
+    const activeDrivers = await prisma.user.findMany({
+      where: {
+        role: 'DRIVER',
+        driver: {
+          // Only get drivers who are not currently assigned to any active trips
+          NOT: {
+            taxiRequests: {
+              some: {
+                status: {
+                  in: [
+                    'DRIVER_ACCEPTED',
+                    'DRIVER_IN_WAY', 
+                    'DRIVER_ARRIVED',
+                    'USER_PICKED_UP',
+                    'DRIVER_IN_PROGRESS'
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      include: {
+        driver: true
+      }
+    });
+
+    console.log(`Found ${activeDrivers.length} active drivers to notify`);
+
+    // Send notification to each active driver
+    const notificationPromises = activeDrivers.map(async (driver) => {
+      try {
+        await sendNewTripNotification(trip, driver.id);
+        console.log(`✅ Notification sent to driver: ${driver.driver?.fullName || driver.id}`);
+      } catch (error) {
+        console.error(`❌ Failed to send notification to driver ${driver.id}:`, error);
+      }
+    });
+
+    await Promise.all(notificationPromises);
+    console.log('✅ All active drivers notified about new trip');
+
+  } catch (error) {
+    console.error('❌ Error notifying active drivers about new trip:', error);
+  }
+}
+
+// Alternative function to notify ALL drivers (including those on trips)
+export async function notifyAllDriversAboutNewTrip(trip: any) {
+  try {
+    console.log('\n=== NOTIFYING ALL DRIVERS ABOUT NEW TRIP ===');
+    console.log('Trip ID:', trip.id);
+    console.log('Pickup:', trip.pickupLocation);
+    console.log('Dropoff:', trip.dropoffLocation);
+    console.log('Fare:', trip.price);
+
+    // Get all drivers
+    const allDrivers = await prisma.user.findMany({
+      where: {
+        role: 'DRIVER'
+      },
+      include: {
+        driver: true
+      }
+    });
+
+    console.log(`Found ${allDrivers.length} total drivers to notify`);
+
+    // Send notification to each driver
+    const notificationPromises = allDrivers.map(async (driver) => {
+      try {
+        await sendNewTripNotification(trip, driver.id);
+        console.log(`✅ Notification sent to driver: ${driver.driver?.fullName || driver.id}`);
+      } catch (error) {
+        console.error(`❌ Failed to send notification to driver ${driver.id}:`, error);
+      }
+    });
+
+    await Promise.all(notificationPromises);
+    console.log('✅ All drivers notified about new trip');
+
+  } catch (error) {
+    console.error('❌ Error notifying all drivers about new trip:', error);
+  }
 } 
