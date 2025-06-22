@@ -6,7 +6,7 @@ import { signJwtAccessToken } from '@/lib/jwt';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phoneNumber, password } = body;
+    const { phoneNumber, password, deviceToken, platform, appVersion } = body;
 
     console.log('Login attempt with phone:', phoneNumber);
 
@@ -42,6 +42,27 @@ export async function POST(request: NextRequest) {
         { error: 'Invalid phone number or password' },
         { status: 401 }
       );
+    }
+
+    // Update user with device information if provided
+    if (deviceToken || platform || appVersion) {
+      console.log('📱 Updating device information:', {
+        deviceToken: deviceToken ? `${deviceToken.substring(0, 20)}...` : 'not provided',
+        platform,
+        appVersion,
+      });
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          deviceToken: deviceToken || user.deviceToken,
+          platform: platform || user.platform,
+          appVersion: appVersion || user.appVersion,
+          updatedAt: new Date(),
+        },
+      });
+
+      console.log('✅ Device information updated successfully');
     }
 
     const { password: _, ...userWithoutPassword } = user;

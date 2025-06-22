@@ -2,8 +2,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waddiny/services/location_service.dart';
+import 'package:waddiny/services/notification_service.dart';
 import '../constants/api_constants.dart';
 import '../models/user_model.dart';
+import 'dart:io' show Platform;
+import 'package:package_info_plus/package_info_plus.dart';
 
 class AuthService {
   User? _currentUser;
@@ -39,16 +42,43 @@ class AuthService {
       final formattedPhone = _formatPhoneNumber(phoneNumber);
       print('Login attempt with phone: $formattedPhone');
 
+      // Get device information
+      String? deviceToken;
+      String platform = Platform.isIOS ? 'ios' : 'android';
+      String appVersion = '1.0.0';
+
+      try {
+        deviceToken = await NotificationService.getDeviceToken();
+        final packageInfo = await PackageInfo.fromPlatform();
+        appVersion = packageInfo.version;
+      } catch (e) {
+        print('⚠️ Could not get device information: $e');
+      }
+
+      final requestBody = {
+        'phoneNumber': formattedPhone,
+        'password': password,
+      };
+
+      // Add device information if available
+      if (deviceToken != null) {
+        requestBody['deviceToken'] = deviceToken;
+        requestBody['platform'] = platform;
+        requestBody['appVersion'] = appVersion;
+
+        print('📱 Device Info:');
+        print('- Token: ${deviceToken.substring(0, 20)}...');
+        print('- Platform: $platform');
+        print('- App Version: $appVersion');
+      }
+
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/auth/login'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: json.encode({
-          'phoneNumber': formattedPhone,
-          'password': password,
-        }),
+        body: json.encode(requestBody),
       );
 
       print('Login response status: ${response.statusCode}');
@@ -100,12 +130,38 @@ class AuthService {
       print('Full Name: $fullName');
       print('Password length: ${password.length}');
 
+      // Get device information
+      String? deviceToken;
+      String platform = Platform.isIOS ? 'ios' : 'android';
+      String appVersion = '1.0.0';
+
+      try {
+        deviceToken = await NotificationService.getDeviceToken();
+        final packageInfo = await PackageInfo.fromPlatform();
+        appVersion = packageInfo.version;
+      } catch (e) {
+        print('⚠️ Could not get device information: $e');
+      }
+
       final requestBody = {
         'phoneNumber': formattedPhone,
         'password': password,
         'fullName': fullName,
         'role': 'USER',
       };
+
+      // Add device information if available
+      if (deviceToken != null) {
+        requestBody['deviceToken'] = deviceToken;
+        requestBody['platform'] = platform;
+        requestBody['appVersion'] = appVersion;
+
+        print('📱 Device Info:');
+        print('- Token: ${deviceToken.substring(0, 20)}...');
+        print('- Platform: $platform');
+        print('- App Version: $appVersion');
+      }
+
       print('Request body: $requestBody');
 
       final response = await http.post(
@@ -150,21 +206,49 @@ class AuthService {
   }) async {
     try {
       final formattedPhone = _formatPhoneNumber(phoneNumber);
+
+      // Get device information
+      String? deviceToken;
+      String platform = Platform.isIOS ? 'ios' : 'android';
+      String appVersion = '1.0.0';
+
+      try {
+        deviceToken = await NotificationService.getDeviceToken();
+        final packageInfo = await PackageInfo.fromPlatform();
+        appVersion = packageInfo.version;
+      } catch (e) {
+        print('⚠️ Could not get device information: $e');
+      }
+
+      final requestBody = {
+        'phoneNumber': formattedPhone,
+        'password': password,
+        'fullName': fullName,
+        'role': 'DRIVER',
+        'carId': carId,
+        'carType': carType,
+        'licenseId': licenseId,
+      };
+
+      // Add device information if available
+      if (deviceToken != null) {
+        requestBody['deviceToken'] = deviceToken;
+        requestBody['platform'] = platform;
+        requestBody['appVersion'] = appVersion;
+
+        print('📱 Device Info:');
+        print('- Token: ${deviceToken.substring(0, 20)}...');
+        print('- Platform: $platform');
+        print('- App Version: $appVersion');
+      }
+
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/auth/register'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: json.encode({
-          'phoneNumber': formattedPhone,
-          'password': password,
-          'fullName': fullName,
-          'role': 'DRIVER',
-          'carId': carId,
-          'carType': carType,
-          'licenseId': licenseId,
-        }),
+        body: json.encode(requestBody),
       );
 
       if (response.statusCode == 200) {
@@ -270,16 +354,43 @@ class AuthService {
       final formattedPhone = _formatPhoneNumber(phoneNumber);
       print('Verifying OTP for: $formattedPhone');
 
+      // Get device information
+      String? deviceToken;
+      String platform = Platform.isIOS ? 'ios' : 'android';
+      String appVersion = '1.0.0';
+
+      try {
+        deviceToken = await NotificationService.getDeviceToken();
+        final packageInfo = await PackageInfo.fromPlatform();
+        appVersion = packageInfo.version;
+      } catch (e) {
+        print('⚠️ Could not get device information: $e');
+      }
+
+      final requestBody = {
+        'phoneNumber': formattedPhone,
+        'otp': otp,
+      };
+
+      // Add device information if available
+      if (deviceToken != null) {
+        requestBody['deviceToken'] = deviceToken;
+        requestBody['platform'] = platform;
+        requestBody['appVersion'] = appVersion;
+
+        print('📱 Device Info:');
+        print('- Token: ${deviceToken.substring(0, 20)}...');
+        print('- Platform: $platform');
+        print('- App Version: $appVersion');
+      }
+
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/auth/otp/verify'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: json.encode({
-          'phoneNumber': formattedPhone,
-          'otp': otp,
-        }),
+        body: json.encode(requestBody),
       );
 
       print('Login response status: ${response.statusCode}');
@@ -326,6 +437,61 @@ class AuthService {
       return json.decode(response.body);
     } else {
       throw Exception('Failed to handle response: ${response.body}');
+    }
+  }
+
+  // Update device token, platform, and app version
+  Future<void> _updateDeviceInfo(String token) async {
+    try {
+      print('📱 Updating device information...');
+
+      // Get device token from notification service
+      final deviceToken = await NotificationService.getDeviceToken();
+      if (deviceToken == null) {
+        print('⚠️ No device token available');
+        return;
+      }
+
+      // Get app version
+      String appVersion = '1.0.0';
+      try {
+        final packageInfo = await PackageInfo.fromPlatform();
+        appVersion = packageInfo.version;
+      } catch (e) {
+        print('⚠️ Could not get app version: $e');
+      }
+
+      // Determine platform
+      final platform = Platform.isIOS ? 'ios' : 'android';
+
+      print('📱 Device Info:');
+      print('- Token: ${deviceToken.substring(0, 20)}...');
+      print('- Platform: $platform');
+      print('- App Version: $appVersion');
+
+      // Send to server
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/users/device-token'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'deviceToken': deviceToken,
+          'platform': platform,
+          'appVersion': appVersion,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ Device information updated successfully');
+      } else {
+        print('❌ Failed to update device information: ${response.statusCode}');
+        print('Response: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error updating device information: $e');
+      throw e;
     }
   }
 }

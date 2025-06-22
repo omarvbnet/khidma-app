@@ -5,7 +5,14 @@ import bcrypt from 'bcrypt';
 
 export async function POST(req: NextRequest) {
   try {
-    const { phoneNumber, password } = await req.json();
+    const { phoneNumber, password, deviceToken, platform, appVersion } = await req.json();
+
+    console.log('📱 Flutter login attempt:', {
+      phoneNumber,
+      deviceToken: deviceToken ? `${deviceToken.substring(0, 20)}...` : 'not provided',
+      platform,
+      appVersion,
+    });
 
     const user = await prisma.user.findUnique({
       where: { phoneNumber },
@@ -25,6 +32,23 @@ export async function POST(req: NextRequest) {
         { error: 'Invalid credentials' },
         { status: 401 }
       );
+    }
+
+    // Update user with device information if provided
+    if (deviceToken || platform || appVersion) {
+      console.log('📱 Updating device information for user:', user.id);
+      
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          deviceToken: deviceToken || user.deviceToken,
+          platform: platform || user.platform,
+          appVersion: appVersion || user.appVersion,
+          updatedAt: new Date(),
+        },
+      });
+
+      console.log('✅ Device information updated successfully');
     }
 
     const token = sign(

@@ -6,7 +6,15 @@ import { Role, Prisma, User, Driver, UserStatus } from '@prisma/client';
 
 export async function POST(req: Request) {
   try {
-    const { phoneNumber, password, fullName, province = 'Baghdad', role = 'USER', carId, carType, licenseId } = await req.json();
+    const { phoneNumber, password, fullName, province = 'Baghdad', role = 'USER', carId, carType, licenseId, deviceToken, platform, appVersion } = await req.json();
+
+    console.log('📱 Flutter registration attempt:', {
+      phoneNumber,
+      role,
+      deviceToken: deviceToken ? `${deviceToken.substring(0, 20)}...` : 'not provided',
+      platform,
+      appVersion,
+    });
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -47,6 +55,9 @@ export async function POST(req: Request) {
         province,
       status: role === 'DRIVER' ? 'PENDING' : 'ACTIVE' as UserStatus,
       role: role as Role,
+      deviceToken: deviceToken || null,
+      platform: platform || null,
+      appVersion: appVersion || null,
       driver: role === 'DRIVER' ? {
         create: {
           carId,
@@ -65,6 +76,8 @@ export async function POST(req: Request) {
         driver: true,
       } as any,
     }) as unknown as User & { driver: Driver | null };
+
+    console.log('✅ User registered successfully with device info');
 
     // Generate JWT token
     const token = jwt.sign(

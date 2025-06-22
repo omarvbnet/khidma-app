@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
 import { otpStore, logOTPStore, cleanupExpiredOTPs } from '@/lib/otp-store';
+import { prisma } from '@/lib/prisma';
+import { sign } from 'jsonwebtoken';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { phoneNumber, otp } = body;
+    const { phoneNumber, otp, deviceToken, platform, appVersion } = body;
 
     console.log('=== OTP VERIFY REQUEST ===');
     console.log('Phone number received:', phoneNumber);
     console.log('OTP received:', otp);
+    console.log('Device info:', {
+      deviceToken: deviceToken ? `${deviceToken.substring(0, 20)}...` : 'not provided',
+      platform,
+      appVersion,
+    });
     
     // Clean up expired OTPs first
     cleanupExpiredOTPs();
@@ -61,9 +68,54 @@ export async function POST(request: Request) {
     console.log('OTP store after verification:');
     logOTPStore();
 
+    // Find user and handle login
+    const user = await prisma.user.findUnique({
+      where: { phoneNumber },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Update user with device information if provided
+    if (deviceToken || platform || appVersion) {
+      console.log('📱 Updating device information for user:', user.id);
+      
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          deviceToken: deviceToken || user.deviceToken,
+          platform: platform || user.platform,
+          appVersion: appVersion || user.appVersion,
+          updatedAt: new Date(),
+        },
+      });
+
+      console.log('✅ Device information updated successfully');
+    }
+
+    // Generate JWT token
+    const token = sign(
+      { userId: user.id, role: user.role },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    console.log('✅ Login successful for user:', user.id);
+
     return NextResponse.json({
-      success: true,
-      message: 'OTP verified successfully'
+      token,
+      user: {
+        id: user.id,
+        phoneNumber: user.phoneNumber,
+        fullName: user.fullName,
+        province: user.province,
+        role: user.role,
+        status: user.status,
+      },
     });
   } catch (error) {
     console.error('OTP verification error:', error);
