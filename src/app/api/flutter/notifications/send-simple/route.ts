@@ -1,21 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verify } from 'jsonwebtoken';
-
-// Middleware to verify JWT token
-async function verifyToken(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return null;
-  }
-
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = verify(token, process.env.JWT_SECRET || 'your-secret-key') as { userId: string };
-    return decoded.userId;
-  } catch (error) {
-    return null;
-  }
-}
+import { verifyToken } from '@/lib/jwt';
+import { sendPushNotification } from '@/lib/firebase-admin';
 
 // Send simple notification (for testing)
 export async function POST(req: NextRequest) {
@@ -44,37 +29,62 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString(),
     });
 
-    // If device token is provided, simulate Firebase push notification
+    // If device token is provided, send Firebase push notification
     if (deviceToken) {
       try {
-        // Here you would integrate with Firebase Admin SDK to send push notifications
-        // For now, we'll just log that it would be sent
-        console.log('🔥 FIREBASE PUSH NOTIFICATION WOULD BE SENT TO:', deviceToken.substring(0, 20) + '...');
+        const firebaseResponse = await sendPushNotification({
+          token: deviceToken,
+          title,
+          body,
+          data: data || {},
+        });
         
-        // TODO: Implement actual Firebase push notification sending
-        // const firebaseResponse = await sendFirebaseNotification({
-        //   token: deviceToken,
-        //   title,
-        //   body,
-        //   data,
-        // });
+        console.log('🔥 FIREBASE PUSH NOTIFICATION SENT TO:', deviceToken.substring(0, 20) + '...');
+        console.log('Firebase Message ID:', firebaseResponse);
+        
+        return NextResponse.json({
+          success: true,
+          message: 'Firebase push notification sent successfully',
+          notification: {
+            id: `firebase_${Date.now()}`,
+            title,
+            body,
+            deviceToken: 'sent',
+            data,
+            firebaseMessageId: firebaseResponse,
+            timestamp: new Date().toISOString(),
+          },
+        });
       } catch (firebaseError) {
         console.error('Firebase notification error:', firebaseError);
+        return NextResponse.json({
+          success: false,
+          message: 'Firebase notification failed',
+          error: firebaseError instanceof Error ? firebaseError.message : 'Unknown error',
+          notification: {
+            id: `failed_${Date.now()}`,
+            title,
+            body,
+            deviceToken: 'failed',
+            data,
+            timestamp: new Date().toISOString(),
+          },
+        }, { status: 500 });
       }
+    } else {
+      return NextResponse.json({
+        success: false,
+        message: 'No device token provided',
+        notification: {
+          id: `no_token_${Date.now()}`,
+          title,
+          body,
+          deviceToken: 'not provided',
+          data,
+          timestamp: new Date().toISOString(),
+        },
+      }, { status: 400 });
     }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Notification logged successfully',
-      notification: {
-        id: `test_${Date.now()}`,
-        title,
-        body,
-        deviceToken: deviceToken ? 'provided' : 'not provided',
-        data,
-        timestamp: new Date().toISOString(),
-      },
-    });
   } catch (error) {
     console.error('Error sending simple notification:', error);
     return NextResponse.json(

@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { sendPushNotification, sendMulticastNotification } from './firebase-admin';
 
 export interface NotificationData {
   tripId: string;
@@ -7,6 +8,74 @@ export interface NotificationData {
   pickupLocation: string;
   dropoffLocation: string;
   [key: string]: any;
+}
+
+// Helper function to get user's device token
+async function getUserDeviceToken(userId: string): Promise<string | null> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { deviceToken: true }
+    });
+    return user?.deviceToken || null;
+  } catch (error) {
+    console.error('Error getting user device token:', error);
+    return null;
+  }
+}
+
+// Helper function to send push notification with fallback
+async function sendNotificationWithFallback(
+  userId: string,
+  title: string,
+  message: string,
+  data: any,
+  type: string
+) {
+  try {
+    // Create notification in database
+    const notification = await prisma.notification.create({
+      data: {
+        userId,
+        type: type as any,
+        title,
+        message,
+        data,
+      },
+    });
+
+    // Get user's device token
+    const deviceToken = await getUserDeviceToken(userId);
+    
+    if (deviceToken) {
+      try {
+        // Send Firebase push notification
+        await sendPushNotification({
+          token: deviceToken,
+          title,
+          body: message,
+          data: {
+            ...data,
+            notificationId: notification.id,
+            type,
+          },
+        });
+        
+        console.log(`📱 Push notification sent to user ${userId}: ${title}`);
+      } catch (firebaseError) {
+        console.error(`❌ Firebase notification failed for user ${userId}:`, firebaseError);
+        // Continue with database notification even if Firebase fails
+      }
+    } else {
+      console.log(`⚠️ No device token found for user ${userId}, only database notification created`);
+    }
+
+    console.log(`📱 Notification sent to user ${userId}: ${title}`);
+    return notification;
+  } catch (error) {
+    console.error('Error sending notification:', error);
+    throw error;
+  }
 }
 
 export async function sendTripStatusNotification(
@@ -69,17 +138,13 @@ export async function sendTripStatusNotification(
     }
 
     try {
-      await prisma.notification.create({
-        data: {
-          userId: trip.userId,
-          type: userType as any,
-          title: userTitle,
-          message: userMessage,
-          data: notificationData,
-        },
-      });
-
-      console.log(`📱 Notification sent to user ${trip.userId}: ${userTitle}`);
+      await sendNotificationWithFallback(
+        trip.userId,
+        userTitle,
+        userMessage,
+        notificationData,
+        userType
+      );
     } catch (error) {
       console.error('Error sending notification to user:', error);
     }
@@ -129,17 +194,13 @@ export async function sendTripStatusNotification(
     }
 
     try {
-      await prisma.notification.create({
-        data: {
-          userId: trip.driverId,
-          type: driverType as any,
-          title: driverTitle,
-          message: driverMessage,
-          data: notificationData,
-        },
-      });
-
-      console.log(`📱 Notification sent to driver ${trip.driverId}: ${driverTitle}`);
+      await sendNotificationWithFallback(
+        trip.driverId,
+        driverTitle,
+        driverMessage,
+        notificationData,
+        driverType
+      );
     } catch (error) {
       console.error('Error sending notification to driver:', error);
     }
@@ -166,17 +227,13 @@ export async function sendNewTripNotification(
   const type = 'NEW_TRIP_AVAILABLE';
 
   try {
-    await prisma.notification.create({
-      data: {
-        userId: driverId,
-        type: type as any,
-        title,
-        message,
-        data: notificationData,
-      },
-    });
-
-    console.log(`📱 New trip notification sent to driver ${driverId}`);
+    await sendNotificationWithFallback(
+      driverId,
+      title,
+      message,
+      notificationData,
+      type
+    );
   } catch (error) {
     console.error('Error sending new trip notification:', error);
   }
@@ -221,17 +278,83 @@ export async function notifyAllActiveDriversAboutNewTrip(trip: any) {
 
     console.log(`Found ${activeDrivers.length} active drivers to notify`);
 
-    // Send notification to each active driver
-    const notificationPromises = activeDrivers.map(async (driver) => {
-      try {
-        await sendNewTripNotification(trip, driver.id);
-        console.log(`✅ Notification sent to driver: ${driver.driver?.fullName || driver.id}`);
-      } catch (error) {
-        console.error(`❌ Failed to send notification to driver ${driver.id}:`, error);
-      }
-    });
+    // Prepare notification data
+    const notificationData: NotificationData = {
+      tripId: trip.id,
+      newStatus: 'NEW_TRIP_AVAILABLE',
+      pickupLocation: trip.pickupLocation,
+      dropoffLocation: trip.dropoffLocation,
+      fare: trip.price,
+      distance: trip.distance,
+      userFullName: trip.userFullName,
+      userPhone: trip.userPhone,
+    };
 
-    await Promise.all(notificationPromises);
+    const title = 'New Trip Available!';
+    const message = 'A new trip request is available in your area. Tap to view details.';
+    const type = 'NEW_TRIP_AVAILABLE';
+
+    // Collect device tokens for batch notification
+    const deviceTokens: string[] = [];
+    const driversWithoutTokens: string[] = [];
+
+    for (const driver of activeDrivers) {
+      if (driver.deviceToken) {
+        deviceTokens.push(driver.deviceToken);
+      } else {
+        driversWithoutTokens.push(driver.id);
+      }
+    }
+
+    // Send batch push notification if we have device tokens
+    if (deviceTokens.length > 0) {
+      try {
+        await sendMulticastNotification({
+          tokens: deviceTokens,
+          title,
+          body: message,
+          data: {
+            ...notificationData,
+            type,
+          },
+        });
+        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers`);
+      } catch (firebaseError) {
+        console.error('❌ Batch Firebase notification failed:', firebaseError);
+        // Fall back to individual notifications
+        for (const driver of activeDrivers) {
+          if (driver.deviceToken) {
+            try {
+              await sendNotificationWithFallback(
+                driver.id,
+                title,
+                message,
+                notificationData,
+                type
+              );
+            } catch (error) {
+              console.error(`❌ Failed to send notification to driver ${driver.id}:`, error);
+            }
+          }
+        }
+      }
+    }
+
+    // Send individual notifications for drivers without device tokens
+    for (const driverId of driversWithoutTokens) {
+      try {
+        await sendNotificationWithFallback(
+          driverId,
+          title,
+          message,
+          notificationData,
+          type
+        );
+      } catch (error) {
+        console.error(`❌ Failed to send notification to driver ${driverId}:`, error);
+      }
+    }
+
     console.log('✅ All active drivers notified about new trip');
 
   } catch (error) {
@@ -260,17 +383,83 @@ export async function notifyAllDriversAboutNewTrip(trip: any) {
 
     console.log(`Found ${allDrivers.length} total drivers to notify`);
 
-    // Send notification to each driver
-    const notificationPromises = allDrivers.map(async (driver) => {
-      try {
-        await sendNewTripNotification(trip, driver.id);
-        console.log(`✅ Notification sent to driver: ${driver.driver?.fullName || driver.id}`);
-      } catch (error) {
-        console.error(`❌ Failed to send notification to driver ${driver.id}:`, error);
-      }
-    });
+    // Prepare notification data
+    const notificationData: NotificationData = {
+      tripId: trip.id,
+      newStatus: 'NEW_TRIP_AVAILABLE',
+      pickupLocation: trip.pickupLocation,
+      dropoffLocation: trip.dropoffLocation,
+      fare: trip.price,
+      distance: trip.distance,
+      userFullName: trip.userFullName,
+      userPhone: trip.userPhone,
+    };
 
-    await Promise.all(notificationPromises);
+    const title = 'New Trip Available!';
+    const message = 'A new trip request is available in your area. Tap to view details.';
+    const type = 'NEW_TRIP_AVAILABLE';
+
+    // Collect device tokens for batch notification
+    const deviceTokens: string[] = [];
+    const driversWithoutTokens: string[] = [];
+
+    for (const driver of allDrivers) {
+      if (driver.deviceToken) {
+        deviceTokens.push(driver.deviceToken);
+      } else {
+        driversWithoutTokens.push(driver.id);
+      }
+    }
+
+    // Send batch push notification if we have device tokens
+    if (deviceTokens.length > 0) {
+      try {
+        await sendMulticastNotification({
+          tokens: deviceTokens,
+          title,
+          body: message,
+          data: {
+            ...notificationData,
+            type,
+          },
+        });
+        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers`);
+      } catch (firebaseError) {
+        console.error('❌ Batch Firebase notification failed:', firebaseError);
+        // Fall back to individual notifications
+        for (const driver of allDrivers) {
+          if (driver.deviceToken) {
+            try {
+              await sendNotificationWithFallback(
+                driver.id,
+                title,
+                message,
+                notificationData,
+                type
+              );
+            } catch (error) {
+              console.error(`❌ Failed to send notification to driver ${driver.id}:`, error);
+            }
+          }
+        }
+      }
+    }
+
+    // Send individual notifications for drivers without device tokens
+    for (const driverId of driversWithoutTokens) {
+      try {
+        await sendNotificationWithFallback(
+          driverId,
+          title,
+          message,
+          notificationData,
+          type
+        );
+      } catch (error) {
+        console.error(`❌ Failed to send notification to driver ${driverId}:`, error);
+      }
+    }
+
     console.log('✅ All drivers notified about new trip');
 
   } catch (error) {
