@@ -242,6 +242,8 @@ export async function sendNewTripNotification(
 // Helper function to check if a driver is available for new trips
 async function isDriverAvailable(driverId: string): Promise<boolean> {
   try {
+    console.log(`\n=== CHECKING AVAILABILITY FOR DRIVER ${driverId} ===`);
+    
     // Check if driver has any active trips
     const activeTrips = await prisma.taxiRequest.findMany({
       where: {
@@ -258,8 +260,16 @@ async function isDriverAvailable(driverId: string): Promise<boolean> {
       }
     });
 
+    console.log(`Driver ${driverId} has ${activeTrips.length} active trips:`);
+    for (const trip of activeTrips) {
+      console.log(`  - Trip ${trip.id}: ${trip.status} (${trip.pickupLocation} → ${trip.dropoffLocation})`);
+    }
+
     // Driver is available if they have no active trips
-    return activeTrips.length === 0;
+    const isAvailable = activeTrips.length === 0;
+    console.log(`Driver ${driverId} is ${isAvailable ? 'AVAILABLE' : 'BUSY'}`);
+    
+    return isAvailable;
   } catch (error) {
     console.error(`Error checking driver availability for ${driverId}:`, error);
     return false;
@@ -296,10 +306,14 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     // Filter to only available drivers (those without active trips)
     const availableDrivers = [];
     for (const driver of allActiveDrivers) {
+      console.log(`\n--- Checking availability for ${driver.fullName} (${driver.id}) ---`);
       const isAvailable = await isDriverAvailable(driver.id);
       console.log(`Driver ${driver.fullName} (${driver.id}) - Available: ${isAvailable}`);
       if (isAvailable) {
         availableDrivers.push(driver);
+        console.log(`✅ Added ${driver.fullName} to available drivers list`);
+      } else {
+        console.log(`❌ ${driver.fullName} is busy, not adding to available list`);
       }
     }
 
