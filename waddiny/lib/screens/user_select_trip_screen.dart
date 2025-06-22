@@ -383,11 +383,34 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
 
       if (!mounted) return;
 
-      // Show success message
+      // Show success message with notification info
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Trip created successfully!'),
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Trip created successfully!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Notifying available drivers...',
+                style: TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
           backgroundColor: Colors.green,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'View Trip',
+            textColor: Colors.white,
+            onPressed: () {
+              // Navigate to trip status screen
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+          ),
         ),
       );
 
@@ -674,7 +697,7 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
                                     )
                                   : const Icon(Icons.check),
                               label: Text(
-                                _isLoading ? 'Creating...' : 'Book Trip',
+                                _isLoading ? 'Creating Trip...' : 'Book Trip',
                                 style: const TextStyle(fontSize: 16),
                               ),
                             ),
