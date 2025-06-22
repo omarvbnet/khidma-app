@@ -239,44 +239,70 @@ export async function sendNewTripNotification(
   }
 }
 
-// New function to notify all active drivers about a new trip
-export async function notifyAllActiveDriversAboutNewTrip(trip: any) {
+// Helper function to check if a driver is available for new trips
+async function isDriverAvailable(driverId: string): Promise<boolean> {
   try {
-    console.log('\n=== NOTIFYING ALL ACTIVE DRIVERS ABOUT NEW TRIP ===');
+    // Check if driver has any active trips
+    const activeTrips = await prisma.taxiRequest.findMany({
+      where: {
+        driverId: driverId,
+        status: {
+          in: [
+            'DRIVER_ACCEPTED',
+            'DRIVER_IN_WAY', 
+            'DRIVER_ARRIVED',
+            'USER_PICKED_UP',
+            'DRIVER_IN_PROGRESS'
+          ]
+        }
+      }
+    });
+
+    // Driver is available if they have no active trips
+    return activeTrips.length === 0;
+  } catch (error) {
+    console.error(`Error checking driver availability for ${driverId}:`, error);
+    return false;
+  }
+}
+
+// New function to notify all available drivers about a new trip
+export async function notifyAvailableDriversAboutNewTrip(trip: any) {
+  try {
+    console.log('\n=== NOTIFYING AVAILABLE DRIVERS ABOUT NEW TRIP ===');
     console.log('Trip ID:', trip.id);
     console.log('Pickup:', trip.pickupLocation);
     console.log('Dropoff:', trip.dropoffLocation);
     console.log('Fare:', trip.price);
 
-    // Get all active drivers (drivers who are not currently on a trip)
-    const activeDrivers = await prisma.user.findMany({
+    // Get all active drivers
+    const allActiveDrivers = await prisma.user.findMany({
       where: {
         role: 'DRIVER',
-        driver: {
-          // Only get drivers who are not currently assigned to any active trips
-          NOT: {
-            taxiRequests: {
-              some: {
-                status: {
-                  in: [
-                    'DRIVER_ACCEPTED',
-                    'DRIVER_IN_WAY', 
-                    'DRIVER_ARRIVED',
-                    'USER_PICKED_UP',
-                    'DRIVER_IN_PROGRESS'
-                  ]
-                }
-              }
-            }
-          }
-        }
+        status: 'ACTIVE', // Only active drivers
       },
       include: {
         driver: true
       }
     });
 
-    console.log(`Found ${activeDrivers.length} active drivers to notify`);
+    console.log(`Found ${allActiveDrivers.length} total active drivers`);
+
+    // Filter to only available drivers (those without active trips)
+    const availableDrivers = [];
+    for (const driver of allActiveDrivers) {
+      const isAvailable = await isDriverAvailable(driver.id);
+      if (isAvailable) {
+        availableDrivers.push(driver);
+      }
+    }
+
+    console.log(`Found ${availableDrivers.length} available drivers to notify`);
+
+    if (availableDrivers.length === 0) {
+      console.log('No available drivers found');
+      return;
+    }
 
     // Prepare notification data
     const notificationData: NotificationData = {
@@ -298,7 +324,7 @@ export async function notifyAllActiveDriversAboutNewTrip(trip: any) {
     const deviceTokens: string[] = [];
     const driversWithoutTokens: string[] = [];
 
-    for (const driver of activeDrivers) {
+    for (const driver of availableDrivers) {
       if (driver.deviceToken) {
         deviceTokens.push(driver.deviceToken);
       } else {
@@ -318,11 +344,11 @@ export async function notifyAllActiveDriversAboutNewTrip(trip: any) {
             type,
           },
         });
-        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers`);
+        console.log(`✅ Batch push notification sent to ${deviceTokens.length} available drivers`);
       } catch (firebaseError) {
         console.error('❌ Batch Firebase notification failed:', firebaseError);
         // Fall back to individual notifications
-        for (const driver of activeDrivers) {
+        for (const driver of availableDrivers) {
           if (driver.deviceToken) {
             try {
               await sendNotificationWithFallback(
@@ -355,10 +381,10 @@ export async function notifyAllActiveDriversAboutNewTrip(trip: any) {
       }
     }
 
-    console.log('✅ All active drivers notified about new trip');
+    console.log('✅ All available drivers notified about new trip');
 
   } catch (error) {
-    console.error('❌ Error notifying active drivers about new trip:', error);
+    console.error('❌ Error notifying available drivers about new trip:', error);
   }
 }
 

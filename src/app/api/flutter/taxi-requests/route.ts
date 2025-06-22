@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verify } from 'jsonwebtoken';
 import { TaxiRequest, User, Driver, TaxiRequest_status, Prisma } from '@prisma/client';
 import { JwtPayload } from 'jsonwebtoken';
-import { notifyAllActiveDriversAboutNewTrip } from '@/lib/notification-service';
+import { notifyAvailableDriversAboutNewTrip } from '@/lib/notification-service';
 
 // Middleware to verify JWT token
 async function verifyToken(req: NextRequest) {
@@ -233,10 +233,10 @@ export async function POST(req: NextRequest) {
 
     console.log('Successfully created taxi request:', taxiRequest);
 
-    // Notify all active drivers about the new trip
+    // Notify all available drivers about the new trip
     try {
-      await notifyAllActiveDriversAboutNewTrip(taxiRequest);
-      console.log('✅ All active drivers notified about new trip');
+      await notifyAvailableDriversAboutNewTrip(taxiRequest);
+      console.log('✅ All available drivers notified about new trip');
     } catch (notificationError) {
       console.error('❌ Error notifying drivers about new trip:', notificationError);
       // Don't fail the request if notification fails
