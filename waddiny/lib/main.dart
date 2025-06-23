@@ -18,10 +18,127 @@ import 'screens/driver_main_screen.dart';
 import 'services/auth_service.dart';
 import 'screens/otp_verification_screen.dart';
 import 'screens/search_trip_screen.dart';
+import 'screens/notification_debug_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+
+// Top-level background message handler (must be outside any class)
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print('\n📨 BACKGROUND MESSAGE RECEIVED IN MAIN');
+  print('Title: ${message.notification?.title}');
+  print('Body: ${message.notification?.body}');
+  print('Data: ${message.data}');
+  print('Message ID: ${message.messageId}');
+  print('From: ${message.from}');
+  print('Sent Time: ${message.sentTime}');
+
+  // Initialize Firebase for background
+  await Firebase.initializeApp();
+
+  // Initialize local notifications for background
+  final FlutterLocalNotificationsPlugin localNotifications =
+      FlutterLocalNotificationsPlugin();
+
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  const DarwinInitializationSettings initializationSettingsIOS =
+      DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
+
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsIOS,
+  );
+
+  await localNotifications.initialize(initializationSettings);
+
+  // Show local notification for background messages
+  if (message.notification != null) {
+    try {
+      final AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+        'trip_notifications',
+        'Trip Notifications',
+        channelDescription: 'Notifications for trip status updates',
+        importance: Importance.max,
+        priority: Priority.high,
+        showWhen: true,
+        enableVibration: true,
+        playSound: true,
+        icon: '@mipmap/ic_launcher',
+        sound: RawResourceAndroidNotificationSound('notification_sound'),
+        vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+        enableLights: true,
+        ledColor: Color(0xFF2196F3),
+        ledOnMs: 1000,
+        ledOffMs: 500,
+        timeoutAfter: 30000, // 30 seconds timeout
+        category: AndroidNotificationCategory.message,
+        visibility: NotificationVisibility.public,
+      );
+
+      final DarwinNotificationDetails iOSPlatformChannelSpecifics =
+          DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        badgeNumber: 1,
+        categoryIdentifier: 'trip_notifications',
+        threadIdentifier: 'trip_notifications',
+        sound: 'default',
+        interruptionLevel: InterruptionLevel.active,
+      );
+
+      final NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: iOSPlatformChannelSpecifics,
+      );
+
+      // Generate unique notification ID
+      final notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      await localNotifications.show(
+        notificationId,
+        message.notification!.title ?? 'New Trip',
+        message.notification!.body ?? '',
+        platformChannelSpecifics,
+        payload: jsonEncode(message.data),
+      );
+
+      print('✅ Background notification displayed from main.dart');
+      print('Notification ID: $notificationId');
+      print('Payload: ${jsonEncode(message.data)}');
+    } catch (e) {
+      print('❌ Error showing background notification: $e');
+      print('Error details: ${e.toString()}');
+    }
+  } else {
+    print('⚠️ No notification content in message');
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase first
+  try {
+    await Firebase.initializeApp();
+    print('✅ Firebase initialized successfully in main.dart');
+
+    // Register background message handler
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    print('✅ Background message handler registered');
+  } catch (e) {
+    print('⚠️ Firebase initialization failed: $e');
+    print('📱 Continuing without Firebase');
+  }
 
   // Try to load .env file, but continue if it fails
   try {
@@ -50,15 +167,6 @@ void main() async {
       iOS: initializationSettingsIOS,
     );
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-  }
-
-  // Initialize Firebase
-  try {
-    await Firebase.initializeApp();
-    print('✅ Firebase initialized successfully');
-  } catch (e) {
-    print('⚠️ Firebase initialization failed: $e');
-    print('📱 Continuing without Firebase');
   }
 
   // Initialize notification service
@@ -155,6 +263,7 @@ class MyApp extends StatelessWidget {
           '/user-main': (context) => const UserMainScreen(),
           '/driver-main': (context) => const DriverMainScreen(),
           '/search_trip': (context) => const SearchTripScreen(),
+          '/notification-debug': (context) => const NotificationDebugScreen(),
         },
         debugShowCheckedModeBanner: false,
       ),

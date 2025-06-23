@@ -1,191 +1,282 @@
-const { PrismaClient } = require('@prisma/client');
+const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
-const prisma = new PrismaClient();
+console.log('🔍 COMPREHENSIVE NOTIFICATION DEBUG SCRIPT');
+console.log('==========================================\n');
 
-async function debugNotificationSystem() {
-  console.log('\n=== NOTIFICATION SYSTEM DEBUG SCRIPT ===\n');
+// Check if we're in the right directory
+const currentDir = process.cwd();
+console.log(`📁 Current directory: ${currentDir}`);
 
+// Check if this is the khidma-app1 project
+if (!fs.existsSync(path.join(currentDir, 'waddiny')) || !fs.existsSync(path.join(currentDir, 'src'))) {
+  console.error('❌ Error: This script must be run from the khidma-app1 root directory');
+  process.exit(1);
+}
+
+console.log('✅ Project structure verified\n');
+
+// Function to run commands and log output
+function runCommand(command, description) {
+  return new Promise((resolve, reject) => {
+    console.log(`🔄 ${description}...`);
+    exec(command, { cwd: currentDir }, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`❌ Error: ${error.message}`);
+        reject(error);
+        return;
+      }
+      if (stderr) {
+        console.warn(`⚠️ Warning: ${stderr}`);
+      }
+      console.log(`✅ ${description} completed`);
+      if (stdout.trim()) {
+        console.log(`📄 Output:\n${stdout}`);
+      }
+      resolve(stdout);
+    });
+  });
+}
+
+// Main debugging function
+async function debugNotifications() {
   try {
-    // 1. Check Firebase environment variables
-    console.log('1. CHECKING FIREBASE ENVIRONMENT...');
-    const hasProjectId = !!process.env.FIREBASE_PROJECT_ID;
-    const hasClientEmail = !!process.env.FIREBASE_CLIENT_EMAIL;
-    const hasPrivateKey = !!process.env.FIREBASE_PRIVATE_KEY;
-    
-    console.log(`   FIREBASE_PROJECT_ID: ${hasProjectId ? 'SET' : 'NOT SET'}`);
-    console.log(`   FIREBASE_CLIENT_EMAIL: ${hasClientEmail ? 'SET' : 'NOT SET'}`);
-    console.log(`   FIREBASE_PRIVATE_KEY: ${hasPrivateKey ? 'SET' : 'NOT SET'}`);
-    
-    if (hasProjectId && hasClientEmail && hasPrivateKey) {
-      console.log('   ✅ Firebase environment is configured');
-    } else {
-      console.log('   ❌ Firebase environment is NOT configured');
-      console.log('   Please check your .env.local file or Vercel environment variables');
-    }
+    console.log('🚀 Starting comprehensive notification debugging...\n');
 
-    // 2. Check all drivers
-    console.log('\n2. CHECKING ALL DRIVERS...');
-    const allDrivers = await prisma.user.findMany({
-      where: { role: 'DRIVER' },
-      select: {
-        id: true,
-        fullName: true,
-        status: true,
-        deviceToken: true,
-        platform: true
-      }
-    });
+    // 1. Check environment variables
+    console.log('1️⃣ CHECKING ENVIRONMENT VARIABLES');
+    console.log('================================');
     
-    console.log(`   Total drivers: ${allDrivers.length}`);
-    
-    for (const driver of allDrivers) {
-      console.log(`   - ${driver.fullName} (${driver.id})`);
-      console.log(`     Status: ${driver.status}`);
-      console.log(`     Platform: ${driver.platform || 'unknown'}`);
-      console.log(`     Device Token: ${driver.deviceToken ? 'YES' : 'NO'}`);
-      if (driver.deviceToken) {
-        console.log(`     Token Preview: ${driver.deviceToken.substring(0, 20)}...`);
-      }
-    }
+    const envVars = [
+      'FIREBASE_PROJECT_ID',
+      'FIREBASE_CLIENT_EMAIL', 
+      'FIREBASE_PRIVATE_KEY',
+      'JWT_SECRET',
+      'DATABASE_URL'
+    ];
 
-    // 3. Check active drivers
-    console.log('\n3. CHECKING ACTIVE DRIVERS...');
-    const activeDrivers = allDrivers.filter(d => d.status === 'ACTIVE');
-    console.log(`   Active drivers: ${activeDrivers.length}`);
-    
-    if (activeDrivers.length === 0) {
-      console.log('   ❌ No active drivers found!');
-      console.log('   This is likely the main issue.');
-      console.log('   Drivers need to have status = "ACTIVE" to receive notifications.');
-    } else {
-      console.log('   ✅ Active drivers found');
-    }
-
-    // 4. Check drivers with device tokens
-    console.log('\n4. CHECKING DRIVERS WITH DEVICE TOKENS...');
-    const driversWithTokens = activeDrivers.filter(d => d.deviceToken);
-    console.log(`   Active drivers with tokens: ${driversWithTokens.length}`);
-    
-    if (driversWithTokens.length === 0) {
-      console.log('   ❌ No active drivers have device tokens!');
-      console.log('   This could be the issue.');
-      console.log('   Check if the Flutter app is properly sending device tokens to the backend.');
-    } else {
-      console.log('   ✅ Active drivers with tokens found');
-    }
-
-    // 5. Check driver availability
-    console.log('\n5. CHECKING DRIVER AVAILABILITY...');
-    const availableDrivers = [];
-    const busyDrivers = [];
-    
-    for (const driver of activeDrivers) {
-      const activeTrips = await prisma.taxiRequest.findMany({
-        where: {
-          driverId: driver.id,
-          status: {
-            in: [
-              'DRIVER_ACCEPTED',
-              'DRIVER_IN_WAY', 
-              'DRIVER_ARRIVED',
-              'USER_PICKED_UP',
-              'DRIVER_IN_PROGRESS'
-            ]
-          }
-        }
-      });
-      
-      if (activeTrips.length === 0) {
-        availableDrivers.push(driver);
-        console.log(`   ✅ ${driver.fullName} - Available (no active trips)`);
+    for (const envVar of envVars) {
+      const value = process.env[envVar];
+      if (value) {
+        console.log(`✅ ${envVar}: ${envVar.includes('KEY') || envVar.includes('SECRET') ? '***SET***' : value.substring(0, 20) + '...'}`);
       } else {
-        busyDrivers.push(driver);
-        console.log(`   ⏳ ${driver.fullName} - Busy (${activeTrips.length} active trips)`);
+        console.log(`❌ ${envVar}: NOT SET`);
       }
     }
-    
-    console.log(`\n   Available drivers: ${availableDrivers.length}`);
-    console.log(`   Busy drivers: ${busyDrivers.length}`);
+    console.log('');
 
-    // 6. Check recent trips
-    console.log('\n6. CHECKING RECENT TRIPS...');
-    const recentTrips = await prisma.taxiRequest.findMany({
-      where: {
-        createdAt: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 5
-    });
+    // 2. Check Firebase configuration files
+    console.log('2️⃣ CHECKING FIREBASE CONFIGURATION FILES');
+    console.log('========================================');
     
-    console.log(`   Recent trips (last 24h): ${recentTrips.length}`);
-    for (const trip of recentTrips) {
-      console.log(`   - Trip ${trip.id}: ${trip.status} (${trip.pickupLocation} → ${trip.dropoffLocation})`);
+    const firebaseFiles = [
+      'waddiny/android/app/google-services.json',
+      'waddiny/ios/Runner/GoogleService-Info.plist'
+    ];
+
+    for (const file of firebaseFiles) {
+      if (fs.existsSync(file)) {
+        const stats = fs.statSync(file);
+        console.log(`✅ ${file}: EXISTS (${stats.size} bytes)`);
+      } else {
+        console.log(`❌ ${file}: MISSING`);
+      }
     }
+    console.log('');
 
-    // 7. Check recent notifications
-    console.log('\n7. CHECKING RECENT NOTIFICATIONS...');
-    const recentNotifications = await prisma.notification.findMany({
-      where: {
-        type: 'NEW_TRIP_AVAILABLE',
-        createdAt: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
-        }
-      },
-      include: {
-        user: {
-          select: { fullName: true, role: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 10
-    });
+    // 3. Check Flutter dependencies
+    console.log('3️⃣ CHECKING FLUTTER DEPENDENCIES');
+    console.log('================================');
     
-    console.log(`   Recent NEW_TRIP_AVAILABLE notifications: ${recentNotifications.length}`);
-    for (const notification of recentNotifications) {
-      console.log(`   - ${notification.user?.fullName} (${notification.user?.role}): ${notification.title}`);
-    }
+    const pubspecPath = path.join(currentDir, 'waddiny', 'pubspec.yaml');
+    if (fs.existsSync(pubspecPath)) {
+      const pubspecContent = fs.readFileSync(pubspecPath, 'utf8');
+      
+      const requiredDeps = [
+        'firebase_core',
+        'firebase_messaging', 
+        'flutter_local_notifications'
+      ];
 
-    // 8. Summary and recommendations
-    console.log('\n=== SUMMARY AND RECOMMENDATIONS ===');
-    
-    if (activeDrivers.length === 0) {
-      console.log('❌ MAIN ISSUE: No active drivers found');
-      console.log('   SOLUTION: Update driver status to ACTIVE in the database');
-      console.log('   SQL: UPDATE "User" SET status = \'ACTIVE\' WHERE role = \'DRIVER\';');
-    } else if (driversWithTokens.length === 0) {
-      console.log('❌ MAIN ISSUE: No active drivers have device tokens');
-      console.log('   SOLUTION: Check Flutter app device token registration');
-      console.log('   - Verify device token is being sent to /api/flutter/users/device-token');
-      console.log('   - Check if notifications are enabled in the app');
-    } else if (availableDrivers.length === 0) {
-      console.log('❌ MAIN ISSUE: All active drivers are busy');
-      console.log('   SOLUTION: Wait for drivers to complete their trips');
-    } else if (!hasProjectId || !hasClientEmail || !hasPrivateKey) {
-      console.log('❌ MAIN ISSUE: Firebase not configured');
-      console.log('   SOLUTION: Set Firebase environment variables in Vercel');
+      for (const dep of requiredDeps) {
+        if (pubspecContent.includes(dep)) {
+          console.log(`✅ ${dep}: INCLUDED`);
+        } else {
+          console.log(`❌ ${dep}: MISSING`);
+        }
+      }
     } else {
-      console.log('✅ System appears to be configured correctly');
-      console.log('   If notifications still not working, check:');
-      console.log('   - Vercel deployment logs');
-      console.log('   - Firebase console for delivery status');
-      console.log('   - Flutter app notification permissions');
+      console.log('❌ pubspec.yaml not found');
     }
+    console.log('');
 
-    console.log('\n=== NEXT STEPS ===');
-    console.log('1. Test the comprehensive debug endpoint:');
-    console.log('   POST /api/flutter/notifications/debug-comprehensive');
-    console.log('2. Check Vercel deployment logs for errors');
-    console.log('3. Test with a real trip creation from the Flutter app');
-    console.log('4. Verify Firebase project settings and APNs certificate');
+    // 4. Check iOS configuration
+    console.log('4️⃣ CHECKING iOS CONFIGURATION');
+    console.log('=============================');
+    
+    const iosFiles = [
+      'waddiny/ios/Runner/Info.plist',
+      'waddiny/ios/Runner/AppDelegate.swift'
+    ];
+
+    for (const file of iosFiles) {
+      if (fs.existsSync(file)) {
+        const content = fs.readFileSync(file, 'utf8');
+        
+        if (file.includes('Info.plist')) {
+          const hasBackgroundModes = content.includes('UIBackgroundModes');
+          const hasRemoteNotification = content.includes('remote-notification');
+          console.log(`✅ ${file}: EXISTS`);
+          console.log(`   - Background modes: ${hasBackgroundModes ? '✅' : '❌'}`);
+          console.log(`   - Remote notification: ${hasRemoteNotification ? '✅' : '❌'}`);
+        } else if (file.includes('AppDelegate.swift')) {
+          const hasFirebase = content.includes('Firebase');
+          const hasNotificationDelegate = content.includes('UNUserNotificationCenter');
+          console.log(`✅ ${file}: EXISTS`);
+          console.log(`   - Firebase import: ${hasFirebase ? '✅' : '❌'}`);
+          console.log(`   - Notification delegate: ${hasNotificationDelegate ? '✅' : '❌'}`);
+        }
+      } else {
+        console.log(`❌ ${file}: MISSING`);
+      }
+    }
+    console.log('');
+
+    // 5. Check Android configuration
+    console.log('5️⃣ CHECKING ANDROID CONFIGURATION');
+    console.log('=================================');
+    
+    const androidFiles = [
+      'waddiny/android/app/src/main/AndroidManifest.xml',
+      'waddiny/android/app/build.gradle'
+    ];
+
+    for (const file of androidFiles) {
+      if (fs.existsSync(file)) {
+        const content = fs.readFileSync(file, 'utf8');
+        
+        if (file.includes('AndroidManifest.xml')) {
+          const hasPermissions = content.includes('POST_NOTIFICATIONS');
+          const hasFirebaseService = content.includes('FlutterFirebaseMessagingService');
+          console.log(`✅ ${file}: EXISTS`);
+          console.log(`   - Notification permissions: ${hasPermissions ? '✅' : '❌'}`);
+          console.log(`   - Firebase messaging service: ${hasFirebaseService ? '✅' : '❌'}`);
+        } else if (file.includes('build.gradle')) {
+          const hasFirebasePlugin = content.includes('firebase');
+          console.log(`✅ ${file}: EXISTS`);
+          console.log(`   - Firebase plugin: ${hasFirebasePlugin ? '✅' : '❌'}`);
+        }
+      } else {
+        console.log(`❌ ${file}: MISSING`);
+      }
+    }
+    console.log('');
+
+    // 6. Check backend notification service
+    console.log('6️⃣ CHECKING BACKEND NOTIFICATION SERVICE');
+    console.log('========================================');
+    
+    const backendFiles = [
+      'src/lib/firebase-admin.ts',
+      'src/lib/notification-service.ts'
+    ];
+
+    for (const file of backendFiles) {
+      if (fs.existsSync(file)) {
+        const content = fs.readFileSync(file, 'utf8');
+        
+        if (file.includes('firebase-admin.ts')) {
+          const hasSendPushNotification = content.includes('sendPushNotification');
+          const hasSendMulticastNotification = content.includes('sendMulticastNotification');
+          console.log(`✅ ${file}: EXISTS`);
+          console.log(`   - sendPushNotification: ${hasSendPushNotification ? '✅' : '❌'}`);
+          console.log(`   - sendMulticastNotification: ${hasSendMulticastNotification ? '✅' : '❌'}`);
+        } else if (file.includes('notification-service.ts')) {
+          const hasNotifyDrivers = content.includes('notifyAvailableDriversAboutNewTrip');
+          console.log(`✅ ${file}: EXISTS`);
+          console.log(`   - notifyAvailableDriversAboutNewTrip: ${hasNotifyDrivers ? '✅' : '❌'}`);
+        }
+      } else {
+        console.log(`❌ ${file}: MISSING`);
+      }
+    }
+    console.log('');
+
+    // 7. Check Flutter notification service
+    console.log('7️⃣ CHECKING FLUTTER NOTIFICATION SERVICE');
+    console.log('========================================');
+    
+    const flutterFiles = [
+      'waddiny/lib/services/notification_service.dart',
+      'waddiny/lib/main.dart'
+    ];
+
+    for (const file of flutterFiles) {
+      if (fs.existsSync(file)) {
+        const content = fs.readFileSync(file, 'utf8');
+        
+        if (file.includes('notification_service.dart')) {
+          const hasFirebaseMessaging = content.includes('FirebaseMessaging');
+          const hasBackgroundHandler = content.includes('onBackgroundMessage');
+          console.log(`✅ ${file}: EXISTS`);
+          console.log(`   - Firebase messaging: ${hasFirebaseMessaging ? '✅' : '❌'}`);
+          console.log(`   - Background handler: ${hasBackgroundHandler ? '✅' : '❌'}`);
+        } else if (file.includes('main.dart')) {
+          const hasBackgroundHandler = content.includes('_firebaseMessagingBackgroundHandler');
+          console.log(`✅ ${file}: EXISTS`);
+          console.log(`   - Background message handler: ${hasBackgroundHandler ? '✅' : '❌'}`);
+        }
+      } else {
+        console.log(`❌ ${file}: MISSING`);
+      }
+    }
+    console.log('');
+
+    // 8. Generate recommendations
+    console.log('8️⃣ RECOMMENDATIONS');
+    console.log('==================');
+    
+    console.log('📋 To fix background notification issues:');
+    console.log('');
+    console.log('1. 🔧 Ensure Firebase environment variables are set:');
+    console.log('   - FIREBASE_PROJECT_ID');
+    console.log('   - FIREBASE_CLIENT_EMAIL');
+    console.log('   - FIREBASE_PRIVATE_KEY');
+    console.log('');
+    console.log('2. 📱 Verify device token registration:');
+    console.log('   - Check that FCM tokens are being generated');
+    console.log('   - Verify tokens are being sent to the server');
+    console.log('   - Ensure tokens are stored in the database');
+    console.log('');
+    console.log('3. 🔔 Test notification permissions:');
+    console.log('   - iOS: Check Settings > Notifications > App Name');
+    console.log('   - Android: Check app notification settings');
+    console.log('');
+    console.log('4. 🧪 Test notification flow:');
+    console.log('   - Create a test trip request');
+    console.log('   - Check server logs for notification sending');
+    console.log('   - Verify Firebase console for delivery status');
+    console.log('');
+    console.log('5. 📊 Monitor notification delivery:');
+    console.log('   - Check Firebase console analytics');
+    console.log('   - Monitor server logs for errors');
+    console.log('   - Test on both foreground and background states');
+    console.log('');
+
+    console.log('✅ Debugging completed successfully!');
+    console.log('');
+    console.log('🚀 Next steps:');
+    console.log('1. Fix any issues identified above');
+    console.log('2. Test notifications on physical devices');
+    console.log('3. Check Firebase console for delivery analytics');
+    console.log('4. Monitor server logs during trip creation');
 
   } catch (error) {
-    console.error('❌ Debug script failed:', error);
-  } finally {
-    await prisma.$disconnect();
+    console.error('❌ Error during debugging:', error);
+    process.exit(1);
   }
 }
 
-// Run the debug script
-debugNotificationSystem(); 
+// Run the debugging
+debugNotifications(); 

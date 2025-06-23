@@ -115,15 +115,15 @@ class NotificationService {
       _sendDeviceTokenToServer(newToken);
     });
 
-    // Handle background messages
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('\n📨 RECEIVED FOREGROUND MESSAGE');
       print('Title: ${message.notification?.title}');
       print('Body: ${message.notification?.body}');
       print('Data: ${message.data}');
+      print('Message ID: ${message.messageId}');
+      print('From: ${message.from}');
+      print('Sent Time: ${message.sentTime}');
 
       // Show local notification
       _showLocalNotificationFromFirebase(message);
@@ -133,29 +133,23 @@ class NotificationService {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('\n👆 NOTIFICATION TAPPED (Background)');
       print('Data: ${message.data}');
+      print('Title: ${message.notification?.title}');
+      print('Body: ${message.notification?.body}');
       _handleNotificationTap(message.data);
     });
 
-    print('✅ Firebase Messaging initialized successfully');
-  }
-
-  // Enhanced background message handler
-  static Future<void> _firebaseMessagingBackgroundHandler(
-      RemoteMessage message) async {
-    print('\n📨 BACKGROUND MESSAGE RECEIVED');
-    print('Title: ${message.notification?.title}');
-    print('Body: ${message.notification?.body}');
-    print('Data: ${message.data}');
-
-    // Show local notification for background messages
-    if (message.notification != null) {
-      try {
-        _showLocalNotificationFromFirebase(message);
-        print('✅ Background notification displayed');
-      } catch (e) {
-        print('❌ Error showing background notification: $e');
-      }
+    // Handle initial notification when app is launched from notification
+    RemoteMessage? initialMessage =
+        await _firebaseMessaging.getInitialMessage();
+    if (initialMessage != null) {
+      print('\n🚀 APP LAUNCHED FROM NOTIFICATION');
+      print('Data: ${initialMessage.data}');
+      print('Title: ${initialMessage.notification?.title}');
+      print('Body: ${initialMessage.notification?.body}');
+      _handleNotificationTap(initialMessage.data);
     }
+
+    print('✅ Firebase Messaging initialized successfully');
   }
 
   // Show local notification from Firebase message
@@ -1230,6 +1224,178 @@ class NotificationService {
       };
     } catch (e) {
       return {
+        'error': e.toString(),
+        'timestamp':
+            DateFormat('yyyy-MM-ddTHH:mm:ss.SSSZ').format(DateTime.now())
+      };
+    }
+  }
+
+  // Comprehensive notification test for debugging
+  static Future<Map<String, dynamic>> comprehensiveNotificationTest() async {
+    try {
+      print('\n🧪 COMPREHENSIVE NOTIFICATION TEST');
+
+      final results = <String, dynamic>{
+        'timestamp':
+            DateFormat('yyyy-MM-ddTHH:mm:ss.SSSZ').format(DateTime.now()),
+        'tests': <String, dynamic>{}
+      };
+
+      // Test 1: Check initialization
+      results['tests']['initialization'] = {
+        'isInitialized': _isInitialized,
+        'firebaseMessaging': _firebaseMessaging != null,
+        'localNotifications': _localNotifications != null
+      };
+
+      // Test 2: Check device token
+      final deviceToken = await getDeviceToken();
+      results['tests']['deviceToken'] = {
+        'hasToken': deviceToken != null,
+        'tokenPreview':
+            deviceToken != null ? deviceToken.substring(0, 20) + '...' : null,
+        'tokenLength': deviceToken?.length
+      };
+
+      // Test 3: Check permissions
+      final hasPermissions = await checkNotificationPermissions();
+      results['tests']['permissions'] = {
+        'granted': hasPermissions,
+        'platform': Platform.isIOS ? 'iOS' : 'Android'
+      };
+
+      // Test 4: Test local notification
+      try {
+        await showLocalNotification(
+          title: 'Test Notification',
+          body: 'This is a test notification from Flutter app',
+          payload: jsonEncode(
+              {'type': 'test', 'timestamp': DateTime.now().toIso8601String()}),
+          id: 9999,
+        );
+        results['tests']['localNotification'] = {'success': true};
+      } catch (e) {
+        results['tests']
+            ['localNotification'] = {'success': false, 'error': e.toString()};
+      }
+
+      // Test 5: Test Firebase notification
+      if (deviceToken != null) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final userToken = prefs.getString('token');
+
+          final response = await http.post(
+            Uri.parse('${ApiConstants.baseUrl}/notifications/send-simple'),
+            headers: {
+              'Content-Type': 'application/json',
+              if (userToken != null) 'Authorization': 'Bearer $userToken',
+            },
+            body: jsonEncode({
+              'title': 'Test Firebase Notification',
+              'body': 'This is a test Firebase notification from Flutter app',
+              'deviceToken': deviceToken,
+              'data': {
+                'type': 'test',
+                'timestamp': DateTime.now().toIso8601String()
+              }
+            }),
+          );
+
+          if (response.statusCode == 200) {
+            results['tests']['firebaseNotification'] = {
+              'success': true,
+              'response': jsonDecode(response.body)
+            };
+          } else {
+            results['tests']['firebaseNotification'] = {
+              'success': false,
+              'statusCode': response.statusCode,
+              'error': response.body
+            };
+          }
+        } catch (e) {
+          results['tests']['firebaseNotification'] = {
+            'success': false,
+            'error': e.toString()
+          };
+        }
+      } else {
+        results['tests']['firebaseNotification'] = {
+          'success': false,
+          'error': 'No device token available'
+        };
+      }
+
+      // Test 6: Check server connectivity
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final userToken = prefs.getString('token');
+
+        final response = await http.get(
+          Uri.parse(
+              '${ApiConstants.baseUrl}/notifications/debug-comprehensive'),
+          headers: {
+            'Content-Type': 'application/json',
+            if (userToken != null) 'Authorization': 'Bearer $userToken',
+          },
+        );
+
+        results['tests']['serverConnectivity'] = {
+          'success': response.statusCode == 200,
+          'statusCode': response.statusCode,
+          'response': response.body.substring(0, 200) + '...'
+        };
+      } catch (e) {
+        results['tests']
+            ['serverConnectivity'] = {'success': false, 'error': e.toString()};
+      }
+
+      // Test 7: Check token registration
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final userToken = prefs.getString('token');
+        final deviceToken = prefs.getString('fcm_token');
+
+        if (userToken != null && deviceToken != null) {
+          final response = await http.post(
+            Uri.parse('${ApiConstants.baseUrl}/users/device-token'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $userToken',
+            },
+            body: jsonEncode({
+              'deviceToken': deviceToken,
+              'platform': Platform.isIOS ? 'ios' : 'android',
+              'appVersion': '1.0.0',
+            }),
+          );
+
+          results['tests']['tokenRegistration'] = {
+            'success': response.statusCode == 200,
+            'statusCode': response.statusCode,
+            'response': response.body
+          };
+        } else {
+          results['tests']['tokenRegistration'] = {
+            'success': false,
+            'error': 'Missing user token or device token',
+            'hasUserToken': userToken != null,
+            'hasDeviceToken': deviceToken != null
+          };
+        }
+      } catch (e) {
+        results['tests']
+            ['tokenRegistration'] = {'success': false, 'error': e.toString()};
+      }
+
+      print('✅ Comprehensive notification test completed');
+      return results;
+    } catch (e) {
+      print('❌ Error during comprehensive notification test: $e');
+      return {
+        'success': false,
         'error': e.toString(),
         'timestamp':
             DateFormat('yyyy-MM-ddTHH:mm:ss.SSSZ').format(DateTime.now())

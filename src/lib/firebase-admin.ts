@@ -43,13 +43,47 @@ export async function sendPushNotification({
         title,
         body,
       },
-      data,
+      data: {
+        ...data,
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        sound: 'default',
+      },
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'trip_notifications',
+          priority: 'high',
+          defaultSound: true,
+          defaultVibrateTimings: true,
+          icon: '@mipmap/ic_launcher',
+          color: '#2196F3',
+          sound: 'notification_sound',
+          vibrateTimingsMillis: [0, 500, 200, 500],
+          lightSettings: {
+            color: '#2196F3',
+            lightOnDurationMillis: 1000,
+            lightOffDurationMillis: 500,
+          },
+        },
+      },
       apns: {
         payload: {
           aps: {
+            alert: {
+              title,
+              body,
+            },
             sound: 'default',
             badge: 1,
+            'content-available': 1,
+            'mutable-content': 1,
+            category: 'trip_notifications',
+            'thread-id': 'trip_notifications',
           },
+        },
+        headers: {
+          'apns-priority': '10',
+          'apns-push-type': 'alert',
         },
       },
     };
@@ -86,13 +120,47 @@ export async function sendMulticastNotification({
         title,
         body,
       },
-      data,
+      data: {
+        ...data,
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        sound: 'default',
+      },
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'trip_notifications',
+          priority: 'high',
+          defaultSound: true,
+          defaultVibrateTimings: true,
+          icon: '@mipmap/ic_launcher',
+          color: '#2196F3',
+          sound: 'notification_sound',
+          vibrateTimingsMillis: [0, 500, 200, 500],
+          lightSettings: {
+            color: '#2196F3',
+            lightOnDurationMillis: 1000,
+            lightOffDurationMillis: 500,
+          },
+        },
+      },
       apns: {
         payload: {
           aps: {
+            alert: {
+              title,
+              body,
+            },
             sound: 'default',
             badge: 1,
+            'content-available': 1,
+            'mutable-content': 1,
+            category: 'trip_notifications',
+            'thread-id': 'trip_notifications',
           },
+        },
+        headers: {
+          'apns-priority': '10',
+          'apns-push-type': 'alert',
         },
       },
       tokens,
@@ -102,6 +170,7 @@ export async function sendMulticastNotification({
     console.log('✅ Multicast notification sent:', {
       successCount: response.successCount,
       failureCount: response.failureCount,
+      responses: response.responses,
     });
     return response;
   } catch (error) {

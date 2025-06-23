@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/taxi_request_model.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/trip_service.dart';
 import '../models/user_model.dart';
 import 'dart:async';
-import '../services/map_service.dart';
 import '../screens/driver_trip_details_screen.dart';
 import '../screens/driver_home_screen.dart';
 import '../screens/notification_test_screen.dart';
+import '../services/notification_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:convert';
 
 class DriverWaitingTripsScreen extends StatefulWidget {
   const DriverWaitingTripsScreen({super.key});
@@ -22,18 +23,20 @@ class DriverWaitingTripsScreen extends StatefulWidget {
 class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
   final _apiService = ApiService();
   final _tripService = TripService();
-  final _mapService = MapService();
   List<TaxiRequest> _trips = [];
   bool _isLoading = true;
   User? _user;
   Timer? _refreshTimer;
   String? _error;
+  StreamSubscription<RemoteMessage>? _firebaseSubscription;
 
   @override
   void initState() {
     super.initState();
     _checkUserStatusAndLoadTrips();
-    // Set up auto-refresh every 30 seconds
+    _setupNotificationListener();
+
+    // Set up auto-refresh every 30 seconds as backup
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (mounted && _user?.status == 'ACTIVE') {
         _loadTrips();
@@ -44,6 +47,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _firebaseSubscription?.cancel();
     super.dispose();
   }
 
@@ -74,32 +78,151 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
 
   Future<void> _loadTrips() async {
     try {
+      print('🔄 Loading trips for driver...');
       setState(() {
         _isLoading = true;
         _error = null;
       });
 
       final trips = await _apiService.getDriverTrips();
-      print('Received ${trips.length} trips from service');
+      print('📋 Received ${trips.length} total trips from service');
 
       // Filter for waiting trips
       final waitingTrips =
           trips.where((trip) => trip.status == 'USER_WAITING').toList();
-      print('Found ${waitingTrips.length} waiting trips');
+      print('⏳ Found ${waitingTrips.length} waiting trips');
 
       if (mounted) {
         setState(() {
           _trips = waitingTrips;
           _isLoading = false;
         });
+
+        // If we found new trips, show a notification
+        if (waitingTrips.isNotEmpty) {
+          print('🎉 New trips available for driver');
+          _showNewTripsNotification(waitingTrips.length);
+        }
       }
     } catch (e) {
-      print('Error in _loadTrips: $e');
+      print('❌ Error in _loadTrips: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
           _error = 'Error loading trips: $e';
         });
+      }
+    }
+  }
+
+  // Show a local notification when new trips are found
+  void _showNewTripsNotification(int tripCount) {
+    if (tripCount > 0) {
+      NotificationService.showLocalNotification(
+        title: 'New Trips Available!',
+        body: '$tripCount new trip${tripCount > 1 ? 's' : ''} waiting for you',
+        payload: jsonEncode({
+          'type': 'NEW_TRIPS_AVAILABLE',
+          'count': tripCount,
+          'timestamp': DateTime.now().toIso8601String(),
+        }),
+        id: 1000 + tripCount, // Unique ID based on trip count
+      );
+    }
+  }
+
+  // Test notification functionality
+  Future<void> _testNotification() async {
+    try {
+      print('🧪 Testing notification in driver waiting screen');
+
+      // Test local notification
+      await NotificationService.showLocalNotification(
+        title: 'Test Notification',
+        body: 'This is a test notification from driver waiting screen',
+        payload: jsonEncode({
+          'type': 'test',
+          'screen': 'driver_waiting',
+          'timestamp': DateTime.now().toIso8601String(),
+        }),
+        id: 9999,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Test notification sent!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error testing notification: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Test notification failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Test Firebase notification listener
+  Future<void> _testFirebaseListener() async {
+    try {
+      print('🔥 Testing Firebase notification listener');
+
+      // Send a test Firebase notification to ourselves
+      final token = await NotificationService.getDeviceToken();
+      if (token != null) {
+        print(
+            '📤 Sending test Firebase notification to token: ${token.substring(0, 20)}...');
+
+        // This would normally be sent from the backend, but for testing we can simulate
+        // the notification by calling the notification service directly
+        await NotificationService.sendNotification(
+          userId: _user?.id ?? '',
+          type: 'NEW_TRIP_AVAILABLE',
+          title: 'Test Firebase Notification',
+          message:
+              'This is a test Firebase notification for driver waiting screen',
+          data: {
+            'type': 'NEW_TRIP_AVAILABLE',
+            'screen': 'driver_waiting',
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Test Firebase notification sent!'),
+              backgroundColor: Colors.blue,
+            ),
+          );
+        }
+      } else {
+        print('❌ No device token available for testing');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No device token available for testing'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Error testing Firebase notification: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Test Firebase notification failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -188,6 +311,109 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
     return true;
   }
 
+  // Setup Firebase notification listener for real-time updates
+  void _setupNotificationListener() {
+    print(
+        '🔔 Setting up Firebase notification listener for driver waiting screen');
+
+    _firebaseSubscription =
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('📨 Received Firebase message in driver waiting screen:');
+      print('- Title: ${message.notification?.title}');
+      print('- Body: ${message.notification?.body}');
+      print('- Data: ${message.data}');
+      print('- Message ID: ${message.messageId}');
+      print('- Sent Time: ${message.sentTime}');
+      print('- From: ${message.from}');
+
+      // Check if this is a new trip notification - be more flexible with matching
+      bool isNewTripNotification = false;
+
+      // Check data payload
+      if (message.data['type'] == 'NEW_TRIP_AVAILABLE' ||
+          message.data['type'] == 'NEW_TRIPS_AVAILABLE' ||
+          message.data['type'] == 'trip_created' ||
+          message.data['type'] == 'new_trip') {
+        isNewTripNotification = true;
+        print('✅ Matched notification type in data: ${message.data['type']}');
+      }
+
+      // Check notification title
+      if (message.notification?.title?.contains('New Trip') == true ||
+          message.notification?.title?.contains('Trip') == true ||
+          message.notification?.title?.contains('Available') == true) {
+        isNewTripNotification = true;
+        print(
+            '✅ Matched notification type in title: ${message.notification?.title}');
+      }
+
+      // Check notification body
+      if (message.notification?.body?.contains('trip') == true ||
+          message.notification?.body?.contains('available') == true) {
+        isNewTripNotification = true;
+        print(
+            '✅ Matched notification type in body: ${message.notification?.body}');
+      }
+
+      // If any notification is received, log it and refresh trips
+      print('🔄 Refreshing trips due to notification received');
+      _loadTrips();
+
+      if (isNewTripNotification) {
+        print('🚗 New trip notification detected, showing user feedback');
+
+        // Show a snackbar to inform the user
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'New trip available: ${message.notification?.body ?? 'Check the list below'}'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+              action: SnackBarAction(
+                label: 'View',
+                textColor: Colors.white,
+                onPressed: () {
+                  // The list should already be refreshed, but we can scroll to top
+                  // This could be enhanced with a scroll controller
+                },
+              ),
+            ),
+          );
+        }
+      } else {
+        print(
+            'ℹ️ General notification received, trips refreshed but no user feedback shown');
+      }
+    });
+
+    // Also listen for notification taps when app is in background
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print('👆 Notification tapped (background): ${message.data}');
+      print('👆 Background notification title: ${message.notification?.title}');
+      print('👆 Background notification body: ${message.notification?.body}');
+
+      // Refresh trips for any notification tap
+      _loadTrips();
+    });
+
+    // Handle initial notification when app is launched from notification
+    FirebaseMessaging.instance
+        .getInitialMessage()
+        .then((RemoteMessage? message) {
+      if (message != null) {
+        print('🚀 App launched from notification: ${message.data}');
+        print('🚀 Initial notification title: ${message.notification?.title}');
+        print('🚀 Initial notification body: ${message.notification?.body}');
+
+        // Refresh trips when app is launched from notification
+        _loadTrips();
+      }
+    });
+
+    print('✅ Firebase notification listener setup completed');
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -265,6 +491,11 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
               onPressed: _loadTrips,
               tooltip: 'Refresh',
             ),
+            IconButton(
+              icon: const Icon(Icons.science),
+              onPressed: _testNotification,
+              tooltip: 'Test Local Notification',
+            ),
           ],
         ),
         body: Center(
@@ -293,27 +524,50 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'New trip requests will appear here',
+                'New trip requests will appear here automatically',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.grey[600],
                     ),
               ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const NotificationTestScreen(),
+              const SizedBox(height: 4),
+              Text(
+                'You\'ll receive notifications for new trips',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[500],
+                      fontSize: 12,
                     ),
-                  );
-                },
-                icon: const Icon(Icons.notifications),
-                label: const Text('Test Notifications'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _testNotification,
+                    icon: const Icon(Icons.science),
+                    label: const Text('Test Notification'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationTestScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.notifications),
+                    label: const Text('Notification Settings'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -323,7 +577,29 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Waiting Trips'),
+        title: Row(
+          children: [
+            const Text('Waiting Trips'),
+            if (_trips.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${_trips.length}',
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -344,6 +620,16 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
             icon: const Icon(Icons.refresh),
             onPressed: _loadTrips,
             tooltip: 'Refresh',
+          ),
+          IconButton(
+            icon: const Icon(Icons.science),
+            onPressed: _testNotification,
+            tooltip: 'Test Local Notification',
+          ),
+          IconButton(
+            icon: const Icon(Icons.whatshot),
+            onPressed: _testFirebaseListener,
+            tooltip: 'Test Firebase Listener',
           ),
         ],
       ),
