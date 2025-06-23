@@ -28,13 +28,27 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
   User? _user;
   Timer? _refreshTimer;
   String? _error;
-  StreamSubscription<RemoteMessage>? _firebaseSubscription;
 
   @override
   void initState() {
     super.initState();
-    _checkUserStatusAndLoadTrips();
+    _initializeScreen();
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initializeScreen() async {
+    print('🚀 Initializing driver waiting trips screen');
+
+    // First, set up notification listeners
     _setupNotificationListener();
+
+    // Then check user status and load trips
+    await _checkUserStatusAndLoadTrips();
 
     // Set up auto-refresh every 30 seconds as backup
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
@@ -42,13 +56,8 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
         _loadTrips();
       }
     });
-  }
 
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    _firebaseSubscription?.cancel();
-    super.dispose();
+    print('✅ Driver waiting trips screen initialization completed');
   }
 
   Future<void> _checkUserStatusAndLoadTrips() async {
@@ -76,15 +85,28 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
     }
   }
 
-  Future<void> _loadTrips() async {
+  Future<void> _loadTrips({bool isRetry = false}) async {
     try {
-      print('🔄 Loading trips for driver...');
+      if (!isRetry) {
+        print('🔄 Loading trips for driver...');
+      } else {
+        print('🔄 Retrying trip loading...');
+      }
+
       setState(() {
         _isLoading = true;
         _error = null;
       });
 
-      final trips = await _apiService.getDriverTrips();
+      // Add timeout to prevent infinite loading
+      final trips = await _apiService.getDriverTrips().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception(
+              'Request timeout - please check your internet connection');
+        },
+      );
+
       print('📋 Received ${trips.length} total trips from service');
 
       // Filter for waiting trips
@@ -111,6 +133,23 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
           _isLoading = false;
           _error = 'Error loading trips: $e';
         });
+
+        // Show retry option for network errors
+        if (e.toString().contains('timeout') ||
+            e.toString().contains('network')) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Network error. Tap to retry.'),
+                action: SnackBarAction(
+                  label: 'Retry',
+                  onPressed: () => _loadTrips(isRetry: true),
+                ),
+                duration: const Duration(seconds: 5),
+              ),
+            );
+          }
+        }
       }
     }
   }
@@ -227,6 +266,34 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
     }
   }
 
+  // Test device token registration
+  Future<void> _testDeviceTokenRegistration() async {
+    try {
+      print('🔧 Testing device token registration');
+
+      await NotificationService.registerDeviceTokenForTesting();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Device token registration test completed!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error testing device token registration: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Device token registration test failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _acceptTrip(TaxiRequest trip) async {
     try {
       setState(() {
@@ -313,56 +380,27 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
 
   // Setup Firebase notification listener for real-time updates
   void _setupNotificationListener() {
-    print(
-        '🔔 Setting up Firebase notification listener for driver waiting screen');
+    print('🔔 Setting up notification listener for driver waiting screen');
 
-    _firebaseSubscription =
-        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('📨 Received Firebase message in driver waiting screen:');
+    // Listen for foreground messages (when app is open)
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('📨 Received foreground message in driver waiting screen:');
       print('- Title: ${message.notification?.title}');
       print('- Body: ${message.notification?.body}');
       print('- Data: ${message.data}');
-      print('- Message ID: ${message.messageId}');
-      print('- Sent Time: ${message.sentTime}');
-      print('- From: ${message.from}');
+      print('- Type: ${message.data['type']}');
 
-      // Check if this is a new trip notification - be more flexible with matching
-      bool isNewTripNotification = false;
-
-      // Check data payload
+      // Check if this is a new trip notification
       if (message.data['type'] == 'NEW_TRIP_AVAILABLE' ||
           message.data['type'] == 'NEW_TRIPS_AVAILABLE' ||
           message.data['type'] == 'trip_created' ||
           message.data['type'] == 'new_trip') {
-        isNewTripNotification = true;
-        print('✅ Matched notification type in data: ${message.data['type']}');
-      }
+        print('🚗 New trip notification detected, refreshing trips...');
 
-      // Check notification title
-      if (message.notification?.title?.contains('New Trip') == true ||
-          message.notification?.title?.contains('Trip') == true ||
-          message.notification?.title?.contains('Available') == true) {
-        isNewTripNotification = true;
-        print(
-            '✅ Matched notification type in title: ${message.notification?.title}');
-      }
+        // Use efficient refresh for notification-triggered updates
+        _handleNotificationTripRefresh();
 
-      // Check notification body
-      if (message.notification?.body?.contains('trip') == true ||
-          message.notification?.body?.contains('available') == true) {
-        isNewTripNotification = true;
-        print(
-            '✅ Matched notification type in body: ${message.notification?.body}');
-      }
-
-      // If any notification is received, log it and refresh trips
-      print('🔄 Refreshing trips due to notification received');
-      _loadTrips();
-
-      if (isNewTripNotification) {
-        print('🚗 New trip notification detected, showing user feedback');
-
-        // Show a snackbar to inform the user
+        // Show user feedback
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -374,27 +412,26 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
                 label: 'View',
                 textColor: Colors.white,
                 onPressed: () {
-                  // The list should already be refreshed, but we can scroll to top
-                  // This could be enhanced with a scroll controller
+                  // Trips should already be refreshed
                 },
               ),
             ),
           );
         }
       } else {
-        print(
-            'ℹ️ General notification received, trips refreshed but no user feedback shown');
+        print('ℹ️ General notification received, refreshing trips...');
+        _handleNotificationTripRefresh();
       }
     });
 
-    // Also listen for notification taps when app is in background
+    // Listen for notification taps when app is in background
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('👆 Notification tapped (background): ${message.data}');
       print('👆 Background notification title: ${message.notification?.title}');
       print('👆 Background notification body: ${message.notification?.body}');
 
-      // Refresh trips for any notification tap
-      _loadTrips();
+      // Use efficient refresh for background notification taps
+      _handleNotificationTripRefresh();
     });
 
     // Handle initial notification when app is launched from notification
@@ -406,12 +443,35 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
         print('🚀 Initial notification title: ${message.notification?.title}');
         print('🚀 Initial notification body: ${message.notification?.body}');
 
-        // Refresh trips when app is launched from notification
-        _loadTrips();
+        // Use efficient refresh when app is launched from notification
+        _handleNotificationTripRefresh();
       }
     });
 
-    print('✅ Firebase notification listener setup completed');
+    print('✅ Notification listener setup completed');
+  }
+
+  // Handle trip refresh triggered by notifications
+  Future<void> _handleNotificationTripRefresh() async {
+    try {
+      print('🔄 Notification-triggered trip refresh...');
+
+      // Quick refresh without showing loading state for better UX
+      final trips = await _apiService.getDriverTrips();
+      final waitingTrips =
+          trips.where((trip) => trip.status == 'USER_WAITING').toList();
+
+      if (mounted) {
+        setState(() {
+          _trips = waitingTrips;
+        });
+
+        print('✅ Trip list updated with ${waitingTrips.length} waiting trips');
+      }
+    } catch (e) {
+      print('❌ Error in notification-triggered trip refresh: $e');
+      // Don't show error to user for notification-triggered refreshes
+    }
   }
 
   @override
@@ -452,7 +512,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: _checkUserStatusAndLoadTrips,
+                onPressed: () => _loadTrips(isRetry: true),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),
                 style: ElevatedButton.styleFrom(
@@ -488,7 +548,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
             ),
             IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: _loadTrips,
+              onPressed: () => _loadTrips(),
               tooltip: 'Refresh',
             ),
             IconButton(
@@ -618,7 +678,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadTrips,
+            onPressed: () => _loadTrips(),
             tooltip: 'Refresh',
           ),
           IconButton(
@@ -630,6 +690,11 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
             icon: const Icon(Icons.whatshot),
             onPressed: _testFirebaseListener,
             tooltip: 'Test Firebase Listener',
+          ),
+          IconButton(
+            icon: const Icon(Icons.token),
+            onPressed: _testDeviceTokenRegistration,
+            tooltip: 'Test Device Token Registration',
           ),
         ],
       ),

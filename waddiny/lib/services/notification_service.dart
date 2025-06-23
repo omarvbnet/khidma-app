@@ -72,96 +72,170 @@ class NotificationService {
   static Future<void> _initializeFirebaseMessaging() async {
     print('\n🔥 INITIALIZING FIREBASE MESSAGING');
 
-    // Request permission for iOS
-    if (Platform.isIOS) {
-      NotificationSettings settings =
-          await _firebaseMessaging.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
+    try {
+      // Request permission for iOS
+      if (Platform.isIOS) {
+        NotificationSettings settings =
+            await _firebaseMessaging.requestPermission(
+          alert: true,
+          announcement: false,
+          badge: true,
+          carPlay: false,
+          criticalAlert: false,
+          provisional: false,
+          sound: true,
+        );
 
-      print('📱 iOS Notification Settings:');
-      print('- Authorization Status: ${settings.authorizationStatus}');
-      print('- Alert: ${settings.alert}');
-      print('- Badge: ${settings.badge}');
-      print('- Sound: ${settings.sound}');
+        print('📱 iOS Notification Settings:');
+        print('- Authorization Status: ${settings.authorizationStatus}');
+        print('- Alert: ${settings.alert}');
+        print('- Badge: ${settings.badge}');
+        print('- Sound: ${settings.sound}');
+
+        // Check if permissions are granted
+        if (settings.authorizationStatus != AuthorizationStatus.authorized) {
+          print('⚠️ WARNING: iOS notification permissions not fully granted!');
+          print('⚠️ This may prevent background notifications from working');
+        }
+      }
+
+      // Get FCM token
+      String? fcmToken = await _firebaseMessaging.getToken();
+      if (fcmToken != null) {
+        print('🔥 FCM Token: $fcmToken');
+        _deviceToken = fcmToken;
+
+        // Save token to shared preferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('fcm_token', fcmToken);
+
+        // Send token to server
+        await _sendDeviceTokenToServer(fcmToken);
+      } else {
+        print('❌ Failed to get FCM token');
+        print('❌ This will prevent push notifications from working');
+      }
+
+      // Listen for token refresh
+      _firebaseMessaging.onTokenRefresh.listen((newToken) {
+        print('🔄 FCM Token refreshed: $newToken');
+        _deviceToken = newToken;
+        _sendDeviceTokenToServer(newToken);
+      });
+
+      // Handle foreground messages - THIS IS THE KEY FIX
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        print('\n📨 RECEIVED FOREGROUND MESSAGE');
+        print('Title: ${message.notification?.title}');
+        print('Body: ${message.notification?.body}');
+        print('Data: ${message.data}');
+        print('Message ID: ${message.messageId}');
+        print('From: ${message.from}');
+        print('Sent Time: ${message.sentTime}');
+
+        // ALWAYS show local notification for foreground messages
+        // This ensures notifications appear even when app is open
+        _showLocalNotificationFromFirebase(message);
+
+        // Also trigger any custom handlers
+        _handleForegroundMessage(message);
+      });
+
+      // Handle notification tap when app is in background
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        print('\n👆 NOTIFICATION TAPPED (Background)');
+        print('Data: ${message.data}');
+        print('Title: ${message.notification?.title}');
+        print('Body: ${message.notification?.body}');
+        _handleNotificationTap(message.data);
+      });
+
+      // Handle initial notification when app is launched from notification
+      RemoteMessage? initialMessage =
+          await _firebaseMessaging.getInitialMessage();
+      if (initialMessage != null) {
+        print('\n🚀 APP LAUNCHED FROM NOTIFICATION');
+        print('Data: ${initialMessage.data}');
+        print('Title: ${initialMessage.notification?.title}');
+        print('Body: ${initialMessage.notification?.body}');
+        _handleNotificationTap(initialMessage.data);
+      }
+
+      print('✅ Firebase Messaging initialized successfully');
+
+      // Additional verification
+      print('🔍 Verification:');
+      print(
+          '- Firebase instance: ${_firebaseMessaging != null ? "Available" : "Missing"}');
+      print('- Device token: ${_deviceToken != null ? "Set" : "Not set"}');
+      print('- Platform: ${Platform.isIOS ? "iOS" : "Android"}');
+    } catch (e) {
+      print('❌ Error during Firebase Messaging initialization: $e');
+      print('❌ This will prevent push notifications from working');
+      rethrow;
     }
+  }
 
-    // Get FCM token
-    String? fcmToken = await _firebaseMessaging.getToken();
-    if (fcmToken != null) {
-      print('🔥 FCM Token: $fcmToken');
-      _deviceToken = fcmToken;
+  // Handle foreground messages with custom logic
+  static void _handleForegroundMessage(RemoteMessage message) {
+    print('🎯 Handling foreground message with custom logic');
 
-      // Save token to shared preferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('fcm_token', fcmToken);
-
-      // Send token to server
-      await _sendDeviceTokenToServer(fcmToken);
-    } else {
-      print('❌ Failed to get FCM token');
+    // You can add custom logic here based on message type
+    if (message.data['type'] == 'NEW_TRIP_AVAILABLE' ||
+        message.data['type'] == 'NEW_TRIPS_AVAILABLE' ||
+        message.data['type'] == 'trip_created' ||
+        message.data['type'] == 'new_trip') {
+      print('🚗 New trip notification detected in foreground');
+      // Add any custom logic for new trip notifications
     }
-
-    // Listen for token refresh
-    _firebaseMessaging.onTokenRefresh.listen((newToken) {
-      print('🔄 FCM Token refreshed: $newToken');
-      _deviceToken = newToken;
-      _sendDeviceTokenToServer(newToken);
-    });
-
-    // Handle foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('\n📨 RECEIVED FOREGROUND MESSAGE');
-      print('Title: ${message.notification?.title}');
-      print('Body: ${message.notification?.body}');
-      print('Data: ${message.data}');
-      print('Message ID: ${message.messageId}');
-      print('From: ${message.from}');
-      print('Sent Time: ${message.sentTime}');
-
-      // Show local notification
-      _showLocalNotificationFromFirebase(message);
-    });
-
-    // Handle notification tap when app is in background
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('\n👆 NOTIFICATION TAPPED (Background)');
-      print('Data: ${message.data}');
-      print('Title: ${message.notification?.title}');
-      print('Body: ${message.notification?.body}');
-      _handleNotificationTap(message.data);
-    });
-
-    // Handle initial notification when app is launched from notification
-    RemoteMessage? initialMessage =
-        await _firebaseMessaging.getInitialMessage();
-    if (initialMessage != null) {
-      print('\n🚀 APP LAUNCHED FROM NOTIFICATION');
-      print('Data: ${initialMessage.data}');
-      print('Title: ${initialMessage.notification?.title}');
-      print('Body: ${initialMessage.notification?.body}');
-      _handleNotificationTap(initialMessage.data);
-    }
-
-    print('✅ Firebase Messaging initialized successfully');
   }
 
   // Show local notification from Firebase message
   static void _showLocalNotificationFromFirebase(RemoteMessage message) {
+    print('🔔 Processing Firebase message for local notification');
+    print('Has notification object: ${message.notification != null}');
+    print('Data: ${message.data}');
+
+    String title = 'New Notification';
+    String body = 'You have a new notification';
+
+    // Use notification object if available
     if (message.notification != null) {
-      showLocalNotification(
-        title: message.notification!.title ?? 'New Notification',
-        body: message.notification!.body ?? '',
-        payload: jsonEncode(message.data),
-        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      );
+      title = message.notification!.title ?? title;
+      body = message.notification!.body ?? body;
+    } else {
+      // Fallback to data payload for data-only messages
+      if (message.data['title'] != null) {
+        title = message.data['title'];
+      }
+      if (message.data['body'] != null) {
+        body = message.data['body'];
+      } else if (message.data['message'] != null) {
+        body = message.data['message'];
+      }
+
+      // Generate title/body based on message type if not provided
+      if (message.data['type'] == 'NEW_TRIP_AVAILABLE' ||
+          message.data['type'] == 'NEW_TRIPS_AVAILABLE') {
+        title = 'New Trip Available!';
+        body = 'A new trip request is waiting for you';
+      } else if (message.data['type'] == 'trip_created' ||
+          message.data['type'] == 'new_trip') {
+        title = 'New Trip Request';
+        body = 'A customer has requested a trip';
+      }
     }
+
+    print('📱 Showing local notification:');
+    print('Title: $title');
+    print('Body: $body');
+
+    showLocalNotification(
+      title: title,
+      body: body,
+      payload: jsonEncode(message.data),
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    );
   }
 
   // Handle notification tap
@@ -781,18 +855,21 @@ class NotificationService {
   }
 
   // Send device token to server
-  static Future<void> _sendDeviceTokenToServer(String token) async {
+  static Future<void> _sendDeviceTokenToServer(String deviceToken) async {
     try {
       print('\n📤 SENDING DEVICE TOKEN TO SERVER');
-      print('Token: $token');
+      print('Token: ${deviceToken.substring(0, 20)}...');
 
       final prefs = await SharedPreferences.getInstance();
       final userToken = prefs.getString('token');
 
       if (userToken == null) {
-        print('❌ No user token found, skipping server update');
+        print('⚠️ No user token found - cannot send device token to server');
+        print('⚠️ Device token will be sent after user authentication');
         return;
       }
+
+      print('✅ User token found, sending device token...');
 
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/users/device-token'),
@@ -801,18 +878,20 @@ class NotificationService {
           'Authorization': 'Bearer $userToken',
         },
         body: jsonEncode({
-          'deviceToken': token,
+          'deviceToken': deviceToken,
           'platform': Platform.isIOS ? 'ios' : 'android',
-          'appVersion': '1.0.0',
         }),
       );
+
+      print('📡 Server response status: ${response.statusCode}');
+      print('📡 Server response body: ${response.body}');
 
       if (response.statusCode == 200) {
         print('✅ Device token sent to server successfully');
       } else {
-        print(
-            '❌ Failed to send device token to server: ${response.statusCode}');
-        print('Response: ${response.body}');
+        print('❌ Failed to send device token to server');
+        print('❌ Status: ${response.statusCode}');
+        print('❌ Response: ${response.body}');
       }
     } catch (e) {
       print('❌ Error sending device token to server: $e');
@@ -1400,6 +1479,28 @@ class NotificationService {
         'timestamp':
             DateFormat('yyyy-MM-ddTHH:mm:ss.SSSZ').format(DateTime.now())
       };
+    }
+  }
+
+  // Manually register device token for testing
+  static Future<void> registerDeviceTokenForTesting() async {
+    try {
+      print('\n🧪 MANUAL DEVICE TOKEN REGISTRATION FOR TESTING');
+
+      final deviceToken = await getDeviceToken();
+      if (deviceToken == null) {
+        print('❌ No device token available for registration');
+        return;
+      }
+
+      print('✅ Device token available: ${deviceToken.substring(0, 20)}...');
+
+      // Force send to server
+      await _sendDeviceTokenToServer(deviceToken);
+
+      print('✅ Manual device token registration completed');
+    } catch (e) {
+      print('❌ Error in manual device token registration: $e');
     }
   }
 }

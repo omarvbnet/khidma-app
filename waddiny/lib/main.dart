@@ -34,107 +34,155 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('Message ID: ${message.messageId}');
   print('From: ${message.from}');
   print('Sent Time: ${message.sentTime}');
+  print('Collapse Key: ${message.collapseKey}');
+  print('TTL: ${message.ttl}');
 
-  // Initialize Firebase for background
-  await Firebase.initializeApp();
+  try {
+    // Initialize Firebase for background
+    await Firebase.initializeApp();
+    print('✅ Firebase initialized in background handler');
 
-  // Initialize local notifications for background
-  final FlutterLocalNotificationsPlugin localNotifications =
-      FlutterLocalNotificationsPlugin();
+    // Initialize local notifications for background
+    final FlutterLocalNotificationsPlugin localNotifications =
+        FlutterLocalNotificationsPlugin();
 
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
-  const DarwinInitializationSettings initializationSettingsIOS =
-      DarwinInitializationSettings(
-    requestAlertPermission: true,
-    requestBadgePermission: true,
-    requestSoundPermission: true,
-  );
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+      requestAlertPermission: false, // Don't request in background
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
 
-  const InitializationSettings initializationSettings = InitializationSettings(
-    android: initializationSettingsAndroid,
-    iOS: initializationSettingsIOS,
-  );
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
 
-  await localNotifications.initialize(initializationSettings);
+    await localNotifications.initialize(initializationSettings);
+    print('✅ Local notifications initialized in background handler');
 
-  // Show local notification for background messages
-  if (message.notification != null) {
-    try {
-      final AndroidNotificationDetails androidPlatformChannelSpecifics =
-          AndroidNotificationDetails(
-        'trip_notifications',
-        'Trip Notifications',
-        channelDescription: 'Notifications for trip status updates',
-        importance: Importance.max,
-        priority: Priority.high,
-        showWhen: true,
-        enableVibration: true,
-        playSound: true,
-        icon: '@mipmap/ic_launcher',
-        sound: RawResourceAndroidNotificationSound('notification_sound'),
-        vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
-        enableLights: true,
-        ledColor: Color(0xFF2196F3),
-        ledOnMs: 1000,
-        ledOffMs: 500,
-        timeoutAfter: 30000, // 30 seconds timeout
-        category: AndroidNotificationCategory.message,
-        visibility: NotificationVisibility.public,
-      );
+    // Process ALL messages, not just those with notification objects
+    String title = 'New Notification';
+    String body = 'You have a new notification';
 
-      final DarwinNotificationDetails iOSPlatformChannelSpecifics =
-          DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-        badgeNumber: 1,
-        categoryIdentifier: 'trip_notifications',
-        threadIdentifier: 'trip_notifications',
-        sound: 'default',
-        interruptionLevel: InterruptionLevel.active,
-      );
+    // Use notification object if available
+    if (message.notification != null) {
+      title = message.notification!.title ?? title;
+      body = message.notification!.body ?? body;
+      print('📨 Using notification object for title/body');
+    } else {
+      // Fallback to data payload for data-only messages
+      if (message.data['title'] != null) {
+        title = message.data['title'];
+      }
+      if (message.data['body'] != null) {
+        body = message.data['body'];
+      } else if (message.data['message'] != null) {
+        body = message.data['message'];
+      }
 
-      final NotificationDetails platformChannelSpecifics = NotificationDetails(
-        android: androidPlatformChannelSpecifics,
-        iOS: iOSPlatformChannelSpecifics,
-      );
-
-      // Generate unique notification ID
-      final notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-      await localNotifications.show(
-        notificationId,
-        message.notification!.title ?? 'New Trip',
-        message.notification!.body ?? '',
-        platformChannelSpecifics,
-        payload: jsonEncode(message.data),
-      );
-
-      print('✅ Background notification displayed from main.dart');
-      print('Notification ID: $notificationId');
-      print('Payload: ${jsonEncode(message.data)}');
-    } catch (e) {
-      print('❌ Error showing background notification: $e');
-      print('Error details: ${e.toString()}');
+      // Generate title/body based on message type if not provided
+      if (message.data['type'] == 'NEW_TRIP_AVAILABLE' ||
+          message.data['type'] == 'NEW_TRIPS_AVAILABLE') {
+        title = 'New Trip Available!';
+        body = 'A new trip request is waiting for you';
+      } else if (message.data['type'] == 'trip_created' ||
+          message.data['type'] == 'new_trip') {
+        title = 'New Trip Request';
+        body = 'A customer has requested a trip';
+      }
+      print('📨 Using data payload for title/body');
     }
-  } else {
-    print('⚠️ No notification content in message');
+
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'trip_notifications',
+      'Trip Notifications',
+      channelDescription: 'Notifications for trip status updates',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: true,
+      enableVibration: true,
+      playSound: true,
+      icon: '@mipmap/ic_launcher',
+      sound: RawResourceAndroidNotificationSound('notification_sound'),
+      vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+      enableLights: true,
+      ledColor: Color(0xFF2196F3),
+      ledOnMs: 1000,
+      ledOffMs: 500,
+      timeoutAfter: 30000, // 30 seconds timeout
+      category: AndroidNotificationCategory.message,
+      visibility: NotificationVisibility.public,
+    );
+
+    final DarwinNotificationDetails iOSPlatformChannelSpecifics =
+        DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      badgeNumber: 1,
+      categoryIdentifier: 'trip_notifications',
+      threadIdentifier: 'trip_notifications',
+      sound: 'default',
+      interruptionLevel: InterruptionLevel.active,
+    );
+
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
+    );
+
+    // Generate unique notification ID
+    final notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    await localNotifications.show(
+      notificationId,
+      title,
+      body,
+      platformChannelSpecifics,
+      payload: jsonEncode(message.data),
+    );
+
+    print('✅ Background notification displayed from main.dart');
+    print('Notification ID: $notificationId');
+    print('Title: $title');
+    print('Body: $body');
+    print('Payload: ${jsonEncode(message.data)}');
+  } catch (e) {
+    print('❌ Error in background message handler: $e');
+    print('Error details: ${e.toString()}');
+    print('Stack trace: ${StackTrace.current}');
   }
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase first
+  // Initialize Firebase first with error handling
   try {
     await Firebase.initializeApp();
     print('✅ Firebase initialized successfully in main.dart');
 
-    // Register background message handler
+    // Register background message handler BEFORE any other Firebase operations
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     print('✅ Background message handler registered');
+
+    // Verify Firebase messaging is working
+    final messaging = FirebaseMessaging.instance;
+    print('✅ Firebase messaging instance created');
+
+    // Check if we can get the token (this tests the connection)
+    try {
+      final token = await messaging.getToken();
+      print('✅ FCM token available: ${token != null ? "Yes" : "No"}');
+    } catch (e) {
+      print('⚠️ FCM token check failed: $e');
+    }
   } catch (e) {
     print('⚠️ Firebase initialization failed: $e');
     print('📱 Continuing without Firebase');
@@ -160,13 +208,18 @@ void main() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings initializationSettingsIOS =
-        DarwinInitializationSettings();
+        DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
     const InitializationSettings initializationSettings =
         InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,
     );
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    print('✅ Local notifications initialized in main');
   }
 
   // Initialize notification service
