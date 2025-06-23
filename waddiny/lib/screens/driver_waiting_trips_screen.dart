@@ -583,19 +583,81 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
                     ),
               ),
               const SizedBox(height: 8),
+              if (_user?.province != null) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '📍 ${_user!.province}',
+                    style: TextStyle(
+                      color: Colors.blue[700],
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               Text(
                 'New trip requests will appear here automatically',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.grey[600],
                     ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
               Text(
-                'You\'ll receive notifications for new trips',
+                'You\'ll receive notifications for new trips in your province',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[500],
                       fontSize: 12,
                     ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.symmetric(horizontal: 32),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: Colors.orange[700],
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Province Filtering',
+                          style: TextStyle(
+                            color: Colors.orange[700],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'You only see trips from users in the same province as you. This ensures better service quality and faster response times.',
+                      style: TextStyle(
+                        color: Colors.orange[700],
+                        fontSize: 11,
+                      ),
+                      textAlign: TextAlign.left,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               Row(
@@ -637,27 +699,19 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Waiting Trips'),
-            if (_trips.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${_trips.length}',
-                  style: const TextStyle(
-                    color: Colors.green,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+            if (_user?.province != null)
+              Text(
+                '📍 ${_user!.province}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.normal,
+                  color: Colors.grey,
                 ),
               ),
-            ],
           ],
         ),
         elevation: 0,

@@ -85,6 +85,19 @@ import UserNotifications
     // Process the notification data
     if let aps = userInfo["aps"] as? [String: Any] {
       print("📨 APS data: \(aps)")
+      
+      // Check if this is a silent notification (no alert/badge/sound in aps)
+      let hasAlert = aps["alert"] != nil
+      let hasBadge = aps["badge"] != nil
+      let hasSound = aps["sound"] != nil
+      
+      print("🔇 Silent notification check - Alert: \(hasAlert), Badge: \(hasBadge), Sound: \(hasSound)")
+      
+      if !hasAlert && !hasBadge && !hasSound {
+        print("🔇 This is a silent notification (data-only message)")
+        // Process the data-only message
+        processSilentNotification(userInfo)
+      }
     }
     
     // Always call completion handler with appropriate result
@@ -125,30 +138,6 @@ import UserNotifications
     } else {
       completionHandler([.alert, .badge, .sound])
     }
-  }
-  
-  // Handle silent notifications (data-only messages)
-  override func application(_ application: UIApplication,
-                     didReceiveRemoteNotification userInfo: [AnyHashable: Any],
-                     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-    print("🔇 Received silent notification: \(userInfo)")
-    
-    // Check if this is a silent notification (no alert/badge/sound in aps)
-    if let aps = userInfo["aps"] as? [String: Any] {
-      let hasAlert = aps["alert"] != nil
-      let hasBadge = aps["badge"] != nil
-      let hasSound = aps["sound"] != nil
-      
-      print("🔇 Silent notification check - Alert: \(hasAlert), Badge: \(hasBadge), Sound: \(hasSound)")
-      
-      if !hasAlert && !hasBadge && !hasSound {
-        print("🔇 This is a silent notification (data-only message)")
-        // Process the data-only message
-        processSilentNotification(userInfo)
-      }
-    }
-    
-    completionHandler(.newData)
   }
   
   // Process silent notifications

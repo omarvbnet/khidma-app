@@ -284,23 +284,25 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     console.log('Pickup:', trip.pickupLocation);
     console.log('Dropoff:', trip.dropoffLocation);
     console.log('Fare:', trip.price);
+    console.log('User Province:', trip.userProvince);
 
-    // Get all active drivers
+    // Get all active drivers in the same province as the user
     const allActiveDrivers = await prisma.user.findMany({
       where: {
         role: 'DRIVER',
         status: 'ACTIVE', // Only active drivers
+        province: trip.userProvince, // Only drivers in the same province
       },
       include: {
         driver: true
       }
     });
 
-    console.log(`Found ${allActiveDrivers.length} total active drivers`);
+    console.log(`Found ${allActiveDrivers.length} total active drivers in province: ${trip.userProvince}`);
 
     // Log driver details for debugging
     for (const driver of allActiveDrivers) {
-      console.log(`- Driver: ${driver.fullName} (${driver.id}) - Status: ${driver.status} - Has Token: ${!!driver.deviceToken}`);
+      console.log(`- Driver: ${driver.fullName} (${driver.id}) - Province: ${driver.province} - Status: ${driver.status} - Has Token: ${!!driver.deviceToken}`);
     }
 
     // Filter to only available drivers (those without active trips)
@@ -317,17 +319,15 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
       }
     }
 
-    console.log(`Found ${availableDrivers.length} available drivers to notify`);
+    console.log(`Found ${availableDrivers.length} available drivers in ${trip.userProvince} to notify`);
 
-    // If no available drivers found, notify ALL active drivers as fallback
-    let driversToNotify = availableDrivers;
+    // If no available drivers found in the same province, log this information
     if (availableDrivers.length === 0) {
-      console.log('⚠️ No available drivers found - falling back to notify ALL active drivers');
-      driversToNotify = allActiveDrivers;
-    }
-
-    if (driversToNotify.length === 0) {
-      console.log('❌ No drivers found at all - no notifications will be sent');
+      console.log(`⚠️ No available drivers found in province: ${trip.userProvince}`);
+      console.log(`📊 Trip will not be visible to drivers outside of ${trip.userProvince}`);
+      
+      // Optionally, you could notify drivers in neighboring provinces or all drivers
+      // For now, we'll just log and return without sending notifications
       return;
     }
 
@@ -341,17 +341,18 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
       distance: trip.distance,
       userFullName: trip.userFullName,
       userPhone: trip.userPhone,
+      userProvince: trip.userProvince, // Include province in notification data
     };
 
     const title = 'New Trip Available!';
-    const message = 'A new trip request is available in your area. Tap to view details.';
+    const message = `A new trip request is available in ${trip.userProvince}. Tap to view details.`;
     const type = 'NEW_TRIP_AVAILABLE';
 
     // Collect device tokens for batch notification
     const deviceTokens: string[] = [];
     const driversWithoutTokens: string[] = [];
 
-    for (const driver of driversToNotify) {
+    for (const driver of availableDrivers) {
       if (driver.deviceToken) {
         deviceTokens.push(driver.deviceToken);
         console.log(`✅ Driver ${driver.fullName} has device token: ${driver.deviceToken.substring(0, 20)}...`);
@@ -377,12 +378,12 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
             type,
           },
         });
-        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers`);
+        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers in ${trip.userProvince}`);
       } catch (firebaseError) {
         console.error('❌ Batch Firebase notification failed:', firebaseError);
         // Fall back to individual notifications
         console.log('Falling back to individual notifications...');
-        for (const driver of driversToNotify) {
+        for (const driver of availableDrivers) {
           if (driver.deviceToken) {
             try {
               await sendNotificationWithFallback(
@@ -401,8 +402,8 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     }
 
     // Create database notifications for ALL drivers (with or without device tokens)
-    console.log('Creating database notifications for all drivers...');
-    for (const driver of driversToNotify) {
+    console.log('Creating database notifications for all available drivers...');
+    for (const driver of availableDrivers) {
       try {
         console.log(`Creating database notification for driver ${driver.fullName} (${driver.id})`);
         await sendNotificationWithFallback(
@@ -418,21 +419,132 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
       }
     }
 
-    console.log(`✅ All ${driversToNotify.length} drivers notified about new trip`);
+    console.log(`✅ All ${availableDrivers.length} drivers in ${trip.userProvince} notified about new trip`);
 
   } catch (error) {
     console.error('❌ Error notifying available drivers about new trip:', error);
-    // Try to notify all drivers as a last resort
+    // Try to notify all drivers in the same province as a last resort
     try {
-      console.log('🔄 Attempting to notify all drivers as fallback...');
-      await notifyAllDriversAboutNewTrip(trip);
+      console.log('🔄 Attempting to notify all drivers in same province as fallback...');
+      await notifyAllDriversInProvinceAboutNewTrip(trip);
     } catch (fallbackError) {
       console.error('❌ Fallback notification also failed:', fallbackError);
     }
   }
 }
 
-// Alternative function to notify ALL drivers (including those on trips)
+// Alternative function to notify ALL drivers in the same province (including those on trips)
+export async function notifyAllDriversInProvinceAboutNewTrip(trip: any) {
+  try {
+    console.log('\n=== NOTIFYING ALL DRIVERS IN PROVINCE ABOUT NEW TRIP ===');
+    console.log('Trip ID:', trip.id);
+    console.log('Pickup:', trip.pickupLocation);
+    console.log('Dropoff:', trip.dropoffLocation);
+    console.log('Fare:', trip.price);
+    console.log('User Province:', trip.userProvince);
+
+    // Get all drivers in the same province
+    const allDrivers = await prisma.user.findMany({
+      where: {
+        role: 'DRIVER',
+        province: trip.userProvince, // Only drivers in the same province
+      },
+      include: {
+        driver: true
+      }
+    });
+
+    console.log(`Found ${allDrivers.length} total drivers in province: ${trip.userProvince} to notify`);
+
+    // Prepare notification data
+    const notificationData: NotificationData = {
+      tripId: trip.id,
+      newStatus: 'NEW_TRIP_AVAILABLE',
+      pickupLocation: trip.pickupLocation,
+      dropoffLocation: trip.dropoffLocation,
+      fare: trip.price,
+      distance: trip.distance,
+      userFullName: trip.userFullName,
+      userPhone: trip.userPhone,
+      userProvince: trip.userProvince,
+    };
+
+    const title = 'New Trip Available!';
+    const message = `A new trip request is available in ${trip.userProvince}. Tap to view details.`;
+    const type = 'NEW_TRIP_AVAILABLE';
+
+    // Collect device tokens for batch notification
+    const deviceTokens: string[] = [];
+    const driversWithoutTokens: string[] = [];
+
+    for (const driver of allDrivers) {
+      if (driver.deviceToken) {
+        deviceTokens.push(driver.deviceToken);
+      } else {
+        driversWithoutTokens.push(driver.id);
+      }
+    }
+
+    console.log(`Drivers with tokens: ${deviceTokens.length}`);
+    console.log(`Drivers without tokens: ${driversWithoutTokens.length}`);
+
+    // Send batch push notification if we have device tokens
+    if (deviceTokens.length > 0) {
+      try {
+        await sendMulticastNotification({
+          tokens: deviceTokens,
+          title,
+          body: message,
+          data: {
+            ...notificationData,
+            type,
+          },
+        });
+        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers in ${trip.userProvince}`);
+      } catch (firebaseError) {
+        console.error('❌ Batch Firebase notification failed:', firebaseError);
+        // Fall back to individual notifications
+        for (const driver of allDrivers) {
+          if (driver.deviceToken) {
+            try {
+              await sendNotificationWithFallback(
+                driver.id,
+                title,
+                message,
+                notificationData,
+                type
+              );
+            } catch (error) {
+              console.error(`❌ Failed to send notification to driver ${driver.id}:`, error);
+            }
+          }
+        }
+      }
+    }
+
+    // Create database notifications for ALL drivers
+    for (const driver of allDrivers) {
+      try {
+        await sendNotificationWithFallback(
+          driver.id,
+          title,
+          message,
+          notificationData,
+          type
+        );
+      } catch (error) {
+        console.error(`❌ Failed to create database notification for driver ${driver.id}:`, error);
+      }
+    }
+
+    console.log(`✅ All ${allDrivers.length} drivers in ${trip.userProvince} notified about new trip`);
+
+  } catch (error) {
+    console.error('❌ Error notifying all drivers in province about new trip:', error);
+  }
+}
+
+// Alternative function to notify ALL drivers (including those on trips) - updated to include province info
 export async function notifyAllDriversAboutNewTrip(trip: any) {
   try {
     console.log('\n=== NOTIFYING ALL DRIVERS ABOUT NEW TRIP ===');
@@ -440,6 +552,7 @@ export async function notifyAllDriversAboutNewTrip(trip: any) {
     console.log('Pickup:', trip.pickupLocation);
     console.log('Dropoff:', trip.dropoffLocation);
     console.log('Fare:', trip.price);
+    console.log('User Province:', trip.userProvince);
 
     // Get all drivers
     const allDrivers = await prisma.user.findMany({
@@ -463,10 +576,11 @@ export async function notifyAllDriversAboutNewTrip(trip: any) {
       distance: trip.distance,
       userFullName: trip.userFullName,
       userPhone: trip.userPhone,
+      userProvince: trip.userProvince, // Include province info
     };
 
     const title = 'New Trip Available!';
-    const message = 'A new trip request is available in your area. Tap to view details.';
+    const message = `A new trip request is available in ${trip.userProvince}. Tap to view details.`;
     const type = 'NEW_TRIP_AVAILABLE';
 
     // Collect device tokens for batch notification
@@ -515,22 +629,22 @@ export async function notifyAllDriversAboutNewTrip(trip: any) {
       }
     }
 
-    // Send individual notifications for drivers without device tokens
-    for (const driverId of driversWithoutTokens) {
+    // Create database notifications for ALL drivers
+    for (const driver of allDrivers) {
       try {
         await sendNotificationWithFallback(
-          driverId,
+          driver.id,
           title,
           message,
           notificationData,
           type
         );
       } catch (error) {
-        console.error(`❌ Failed to send notification to driver ${driverId}:`, error);
+        console.error(`❌ Failed to create database notification for driver ${driver.id}:`, error);
       }
     }
 
-    console.log('✅ All drivers notified about new trip');
+    console.log(`✅ All ${allDrivers.length} drivers notified about new trip`);
 
   } catch (error) {
     console.error('❌ Error notifying all drivers about new trip:', error);

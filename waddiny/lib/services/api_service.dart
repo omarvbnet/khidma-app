@@ -190,6 +190,20 @@ class ApiService {
     );
 
     final data = await _handleResponse(response);
+
+    // Log province information for debugging
+    if (data.containsKey('driverProvince')) {
+      print('📍 Driver Province: ${data['driverProvince']}');
+    }
+
+    if (data.containsKey('tripCounts')) {
+      final counts = data['tripCounts'];
+      print('📊 Trip Counts:');
+      print('  - Total: ${counts['total']}');
+      print('  - Waiting: ${counts['waiting']}');
+      print('  - Driver Own: ${counts['driverOwn']}');
+    }
+
     return (data['trips'] as List)
         .map((trip) => TaxiRequest.fromJson(trip))
         .toList();

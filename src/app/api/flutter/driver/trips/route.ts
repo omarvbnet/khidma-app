@@ -42,14 +42,32 @@ export async function GET(req: NextRequest) {
     console.log('Driver ID:', userId);
     console.log('User role:', user?.role);
     console.log('Driver profile:', user?.driver);
+    console.log('Driver province:', user?.province);
 
-    // Get all trips for this driver and waiting trips
+    // Get driver's province
+    const driverProvince = user.province;
+    
+    if (!driverProvince) {
+      console.log('❌ Driver has no province set');
+      return NextResponse.json({ 
+        error: 'Driver province not set. Please update your profile.' 
+      }, { status: 400 });
+    }
+
+    // Get all trips for this driver and waiting trips from the same province
     const trips = await prisma.taxiRequest.findMany({
       where: { 
         OR: [
+          // Driver's own trips (accepted trips)
           { driver: { userId: userId } },
           { driverId: user.driver?.id },
-          { status: TaxiRequest_status.USER_WAITING }  // Include waiting trips
+          // Waiting trips from users in the same province
+          { 
+            AND: [
+              { status: TaxiRequest_status.USER_WAITING },
+              { userProvince: driverProvince }
+            ]
+          }
         ]
       },
       orderBy: { createdAt: 'desc' },
@@ -85,8 +103,18 @@ export async function GET(req: NextRequest) {
       id: t.id, 
       status: t.status,
       driverId: t.driverId,
+      userProvince: t.userProvince,
       createdAt: t.createdAt
     })));
+
+    // Separate waiting trips from driver's own trips
+    const waitingTrips = trips.filter(trip => trip.status === TaxiRequest_status.USER_WAITING);
+    const driverTrips = trips.filter(trip => trip.status !== TaxiRequest_status.USER_WAITING);
+
+    console.log(`📊 Trip Summary for driver in ${driverProvince}:`);
+    console.log(`- Total trips found: ${trips.length}`);
+    console.log(`- Waiting trips in same province: ${waitingTrips.length}`);
+    console.log(`- Driver's own trips: ${driverTrips.length}`);
 
     const responseData = {
       trips: trips.map(trip => ({
@@ -114,7 +142,13 @@ export async function GET(req: NextRequest) {
         dropoffLng: trip.dropoffLng,
         pickupLat: trip.pickupLat,
         pickupLng: trip.pickupLng
-      }))
+      })),
+      driverProvince: driverProvince,
+      tripCounts: {
+        total: trips.length,
+        waiting: waitingTrips.length,
+        driverOwn: driverTrips.length
+      }
     };
 
     console.log('Response data:', JSON.stringify(responseData, null, 2));
