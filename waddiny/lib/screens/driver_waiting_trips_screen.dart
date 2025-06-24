@@ -382,6 +382,32 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
   void _setupNotificationListener() {
     print('🔔 Setting up notification listener for driver waiting screen');
 
+    // Verify Firebase messaging is available
+    try {
+      final messaging = FirebaseMessaging.instance;
+      print('✅ Firebase messaging instance available');
+
+      // Check current permission status
+      messaging.getNotificationSettings().then((settings) {
+        print('📱 Current notification settings:');
+        print('- Authorization Status: ${settings.authorizationStatus}');
+        print('- Alert: ${settings.alert}');
+        print('- Badge: ${settings.badge}');
+        print('- Sound: ${settings.sound}');
+      });
+
+      // Get current token for verification
+      messaging.getToken().then((token) {
+        if (token != null) {
+          print('✅ FCM Token available: ${token.substring(0, 20)}...');
+        } else {
+          print('❌ FCM Token is null');
+        }
+      });
+    } catch (e) {
+      print('❌ Error accessing Firebase messaging: $e');
+    }
+
     // Listen for foreground messages (when app is open)
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('📨 Received foreground message in driver waiting screen:');
@@ -389,6 +415,9 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
       print('- Body: ${message.notification?.body}');
       print('- Data: ${message.data}');
       print('- Type: ${message.data['type']}');
+      print('- Message ID: ${message.messageId}');
+      print('- From: ${message.from}');
+      print('- Sent Time: ${message.sentTime}');
 
       // Check if this is a new trip notification
       if (message.data['type'] == 'NEW_TRIP_AVAILABLE' ||
@@ -422,6 +451,8 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
         print('ℹ️ General notification received, refreshing trips...');
         _handleNotificationTripRefresh();
       }
+    }, onError: (error) {
+      print('❌ Error in foreground message listener: $error');
     });
 
     // Listen for notification taps when app is in background
@@ -432,6 +463,8 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
 
       // Use efficient refresh for background notification taps
       _handleNotificationTripRefresh();
+    }, onError: (error) {
+      print('❌ Error in background message listener: $error');
     });
 
     // Handle initial notification when app is launched from notification
@@ -445,7 +478,11 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
 
         // Use efficient refresh when app is launched from notification
         _handleNotificationTripRefresh();
+      } else {
+        print('ℹ️ No initial message found');
       }
+    }).catchError((error) {
+      print('❌ Error getting initial message: $error');
     });
 
     print('✅ Notification listener setup completed');

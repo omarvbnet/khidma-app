@@ -23,6 +23,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 
 // Top-level background message handler (must be outside any class)
 @pragma('vm:entry-point')
@@ -65,7 +66,118 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await localNotifications.initialize(initializationSettings);
     print('✅ Local notifications initialized in background handler');
 
-    // Process ALL messages, not just those with notification objects
+    // ALWAYS show a test notification to verify the handler is working
+    final testNotificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    // Show a test notification to verify the handler is working
+    await localNotifications.show(
+      testNotificationId,
+      'Background Handler Test',
+      'Background message handler is working! Data: ${jsonEncode(message.data)}',
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'trip_notifications',
+          'Trip Notifications',
+          channelDescription: 'Notifications for trip status updates',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: true,
+          enableVibration: true,
+          playSound: true,
+          icon: '@mipmap/ic_launcher',
+          sound: RawResourceAndroidNotificationSound('notification_sound'),
+          vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+          enableLights: true,
+          ledColor: Color(0xFF2196F3),
+          ledOnMs: 1000,
+          ledOffMs: 500,
+          timeoutAfter: 30000, // 30 seconds timeout
+          category: AndroidNotificationCategory.message,
+          visibility: NotificationVisibility.public,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          badgeNumber: 1,
+          categoryIdentifier: 'trip_notifications',
+          threadIdentifier: 'trip_notifications',
+          sound: 'default',
+          interruptionLevel: InterruptionLevel.active,
+        ),
+      ),
+      payload: jsonEncode(message.data),
+    );
+
+    print('✅ Test background notification displayed');
+    print('Test Notification ID: $testNotificationId');
+
+    // Check if this is ANY kind of trip-related notification
+    bool isTripNotification = false;
+    String notificationType = '';
+
+    // Check notification object first
+    if (message.notification != null) {
+      final title = message.notification!.title?.toLowerCase() ?? '';
+      final body = message.notification!.body?.toLowerCase() ?? '';
+
+      if (title.contains('trip') ||
+          body.contains('trip') ||
+          title.contains('new') ||
+          body.contains('available')) {
+        isTripNotification = true;
+        notificationType = 'notification_object';
+        print('📨 Trip notification detected from notification object');
+      }
+    }
+
+    // Check data payload
+    if (!isTripNotification && message.data.isNotEmpty) {
+      final dataType = message.data['type']?.toString().toLowerCase() ?? '';
+      final dataKeys =
+          message.data.keys.map((k) => k.toString().toLowerCase()).toList();
+
+      if (dataType.contains('trip') ||
+          dataType.contains('new') ||
+          dataKeys.any((key) =>
+              key.contains('trip') ||
+              key.contains('pickup') ||
+              key.contains('dropoff'))) {
+        isTripNotification = true;
+        notificationType = 'data_payload';
+        print('📨 Trip notification detected from data payload');
+      }
+    }
+
+    // Also check for specific notification types we know about
+    if (!isTripNotification) {
+      final knownTypes = [
+        'NEW_TRIP_AVAILABLE',
+        'NEW_TRIPS_AVAILABLE',
+        'trip_created',
+        'new_trip',
+        'TEST_DRIVER_NOTIFICATION'
+      ];
+
+      final messageType = message.data['type']?.toString() ?? '';
+      if (knownTypes.contains(messageType)) {
+        isTripNotification = true;
+        notificationType = 'known_type';
+        print('📨 Trip notification detected from known type: $messageType');
+      }
+    }
+
+    if (isTripNotification) {
+      print(
+          '🚗 Trip notification detected in background, fetching latest trips...');
+      print('Detection method: $notificationType');
+
+      // Fetch latest trips from backend
+      await _fetchTripsInBackground(localNotifications);
+      return; // Exit early since we handled the trip notification
+    }
+
+    // Process other messages as before
     String title = 'New Notification';
     String body = 'You have a new notification';
 
@@ -157,6 +269,116 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     print('❌ Error in background message handler: $e');
     print('Error details: ${e.toString()}');
     print('Stack trace: ${StackTrace.current}');
+  }
+}
+
+// Helper function to fetch trips in background
+Future<void> _fetchTripsInBackground(
+    FlutterLocalNotificationsPlugin localNotifications) async {
+  try {
+    print('🔄 Fetching trips in background...');
+
+    // Get stored token
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    if (token == null) {
+      print('❌ No auth token found in background');
+      return;
+    }
+
+    print('✅ Auth token found, making API request...');
+
+    // Make direct HTTP request to fetch trips using the correct API URL
+    final response = await http.get(
+      Uri.parse('https://khidma-app1.vercel.app/api/flutter/driver/trips'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    ).timeout(const Duration(seconds: 10));
+
+    print('📡 API Response Status: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final trips = data['trips'] as List;
+      final waitingTrips =
+          trips.where((trip) => trip['status'] == 'USER_WAITING').toList();
+
+      print(
+          '📊 Found ${waitingTrips.length} waiting trips in background fetch');
+
+      if (waitingTrips.isNotEmpty) {
+        // Show notification with trip count
+        final notificationData = {
+          'type': 'NEW_TRIPS_AVAILABLE',
+          'tripCount': waitingTrips.length,
+          'timestamp': DateTime.now().toIso8601String(),
+        };
+
+        final AndroidNotificationDetails androidPlatformChannelSpecifics =
+            AndroidNotificationDetails(
+          'trip_notifications',
+          'Trip Notifications',
+          channelDescription: 'Notifications for trip status updates',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: true,
+          enableVibration: true,
+          playSound: true,
+          icon: '@mipmap/ic_launcher',
+          sound: RawResourceAndroidNotificationSound('notification_sound'),
+          vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+          enableLights: true,
+          ledColor: Color(0xFF2196F3),
+          ledOnMs: 1000,
+          ledOffMs: 500,
+          timeoutAfter: 30000,
+          category: AndroidNotificationCategory.message,
+          visibility: NotificationVisibility.public,
+        );
+
+        final DarwinNotificationDetails iOSPlatformChannelSpecifics =
+            DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          badgeNumber: waitingTrips.length,
+          categoryIdentifier: 'trip_notifications',
+          threadIdentifier: 'trip_notifications',
+          sound: 'default',
+          interruptionLevel: InterruptionLevel.active,
+        );
+
+        final NotificationDetails platformChannelSpecifics =
+            NotificationDetails(
+          android: androidPlatformChannelSpecifics,
+          iOS: iOSPlatformChannelSpecifics,
+        );
+
+        final notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+        await localNotifications.show(
+          notificationId,
+          'New Trips Available!',
+          'You have ${waitingTrips.length} new trip${waitingTrips.length > 1 ? 's' : ''} waiting. Tap to view.',
+          platformChannelSpecifics,
+          payload: jsonEncode(notificationData),
+        );
+
+        print('✅ Background trip notification displayed');
+        print('Trip count: ${waitingTrips.length}');
+      } else {
+        print('ℹ️ No waiting trips found in background fetch');
+      }
+    } else {
+      print('❌ API request failed with status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+    }
+  } catch (e) {
+    print('❌ Error fetching trips in background: $e');
+    print('Error details: ${e.toString()}');
   }
 }
 
