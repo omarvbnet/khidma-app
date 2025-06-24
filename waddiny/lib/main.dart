@@ -112,30 +112,40 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     print('✅ Test background notification displayed');
     print('Test Notification ID: $testNotificationId');
 
-    // Check if this is ANY kind of trip-related notification
+    // ENHANCED TRIP NOTIFICATION DETECTION
     bool isTripNotification = false;
-    String notificationType = '';
+    String detectionReason = '';
 
-    // Check notification object first
+    // Method 1: Check notification object content
     if (message.notification != null) {
       final title = message.notification!.title?.toLowerCase() ?? '';
       final body = message.notification!.body?.toLowerCase() ?? '';
 
+      print('🔍 Checking notification object:');
+      print('  Title: "$title"');
+      print('  Body: "$body"');
+
       if (title.contains('trip') ||
           body.contains('trip') ||
           title.contains('new') ||
-          body.contains('available')) {
+          body.contains('available') ||
+          title.contains('available') ||
+          body.contains('new')) {
         isTripNotification = true;
-        notificationType = 'notification_object';
-        print('📨 Trip notification detected from notification object');
+        detectionReason = 'notification_object_content';
+        print('📨 Trip notification detected from notification object content');
       }
     }
 
-    // Check data payload
+    // Method 2: Check data payload
     if (!isTripNotification && message.data.isNotEmpty) {
       final dataType = message.data['type']?.toString().toLowerCase() ?? '';
       final dataKeys =
           message.data.keys.map((k) => k.toString().toLowerCase()).toList();
+
+      print('🔍 Checking data payload:');
+      print('  Type: "$dataType"');
+      print('  Keys: $dataKeys');
 
       if (dataType.contains('trip') ||
           dataType.contains('new') ||
@@ -144,12 +154,12 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
               key.contains('pickup') ||
               key.contains('dropoff'))) {
         isTripNotification = true;
-        notificationType = 'data_payload';
-        print('📨 Trip notification detected from data payload');
+        detectionReason = 'data_payload_content';
+        print('📨 Trip notification detected from data payload content');
       }
     }
 
-    // Also check for specific notification types we know about
+    // Method 3: Check for specific known types
     if (!isTripNotification) {
       final knownTypes = [
         'NEW_TRIP_AVAILABLE',
@@ -160,17 +170,60 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       ];
 
       final messageType = message.data['type']?.toString() ?? '';
+      print('🔍 Checking known types:');
+      print('  Message type: "$messageType"');
+      print('  Known types: $knownTypes');
+
       if (knownTypes.contains(messageType)) {
         isTripNotification = true;
-        notificationType = 'known_type';
+        detectionReason = 'known_type_match';
         print('📨 Trip notification detected from known type: $messageType');
       }
     }
 
+    // Method 4: Check for any trip-related keywords in the entire message
+    if (!isTripNotification) {
+      final allText = [
+        message.notification?.title ?? '',
+        message.notification?.body ?? '',
+        ...message.data.values.map((v) => v.toString()),
+        ...message.data.keys.map((k) => k.toString()),
+      ].join(' ').toLowerCase();
+
+      print('🔍 Checking all text for trip keywords:');
+      print('  All text: "$allText"');
+
+      if (allText.contains('trip') ||
+          allText.contains('pickup') ||
+          allText.contains('dropoff') ||
+          allText.contains('fare') ||
+          allText.contains('driver') ||
+          allText.contains('passenger')) {
+        isTripNotification = true;
+        detectionReason = 'keyword_search';
+        print('📨 Trip notification detected from keyword search');
+      }
+    }
+
+    // Method 5: If it's from our backend, assume it's trip-related
+    if (!isTripNotification && message.from != null) {
+      if (message.from!.contains('fcm.googleapis.com') ||
+          message.from!.contains('khidma-app1.vercel.app')) {
+        isTripNotification = true;
+        detectionReason = 'backend_source';
+        print(
+            '📨 Trip notification detected from backend source: ${message.from}');
+      }
+    }
+
+    print('🎯 FINAL DETECTION RESULT:');
+    print('  Is trip notification: $isTripNotification');
+    print('  Detection reason: $detectionReason');
+
     if (isTripNotification) {
       print(
           '🚗 Trip notification detected in background, fetching latest trips...');
-      print('Detection method: $notificationType');
+      print('Detection method: $detectionReason');
 
       // Fetch latest trips from backend
       await _fetchTripsInBackground(localNotifications);
@@ -284,6 +337,26 @@ Future<void> _fetchTripsInBackground(
 
     if (token == null) {
       print('❌ No auth token found in background');
+      // Show a notification about the missing token
+      await localNotifications.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        'Background Fetch Failed',
+        'Authentication token not found. Please log in again.',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'trip_notifications',
+            'Trip Notifications',
+            channelDescription: 'Notifications for trip status updates',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+      );
       return;
     }
 
@@ -296,9 +369,11 @@ Future<void> _fetchTripsInBackground(
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-    ).timeout(const Duration(seconds: 10));
+    ).timeout(const Duration(seconds: 15)); // Increased timeout
 
     print('📡 API Response Status: ${response.statusCode}');
+    print(
+        '📡 API Response Body: ${response.body.substring(0, 200)}...'); // Log first 200 chars
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -308,6 +383,7 @@ Future<void> _fetchTripsInBackground(
 
       print(
           '📊 Found ${waitingTrips.length} waiting trips in background fetch');
+      print('📊 Total trips: ${trips.length}');
 
       if (waitingTrips.isNotEmpty) {
         // Show notification with trip count
@@ -315,47 +391,8 @@ Future<void> _fetchTripsInBackground(
           'type': 'NEW_TRIPS_AVAILABLE',
           'tripCount': waitingTrips.length,
           'timestamp': DateTime.now().toIso8601String(),
+          'source': 'background_fetch',
         };
-
-        final AndroidNotificationDetails androidPlatformChannelSpecifics =
-            AndroidNotificationDetails(
-          'trip_notifications',
-          'Trip Notifications',
-          channelDescription: 'Notifications for trip status updates',
-          importance: Importance.max,
-          priority: Priority.high,
-          showWhen: true,
-          enableVibration: true,
-          playSound: true,
-          icon: '@mipmap/ic_launcher',
-          sound: RawResourceAndroidNotificationSound('notification_sound'),
-          vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
-          enableLights: true,
-          ledColor: Color(0xFF2196F3),
-          ledOnMs: 1000,
-          ledOffMs: 500,
-          timeoutAfter: 30000,
-          category: AndroidNotificationCategory.message,
-          visibility: NotificationVisibility.public,
-        );
-
-        final DarwinNotificationDetails iOSPlatformChannelSpecifics =
-            DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-          badgeNumber: waitingTrips.length,
-          categoryIdentifier: 'trip_notifications',
-          threadIdentifier: 'trip_notifications',
-          sound: 'default',
-          interruptionLevel: InterruptionLevel.active,
-        );
-
-        final NotificationDetails platformChannelSpecifics =
-            NotificationDetails(
-          android: androidPlatformChannelSpecifics,
-          iOS: iOSPlatformChannelSpecifics,
-        );
 
         final notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
@@ -363,22 +400,141 @@ Future<void> _fetchTripsInBackground(
           notificationId,
           'New Trips Available!',
           'You have ${waitingTrips.length} new trip${waitingTrips.length > 1 ? 's' : ''} waiting. Tap to view.',
-          platformChannelSpecifics,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              'trip_notifications',
+              'Trip Notifications',
+              channelDescription: 'Notifications for trip status updates',
+              importance: Importance.max,
+              priority: Priority.high,
+              showWhen: true,
+              enableVibration: true,
+              playSound: true,
+              icon: '@mipmap/ic_launcher',
+              sound: RawResourceAndroidNotificationSound('notification_sound'),
+              vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+              enableLights: true,
+              ledColor: Color(0xFF2196F3),
+              ledOnMs: 1000,
+              ledOffMs: 500,
+              timeoutAfter: 30000,
+              category: AndroidNotificationCategory.message,
+              visibility: NotificationVisibility.public,
+            ),
+            iOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+              badgeNumber: waitingTrips.length,
+              categoryIdentifier: 'trip_notifications',
+              threadIdentifier: 'trip_notifications',
+              sound: 'default',
+              interruptionLevel: InterruptionLevel.active,
+            ),
+          ),
           payload: jsonEncode(notificationData),
         );
 
         print('✅ Background trip notification displayed');
         print('Trip count: ${waitingTrips.length}');
+        print('Notification ID: $notificationId');
       } else {
         print('ℹ️ No waiting trips found in background fetch');
+        // Show a notification that no trips are available
+        await localNotifications.show(
+          DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          'No Trips Available',
+          'No new trips are currently waiting for drivers.',
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              'trip_notifications',
+              'Trip Notifications',
+              channelDescription: 'Notifications for trip status updates',
+              importance: Importance.low,
+              priority: Priority.low,
+            ),
+            iOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: false,
+              presentSound: false,
+            ),
+          ),
+        );
       }
+    } else if (response.statusCode == 401) {
+      print('❌ Authentication failed (401)');
+      await localNotifications.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        'Authentication Required',
+        'Please log in again to receive trip notifications.',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'trip_notifications',
+            'Trip Notifications',
+            channelDescription: 'Notifications for trip status updates',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+      );
     } else {
       print('❌ API request failed with status: ${response.statusCode}');
       print('Response body: ${response.body}');
+
+      // Show error notification
+      await localNotifications.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        'Network Error',
+        'Unable to fetch latest trips. Please check your connection.',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'trip_notifications',
+            'Trip Notifications',
+            channelDescription: 'Notifications for trip status updates',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: false,
+            presentSound: false,
+          ),
+        ),
+      );
     }
   } catch (e) {
     print('❌ Error fetching trips in background: $e');
     print('Error details: ${e.toString()}');
+
+    // Show error notification
+    try {
+      await localNotifications.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        'Background Fetch Error',
+        'Error: ${e.toString().substring(0, 50)}...',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'trip_notifications',
+            'Trip Notifications',
+            channelDescription: 'Notifications for trip status updates',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: false,
+            presentSound: false,
+          ),
+        ),
+      );
+    } catch (notificationError) {
+      print('❌ Failed to show error notification: $notificationError');
+    }
   }
 }
 
