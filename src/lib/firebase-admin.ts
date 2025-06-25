@@ -173,7 +173,7 @@ export async function sendMulticastNotification({
   }
 
   try {
-    // Create both notification and data-only messages for better background delivery
+    // Create notification message with correct APNs headers for alert
     const notificationMessage = {
       notification: {
         title,
@@ -183,8 +183,8 @@ export async function sendMulticastNotification({
         ...data,
         click_action: 'FLUTTER_NOTIFICATION_CLICK',
         sound: 'default',
-        title: title, // Include title in data for background handling
-        body: body,   // Include body in data for background handling
+        title: title,
+        body: body,
       },
       android: {
         priority: 'high',
@@ -220,14 +220,14 @@ export async function sendMulticastNotification({
           },
         },
         headers: {
-          'apns-priority': '10',
-          'apns-push-type': 'alert',
+          'apns-priority': '10', // must be 10 for alert
+          'apns-push-type': 'alert', // must be alert for notification
         },
       },
       tokens,
     };
 
-    // Also send a data-only message for better background handling
+    // Also send a data-only message for background handler logic
     const dataOnlyMessage = {
       data: {
         ...data,
