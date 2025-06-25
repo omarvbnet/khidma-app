@@ -368,8 +368,17 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     // Send batch push notification if we have device tokens
     if (deviceTokens.length > 0) {
       try {
-        console.log('Sending batch push notification...');
-        await sendMulticastNotification({
+        console.log('Sending batch push notification with dual strategy...');
+        console.log('Notification data:', {
+          title,
+          body: message,
+          data: {
+            ...notificationData,
+            type,
+          },
+        });
+        
+        const result = await sendMulticastNotification({
           tokens: deviceTokens,
           title,
           body: message,
@@ -378,7 +387,30 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
             type,
           },
         });
+        
         console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers`);
+        console.log('Notification result:', {
+          notificationSuccessCount: result?.notificationResponse?.successCount,
+          notificationFailureCount: result?.notificationResponse?.failureCount,
+          dataSuccessCount: result?.dataResponse?.successCount,
+          dataFailureCount: result?.dataResponse?.failureCount,
+        });
+        
+        // Log individual responses for debugging
+        if (result?.notificationResponse?.responses) {
+          console.log('Individual notification responses:');
+          result.notificationResponse.responses.forEach((response: any, index: number) => {
+            console.log(`  Driver ${index + 1}: ${response.success ? '✅ Success' : '❌ Failed'} - ${response.messageId || 'No message ID'}`);
+          });
+        }
+        
+        if (result?.dataResponse?.responses) {
+          console.log('Individual data responses:');
+          result.dataResponse.responses.forEach((response: any, index: number) => {
+            console.log(`  Driver ${index + 1}: ${response.success ? '✅ Success' : '❌ Failed'} - ${response.messageId || 'No message ID'}`);
+          });
+        }
+        
       } catch (firebaseError) {
         console.error('❌ Batch Firebase notification failed:', firebaseError);
         // Fall back to individual notifications
