@@ -173,7 +173,7 @@ export async function sendMulticastNotification({
   }
 
   try {
-    // Create notification message with correct APNs headers for alert
+    // Create notification message with correct format for sendEachForMulticast
     const notificationMessage = {
       notification: {
         title,
@@ -224,7 +224,6 @@ export async function sendMulticastNotification({
           'apns-push-type': 'alert', // must be alert for notification
         },
       },
-      tokens,
     };
 
     // Also send a data-only message for background handler logic
@@ -271,13 +270,18 @@ export async function sendMulticastNotification({
           'apns-push-type': 'background',
         },
       },
-      tokens,
     };
 
-    // Send both messages
+    // Send both messages using sendEachForMulticast with correct format
     const [notificationResponse, dataResponse] = await Promise.all([
-      messaging.sendEachForMulticast(notificationMessage),
-      messaging.sendEachForMulticast(dataOnlyMessage),
+      messaging.sendEachForMulticast({
+        ...notificationMessage,
+        tokens,
+      }),
+      messaging.sendEachForMulticast({
+        ...dataOnlyMessage,
+        tokens,
+      }),
     ]);
 
     console.log('✅ Multicast notifications sent:', {
