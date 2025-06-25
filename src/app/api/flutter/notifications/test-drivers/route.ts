@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
           driverId: driver.id,
           driverName: driver.fullName,
           success: true,
-          messageId: result.messageId
+          messageId: result?.notificationResponse || result?.dataResponse || 'unknown'
         });
 
         console.log(`✅ Notification sent to driver ${driver.fullName} (${driver.id})`);
