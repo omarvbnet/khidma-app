@@ -553,6 +553,33 @@ void main() async {
     final messaging = FirebaseMessaging.instance;
     print('✅ Firebase messaging instance created');
 
+    // iOS-specific configuration for better background notification handling
+    if (Platform.isIOS) {
+      // Request permission with all options enabled
+      final settings = await messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      print(
+          '📱 iOS Notification Permission Status: ${settings.authorizationStatus}');
+
+      // Enable provisional authorization for better background delivery
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        await messaging.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        print('✅ iOS foreground notification options set');
+      }
+    }
+
     // Check if we can get the token (this tests the connection)
     try {
       final token = await messaging.getToken();
