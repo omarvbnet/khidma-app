@@ -4,7 +4,11 @@ import '../models/trip_model.dart';
 import '../services/driver_service.dart';
 import '../services/api_service.dart';
 import '../screens/driver_navigation_screen.dart';
-import '../screens/notification_test_screen.dart';
+import '../screens/driver_trip_details_screen.dart';
+import '../screens/driver_home_screen.dart';
+import '../services/notification_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:convert';
 
 class DriverAcceptedTripScreen extends StatefulWidget {
   final Trip trip;
@@ -114,20 +118,7 @@ class _DriverAcceptedTripScreenState extends State<DriverAcceptedTripScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NotificationTestScreen(),
-                ),
-              );
-            },
-            tooltip: 'Test Notifications',
-          ),
-        ],
+        actions: [],
       ),
       body: Column(
         children: [

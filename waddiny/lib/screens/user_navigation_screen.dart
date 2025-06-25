@@ -7,7 +7,6 @@ import '../services/trip_service.dart';
 import '../services/map_service.dart';
 import '../services/location_service.dart';
 import '../services/notification_service.dart';
-import 'notification_test_screen.dart';
 import 'dart:math';
 import '../constants/app_constants.dart';
 
@@ -392,20 +391,7 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
       appBar: AppBar(
         title: Text('Trip in Progress'),
         backgroundColor: Colors.blue,
-        actions: [
-          // Temporary test button for notifications
-          IconButton(
-            icon: Icon(Icons.notifications),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => NotificationTestScreen(),
-                ),
-              );
-            },
-          ),
-        ],
+        actions: [],
       ),
       body: Stack(
         children: [

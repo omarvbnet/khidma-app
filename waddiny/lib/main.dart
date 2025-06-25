@@ -18,7 +18,6 @@ import 'screens/driver_main_screen.dart';
 import 'services/auth_service.dart';
 import 'screens/otp_verification_screen.dart';
 import 'screens/search_trip_screen.dart';
-import 'screens/notification_debug_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:convert';
@@ -52,65 +51,19 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-          requestAlertPermission: false, // Don't request in background
-          requestBadgePermission: false,
-          requestSoundPermission: false,
-        );
+      requestAlertPermission: false, // Don't request in background
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
-          android: initializationSettingsAndroid,
-          iOS: initializationSettingsIOS,
-        );
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
 
     await localNotifications.initialize(initializationSettings);
     print('✅ Local notifications initialized in background handler');
-
-    // ALWAYS show a test notification to verify the handler is working
-    final testNotificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-    // Show a test notification to verify the handler is working
-    await localNotifications.show(
-      testNotificationId,
-      'Background Handler Test',
-      'Background message handler is working! Data: ${jsonEncode(message.data)}',
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'trip_notifications',
-          'Trip Notifications',
-          channelDescription: 'Notifications for trip status updates',
-          importance: Importance.max,
-          priority: Priority.high,
-          showWhen: true,
-          enableVibration: true,
-          playSound: true,
-          icon: '@mipmap/ic_launcher',
-          sound: RawResourceAndroidNotificationSound('notification_sound'),
-          vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
-          enableLights: true,
-          ledColor: Color(0xFF2196F3),
-          ledOnMs: 1000,
-          ledOffMs: 500,
-          timeoutAfter: 30000, // 30 seconds timeout
-          category: AndroidNotificationCategory.message,
-          visibility: NotificationVisibility.public,
-        ),
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-          badgeNumber: 1,
-          categoryIdentifier: 'trip_notifications',
-          threadIdentifier: 'trip_notifications',
-          sound: 'default',
-          interruptionLevel: InterruptionLevel.active,
-        ),
-      ),
-      payload: jsonEncode(message.data),
-    );
-
-    print('✅ Test background notification displayed');
-    print('Test Notification ID: $testNotificationId');
 
     // ENHANCED TRIP NOTIFICATION DETECTION
     bool isTripNotification = false;
@@ -140,9 +93,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     // Method 2: Check data payload
     if (!isTripNotification && message.data.isNotEmpty) {
       final dataType = message.data['type']?.toString().toLowerCase() ?? '';
-      final dataKeys = message.data.keys
-          .map((k) => k.toString().toLowerCase())
-          .toList();
+      final dataKeys =
+          message.data.keys.map((k) => k.toString().toLowerCase()).toList();
 
       print('🔍 Checking data payload:');
       print('  Type: "$dataType"');
@@ -169,7 +121,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         'NEW_TRIPS_AVAILABLE',
         'trip_created',
         'new_trip',
-        'TEST_DRIVER_NOTIFICATION',
       ];
 
       final messageType = message.data['type']?.toString() ?? '';
@@ -368,15 +319,13 @@ Future<void> _fetchTripsInBackground(
     print('✅ Auth token found, making API request...');
 
     // Make direct HTTP request to fetch trips using the correct API URL
-    final response = await http
-        .get(
-          Uri.parse('https://khidma-app1.vercel.app/api/flutter/driver/trips'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        )
-        .timeout(const Duration(seconds: 15)); // Increased timeout
+    final response = await http.get(
+      Uri.parse('https://khidma-app1.vercel.app/api/flutter/driver/trips'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    ).timeout(const Duration(seconds: 15)); // Increased timeout
 
     print('📡 API Response Status: ${response.statusCode}');
     print(
@@ -386,9 +335,8 @@ Future<void> _fetchTripsInBackground(
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final trips = data['trips'] as List;
-      final waitingTrips = trips
-          .where((trip) => trip['status'] == 'USER_WAITING')
-          .toList();
+      final waitingTrips =
+          trips.where((trip) => trip['status'] == 'USER_WAITING').toList();
 
       print(
         '📊 Found ${waitingTrips.length} waiting trips in background fetch',
@@ -597,15 +545,15 @@ void main() async {
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestBadgePermission: true,
-          requestSoundPermission: true,
-        );
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
     const InitializationSettings initializationSettings =
         InitializationSettings(
-          android: initializationSettingsAndroid,
-          iOS: initializationSettingsIOS,
-        );
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
     print('✅ Local notifications initialized in main');
   }
@@ -777,7 +725,6 @@ class MyApp extends StatelessWidget {
           '/user-main': (context) => const UserMainScreen(),
           '/driver-main': (context) => const DriverMainScreen(),
           '/search_trip': (context) => const SearchTripScreen(),
-          '/notification-debug': (context) => const NotificationDebugScreen(),
         },
         debugShowCheckedModeBanner: false,
       ),

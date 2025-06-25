@@ -8,7 +8,6 @@ import '../models/user_model.dart';
 import 'dart:async';
 import '../screens/driver_trip_details_screen.dart';
 import '../screens/driver_home_screen.dart';
-import '../screens/notification_test_screen.dart';
 import '../services/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:convert';
@@ -200,130 +199,6 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
         }),
         id: 1000 + tripCount, // Unique ID based on trip count
       );
-    }
-  }
-
-  // Test notification functionality
-  Future<void> _testNotification() async {
-    try {
-      print('🧪 Testing notification in driver waiting screen');
-
-      // Test local notification
-      await NotificationService.showLocalNotification(
-        title: 'Test Notification',
-        body: 'This is a test notification from driver waiting screen',
-        payload: jsonEncode({
-          'type': 'test',
-          'screen': 'driver_waiting',
-          'timestamp': DateTime.now().toIso8601String(),
-        }),
-        id: 9999,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Test notification sent!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      print('❌ Error testing notification: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Test notification failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  // Test Firebase notification listener
-  Future<void> _testFirebaseListener() async {
-    try {
-      print('🔥 Testing Firebase notification listener');
-
-      // Send a test Firebase notification to ourselves
-      final token = await NotificationService.getDeviceToken();
-      if (token != null) {
-        print(
-            '📤 Sending test Firebase notification to token: ${token.substring(0, 20)}...');
-
-        // This would normally be sent from the backend, but for testing we can simulate
-        // the notification by calling the notification service directly
-        await NotificationService.sendNotification(
-          userId: _user?.id ?? '',
-          type: 'NEW_TRIP_AVAILABLE',
-          title: 'Test Firebase Notification',
-          message:
-              'This is a test Firebase notification for driver waiting screen',
-          data: {
-            'type': 'NEW_TRIP_AVAILABLE',
-            'screen': 'driver_waiting',
-            'timestamp': DateTime.now().toIso8601String(),
-          },
-        );
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Test Firebase notification sent!'),
-              backgroundColor: Colors.blue,
-            ),
-          );
-        }
-      } else {
-        print('❌ No device token available for testing');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No device token available for testing'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      print('❌ Error testing Firebase notification: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Test Firebase notification failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  // Test device token registration
-  Future<void> _testDeviceTokenRegistration() async {
-    try {
-      print('🔧 Testing device token registration');
-
-      await NotificationService.registerDeviceTokenForTesting();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Device token registration test completed!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      print('❌ Error testing device token registration: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Device token registration test failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
@@ -726,26 +601,9 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
           foregroundColor: Colors.black,
           actions: [
             IconButton(
-              icon: const Icon(Icons.notifications),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationTestScreen(),
-                  ),
-                );
-              },
-              tooltip: 'Test Notifications',
-            ),
-            IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () => _loadTrips(),
               tooltip: 'Refresh',
-            ),
-            IconButton(
-              icon: const Icon(Icons.science),
-              onPressed: _testNotification,
-              tooltip: 'Test Local Notification',
             ),
           ],
         ),
@@ -855,26 +713,9 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ElevatedButton.icon(
-                    onPressed: _testNotification,
-                    icon: const Icon(Icons.science),
-                    label: const Text('Test Notification'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NotificationTestScreen(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.notifications),
-                    label: const Text('Notification Settings'),
+                    onPressed: () => _loadTrips(),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Refresh'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
@@ -950,31 +791,9 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
             tooltip: 'Test Budget',
           ),
           IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NotificationTestScreen(),
-                ),
-              );
-            },
-            tooltip: 'Test Notifications',
-          ),
-          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => _loadTrips(),
             tooltip: 'Refresh',
-          ),
-          IconButton(
-            icon: const Icon(Icons.whatshot),
-            onPressed: _testFirebaseListener,
-            tooltip: 'Test Firebase Listener',
-          ),
-          IconButton(
-            icon: const Icon(Icons.token),
-            onPressed: _testDeviceTokenRegistration,
-            tooltip: 'Test Device Token Registration',
           ),
         ],
       ),

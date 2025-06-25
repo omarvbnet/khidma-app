@@ -685,17 +685,6 @@ class NotificationService {
     await _localNotifications.cancel(id);
   }
 
-  // Test notification for debugging
-  static Future<void> testNotification() async {
-    print('🧪 Testing notification...');
-    await showLocalNotification(
-      title: 'Test Notification',
-      body: 'This is a test notification to verify iOS permissions',
-      payload: jsonEncode({'type': 'test'}),
-      id: 999,
-    );
-  }
-
   // Check notification permissions
   static Future<bool> checkNotificationPermissions() async {
     try {
@@ -854,6 +843,31 @@ class NotificationService {
     }
   }
 
+  // Get detailed notification status
+  static Future<Map<String, dynamic>> getNotificationStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      return {
+        'timestamp':
+            DateFormat('yyyy-MM-ddTHH:mm:ss.SSSZ').format(DateTime.now()),
+        'isInitialized': _isInitialized,
+        'deviceToken': prefs.getString('fcm_token'),
+        'userToken': prefs.getString('token') != null,
+        'platform': Platform.isIOS ? 'iOS' : 'Android',
+        'permissions': await checkNotificationPermissions(),
+        'firebaseReady': _firebaseMessaging != null,
+        'localNotificationsReady': _localNotifications != null,
+      };
+    } catch (e) {
+      return {
+        'error': e.toString(),
+        'timestamp':
+            DateFormat('yyyy-MM-ddTHH:mm:ss.SSSZ').format(DateTime.now())
+      };
+    }
+  }
+
   // Send device token to server
   static Future<void> _sendDeviceTokenToServer(String deviceToken) async {
     try {
@@ -880,18 +894,16 @@ class NotificationService {
         body: jsonEncode({
           'deviceToken': deviceToken,
           'platform': Platform.isIOS ? 'ios' : 'android',
+          'appVersion': '1.0.0',
         }),
       );
-
-      print('📡 Server response status: ${response.statusCode}');
-      print('📡 Server response body: ${response.body}');
 
       if (response.statusCode == 200) {
         print('✅ Device token sent to server successfully');
       } else {
-        print('❌ Failed to send device token to server');
-        print('❌ Status: ${response.statusCode}');
-        print('❌ Response: ${response.body}');
+        print(
+            '❌ Failed to send device token to server: ${response.statusCode}');
+        print('Response: ${response.body}');
       }
     } catch (e) {
       print('❌ Error sending device token to server: $e');
@@ -1282,31 +1294,6 @@ class NotificationService {
       }
     } catch (e) {
       return {'success': false, 'error': e.toString()};
-    }
-  }
-
-  // Get detailed notification status
-  static Future<Map<String, dynamic>> getNotificationStatus() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-
-      return {
-        'timestamp':
-            DateFormat('yyyy-MM-ddTHH:mm:ss.SSSZ').format(DateTime.now()),
-        'isInitialized': _isInitialized,
-        'deviceToken': prefs.getString('fcm_token'),
-        'userToken': prefs.getString('token') != null,
-        'platform': Platform.isIOS ? 'iOS' : 'Android',
-        'permissions': await checkNotificationPermissions(),
-        'firebaseReady': _firebaseMessaging != null,
-        'localNotificationsReady': _localNotifications != null,
-      };
-    } catch (e) {
-      return {
-        'error': e.toString(),
-        'timestamp':
-            DateFormat('yyyy-MM-ddTHH:mm:ss.SSSZ').format(DateTime.now())
-      };
     }
   }
 

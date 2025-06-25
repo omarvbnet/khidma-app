@@ -9,7 +9,6 @@ import '../services/map_service.dart';
 import '../services/location_service.dart';
 import '../models/trip_model.dart';
 import 'driver_navigation_screen.dart';
-import 'notification_test_screen.dart';
 
 class DriverArrivedScreen extends StatefulWidget {
   final TaxiRequest trip;
@@ -141,20 +140,7 @@ class _DriverArrivedScreenState extends State<DriverArrivedScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pick up Passenger'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NotificationTestScreen(),
-                ),
-              );
-            },
-            tooltip: 'Test Notifications',
-          ),
-        ],
+        actions: [],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
