@@ -310,16 +310,17 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     for (const driver of allActiveDrivers) {
       console.log(`\n--- Checking availability for ${driver.fullName} (${driver.id}) ---`);
       
-      // TEMPORARILY BYPASS AVAILABILITY CHECK FOR TESTING
-      // const isAvailable = await isDriverAvailable(driver.id);
-      const isAvailable = true; // Force all drivers to be considered available
+      // Check if driver has active trips
+      const isAvailable = await isDriverAvailable(driver.id);
+      console.log(`Driver ${driver.fullName} (${driver.id}) - Available: ${isAvailable}`);
       
-      console.log(`Driver ${driver.fullName} (${driver.id}) - Available: ${isAvailable} (FORCED FOR TESTING)`);
-      if (isAvailable) {
+      // Allow drivers to receive notifications even if they have active trips
+      // This ensures drivers can see new trips while on current trips
+      if (isAvailable || driver.deviceToken) { // Include drivers with device tokens even if busy
         availableDrivers.push(driver);
-        console.log(`✅ Added ${driver.fullName} to available drivers list`);
+        console.log(`✅ Added ${driver.fullName} to available drivers list (${isAvailable ? 'available' : 'busy but has device token'})`);
       } else {
-        console.log(`❌ ${driver.fullName} is busy, not adding to available list`);
+        console.log(`❌ ${driver.fullName} is busy and has no device token, not adding to available list`);
       }
     }
 
