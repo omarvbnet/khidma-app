@@ -112,125 +112,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     print('✅ Test background notification displayed');
     print('Test Notification ID: $testNotificationId');
 
-    // ENHANCED TRIP NOTIFICATION DETECTION
-    bool isTripNotification = false;
-    String detectionReason = '';
-
-    // Method 1: Check notification object content
-    if (message.notification != null) {
-      final title = message.notification!.title?.toLowerCase() ?? '';
-      final body = message.notification!.body?.toLowerCase() ?? '';
-
-      print('🔍 Checking notification object:');
-      print('  Title: "$title"');
-      print('  Body: "$body"');
-
-      if (title.contains('trip') ||
-          body.contains('trip') ||
-          title.contains('new') ||
-          body.contains('available') ||
-          title.contains('available') ||
-          body.contains('new')) {
-        isTripNotification = true;
-        detectionReason = 'notification_object_content';
-        print('📨 Trip notification detected from notification object content');
-      }
-    }
-
-    // Method 2: Check data payload
-    if (!isTripNotification && message.data.isNotEmpty) {
-      final dataType = message.data['type']?.toString().toLowerCase() ?? '';
-      final dataKeys =
-          message.data.keys.map((k) => k.toString().toLowerCase()).toList();
-
-      print('🔍 Checking data payload:');
-      print('  Type: "$dataType"');
-      print('  Keys: $dataKeys');
-
-      if (dataType.contains('trip') ||
-          dataType.contains('new') ||
-          dataKeys.any((key) =>
-              key.contains('trip') ||
-              key.contains('pickup') ||
-              key.contains('dropoff'))) {
-        isTripNotification = true;
-        detectionReason = 'data_payload_content';
-        print('📨 Trip notification detected from data payload content');
-      }
-    }
-
-    // Method 3: Check for specific known types
-    if (!isTripNotification) {
-      final knownTypes = [
-        'NEW_TRIP_AVAILABLE',
-        'NEW_TRIPS_AVAILABLE',
-        'trip_created',
-        'new_trip',
-        'TEST_DRIVER_NOTIFICATION'
-      ];
-
-      final messageType = message.data['type']?.toString() ?? '';
-      print('🔍 Checking known types:');
-      print('  Message type: "$messageType"');
-      print('  Known types: $knownTypes');
-
-      if (knownTypes.contains(messageType)) {
-        isTripNotification = true;
-        detectionReason = 'known_type_match';
-        print('📨 Trip notification detected from known type: $messageType');
-      }
-    }
-
-    // Method 4: Check for any trip-related keywords in the entire message
-    if (!isTripNotification) {
-      final allText = [
-        message.notification?.title ?? '',
-        message.notification?.body ?? '',
-        ...message.data.values.map((v) => v.toString()),
-        ...message.data.keys.map((k) => k.toString()),
-      ].join(' ').toLowerCase();
-
-      print('🔍 Checking all text for trip keywords:');
-      print('  All text: "$allText"');
-
-      if (allText.contains('trip') ||
-          allText.contains('pickup') ||
-          allText.contains('dropoff') ||
-          allText.contains('fare') ||
-          allText.contains('driver') ||
-          allText.contains('passenger')) {
-        isTripNotification = true;
-        detectionReason = 'keyword_search';
-        print('📨 Trip notification detected from keyword search');
-      }
-    }
-
-    // Method 5: If it's from our backend, assume it's trip-related
-    if (!isTripNotification && message.from != null) {
-      if (message.from!.contains('fcm.googleapis.com') ||
-          message.from!.contains('khidma-app1.vercel.app')) {
-        isTripNotification = true;
-        detectionReason = 'backend_source';
-        print(
-            '📨 Trip notification detected from backend source: ${message.from}');
-      }
-    }
-
-    print('🎯 FINAL DETECTION RESULT:');
-    print('  Is trip notification: $isTripNotification');
-    print('  Detection reason: $detectionReason');
-
-    if (isTripNotification) {
-      print(
-          '🚗 Trip notification detected in background, fetching latest trips...');
-      print('Detection method: $detectionReason');
-
-      // Fetch latest trips from backend
-      await _fetchTripsInBackground(localNotifications);
-      return; // Exit early since we handled the trip notification
-    }
-
-    // Process other messages as before
+    // Process the actual notification
     String title = 'New Notification';
     String body = 'You have a new notification';
 
@@ -263,53 +145,45 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       print('📨 Using data payload for title/body');
     }
 
-    final AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'trip_notifications',
-      'Trip Notifications',
-      channelDescription: 'Notifications for trip status updates',
-      importance: Importance.max,
-      priority: Priority.high,
-      showWhen: true,
-      enableVibration: true,
-      playSound: true,
-      icon: '@mipmap/ic_launcher',
-      sound: RawResourceAndroidNotificationSound('notification_sound'),
-      vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
-      enableLights: true,
-      ledColor: Color(0xFF2196F3),
-      ledOnMs: 1000,
-      ledOffMs: 500,
-      timeoutAfter: 30000, // 30 seconds timeout
-      category: AndroidNotificationCategory.message,
-      visibility: NotificationVisibility.public,
-    );
-
-    final DarwinNotificationDetails iOSPlatformChannelSpecifics =
-        DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-      badgeNumber: 1,
-      categoryIdentifier: 'trip_notifications',
-      threadIdentifier: 'trip_notifications',
-      sound: 'default',
-      interruptionLevel: InterruptionLevel.active,
-    );
-
-    final NotificationDetails platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-      iOS: iOSPlatformChannelSpecifics,
-    );
-
-    // Generate unique notification ID
+    // Show the actual notification
     final notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
     await localNotifications.show(
       notificationId,
       title,
       body,
-      platformChannelSpecifics,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'trip_notifications',
+          'Trip Notifications',
+          channelDescription: 'Notifications for trip status updates',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: true,
+          enableVibration: true,
+          playSound: true,
+          icon: '@mipmap/ic_launcher',
+          sound: RawResourceAndroidNotificationSound('notification_sound'),
+          vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+          enableLights: true,
+          ledColor: Color(0xFF2196F3),
+          ledOnMs: 1000,
+          ledOffMs: 500,
+          timeoutAfter: 30000,
+          category: AndroidNotificationCategory.message,
+          visibility: NotificationVisibility.public,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          badgeNumber: 1,
+          categoryIdentifier: 'trip_notifications',
+          threadIdentifier: 'trip_notifications',
+          sound: 'default',
+          interruptionLevel: InterruptionLevel.active,
+        ),
+      ),
       payload: jsonEncode(message.data),
     );
 
@@ -606,6 +480,80 @@ void main() async {
   // Load and get device token for push notifications
   await NotificationService.loadDeviceToken();
   await NotificationService.getDeviceToken();
+
+  // Set up foreground message handler
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+    print('\n📨 FOREGROUND MESSAGE RECEIVED');
+    print('Title: ${message.notification?.title}');
+    print('Body: ${message.notification?.body}');
+    print('Data: ${message.data}');
+
+    // Show local notification even in foreground
+    final FlutterLocalNotificationsPlugin localNotifications =
+        FlutterLocalNotificationsPlugin();
+
+    String title = 'New Notification';
+    String body = 'You have a new notification';
+
+    // Use notification object if available
+    if (message.notification != null) {
+      title = message.notification!.title ?? title;
+      body = message.notification!.body ?? body;
+    } else {
+      // Fallback to data payload
+      if (message.data['title'] != null) {
+        title = message.data['title'];
+      }
+      if (message.data['body'] != null) {
+        body = message.data['body'];
+      } else if (message.data['message'] != null) {
+        body = message.data['message'];
+      }
+    }
+
+    final notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    await localNotifications.show(
+      notificationId,
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'trip_notifications',
+          'Trip Notifications',
+          channelDescription: 'Notifications for trip status updates',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: true,
+          enableVibration: true,
+          playSound: true,
+          icon: '@mipmap/ic_launcher',
+          sound: RawResourceAndroidNotificationSound('notification_sound'),
+          vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+          enableLights: true,
+          ledColor: Color(0xFF2196F3),
+          ledOnMs: 1000,
+          ledOffMs: 500,
+          timeoutAfter: 30000,
+          category: AndroidNotificationCategory.message,
+          visibility: NotificationVisibility.public,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          badgeNumber: 1,
+          categoryIdentifier: 'trip_notifications',
+          threadIdentifier: 'trip_notifications',
+          sound: 'default',
+          interruptionLevel: InterruptionLevel.active,
+        ),
+      ),
+      payload: jsonEncode(message.data),
+    );
+
+    print('✅ Foreground notification displayed');
+  });
 
   // Test notification permissions on iOS
   if (Platform.isIOS) {
