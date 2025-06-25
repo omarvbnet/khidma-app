@@ -37,7 +37,8 @@ export async function sendPushNotification({
   }
 
   try {
-    const message = {
+    // Create both notification and data-only messages for better background delivery
+    const notificationMessage = {
       token,
       notification: {
         title,
@@ -47,6 +48,8 @@ export async function sendPushNotification({
         ...data,
         click_action: 'FLUTTER_NOTIFICATION_CLICK',
         sound: 'default',
+        title: title, // Include title in data for background handling
+        body: body,   // Include body in data for background handling
       },
       android: {
         priority: 'high',
@@ -88,9 +91,64 @@ export async function sendPushNotification({
       },
     };
 
-    const response = await messaging.send(message);
-    console.log('✅ Push notification sent successfully:', response);
-    return response;
+    // Also send a data-only message for better background handling
+    const dataOnlyMessage = {
+      token,
+      data: {
+        ...data,
+        title: title,
+        body: body,
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        sound: 'default',
+        type: data.type || 'NEW_TRIP_AVAILABLE',
+        timestamp: new Date().toISOString(),
+      },
+      android: {
+        priority: 'high',
+        data: {
+          ...data,
+          title: title,
+          body: body,
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+          sound: 'default',
+          type: data.type || 'NEW_TRIP_AVAILABLE',
+          timestamp: new Date().toISOString(),
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            'content-available': 1,
+            'mutable-content': 1,
+            category: 'trip_notifications',
+            'thread-id': 'trip_notifications',
+          },
+          data: {
+            ...data,
+            title: title,
+            body: body,
+            type: data.type || 'NEW_TRIP_AVAILABLE',
+            timestamp: new Date().toISOString(),
+          },
+        },
+        headers: {
+          'apns-priority': '5', // Lower priority for data-only messages
+          'apns-push-type': 'background',
+        },
+      },
+    };
+
+    // Send both messages
+    const [notificationResponse, dataResponse] = await Promise.all([
+      messaging.send(notificationMessage),
+      messaging.send(dataOnlyMessage),
+    ]);
+
+    console.log('✅ Push notifications sent successfully:', {
+      notificationResponse,
+      dataResponse,
+    });
+    return { notificationResponse, dataResponse };
   } catch (error) {
     console.error('❌ Error sending push notification:', error);
     throw error;
@@ -115,7 +173,8 @@ export async function sendMulticastNotification({
   }
 
   try {
-    const message = {
+    // Create both notification and data-only messages for better background delivery
+    const notificationMessage = {
       notification: {
         title,
         body,
@@ -124,6 +183,8 @@ export async function sendMulticastNotification({
         ...data,
         click_action: 'FLUTTER_NOTIFICATION_CLICK',
         sound: 'default',
+        title: title, // Include title in data for background handling
+        body: body,   // Include body in data for background handling
       },
       android: {
         priority: 'high',
@@ -166,13 +227,72 @@ export async function sendMulticastNotification({
       tokens,
     };
 
-    const response = await messaging.sendEachForMulticast(message);
-    console.log('✅ Multicast notification sent:', {
-      successCount: response.successCount,
-      failureCount: response.failureCount,
-      responses: response.responses,
+    // Also send a data-only message for better background handling
+    const dataOnlyMessage = {
+      data: {
+        ...data,
+        title: title,
+        body: body,
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        sound: 'default',
+        type: data.type || 'NEW_TRIP_AVAILABLE',
+        timestamp: new Date().toISOString(),
+      },
+      android: {
+        priority: 'high',
+        data: {
+          ...data,
+          title: title,
+          body: body,
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+          sound: 'default',
+          type: data.type || 'NEW_TRIP_AVAILABLE',
+          timestamp: new Date().toISOString(),
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            'content-available': 1,
+            'mutable-content': 1,
+            category: 'trip_notifications',
+            'thread-id': 'trip_notifications',
+          },
+          data: {
+            ...data,
+            title: title,
+            body: body,
+            type: data.type || 'NEW_TRIP_AVAILABLE',
+            timestamp: new Date().toISOString(),
+          },
+        },
+        headers: {
+          'apns-priority': '5', // Lower priority for data-only messages
+          'apns-push-type': 'background',
+        },
+      },
+      tokens,
+    };
+
+    // Send both messages
+    const [notificationResponse, dataResponse] = await Promise.all([
+      messaging.sendEachForMulticast(notificationMessage),
+      messaging.sendEachForMulticast(dataOnlyMessage),
+    ]);
+
+    console.log('✅ Multicast notifications sent:', {
+      notificationResponse: {
+        successCount: notificationResponse.successCount,
+        failureCount: notificationResponse.failureCount,
+        responses: notificationResponse.responses,
+      },
+      dataResponse: {
+        successCount: dataResponse.successCount,
+        failureCount: dataResponse.failureCount,
+        responses: dataResponse.responses,
+      },
     });
-    return response;
+    return { notificationResponse, dataResponse };
   } catch (error) {
     console.error('❌ Error sending multicast notification:', error);
     throw error;
