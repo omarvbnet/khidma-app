@@ -52,16 +52,16 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-      requestAlertPermission: false, // Don't request in background
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-    );
+          requestAlertPermission: false, // Don't request in background
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        );
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS,
+        );
 
     await localNotifications.initialize(initializationSettings);
     print('✅ Local notifications initialized in background handler');
@@ -140,8 +140,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     // Method 2: Check data payload
     if (!isTripNotification && message.data.isNotEmpty) {
       final dataType = message.data['type']?.toString().toLowerCase() ?? '';
-      final dataKeys =
-          message.data.keys.map((k) => k.toString().toLowerCase()).toList();
+      final dataKeys = message.data.keys
+          .map((k) => k.toString().toLowerCase())
+          .toList();
 
       print('🔍 Checking data payload:');
       print('  Type: "$dataType"');
@@ -149,10 +150,12 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
       if (dataType.contains('trip') ||
           dataType.contains('new') ||
-          dataKeys.any((key) =>
-              key.contains('trip') ||
-              key.contains('pickup') ||
-              key.contains('dropoff'))) {
+          dataKeys.any(
+            (key) =>
+                key.contains('trip') ||
+                key.contains('pickup') ||
+                key.contains('dropoff'),
+          )) {
         isTripNotification = true;
         detectionReason = 'data_payload_content';
         print('📨 Trip notification detected from data payload content');
@@ -166,7 +169,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         'NEW_TRIPS_AVAILABLE',
         'trip_created',
         'new_trip',
-        'TEST_DRIVER_NOTIFICATION'
+        'TEST_DRIVER_NOTIFICATION',
       ];
 
       final messageType = message.data['type']?.toString() ?? '';
@@ -212,7 +215,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         isTripNotification = true;
         detectionReason = 'backend_source';
         print(
-            '📨 Trip notification detected from backend source: ${message.from}');
+          '📨 Trip notification detected from backend source: ${message.from}',
+        );
       }
     }
 
@@ -229,7 +233,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
     if (isTripNotification) {
       print(
-          '🚗 Trip notification detected in background, fetching latest trips...');
+        '🚗 Trip notification detected in background, fetching latest trips...',
+      );
       print('Detection method: $detectionReason');
 
       // Fetch latest trips from backend
@@ -326,7 +331,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 // Helper function to fetch trips in background
 Future<void> _fetchTripsInBackground(
-    FlutterLocalNotificationsPlugin localNotifications) async {
+  FlutterLocalNotificationsPlugin localNotifications,
+) async {
   try {
     print('🔄 Fetching trips in background...');
 
@@ -362,26 +368,31 @@ Future<void> _fetchTripsInBackground(
     print('✅ Auth token found, making API request...');
 
     // Make direct HTTP request to fetch trips using the correct API URL
-    final response = await http.get(
-      Uri.parse('https://khidma-app1.vercel.app/api/flutter/driver/trips'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    ).timeout(const Duration(seconds: 15)); // Increased timeout
+    final response = await http
+        .get(
+          Uri.parse('https://khidma-app1.vercel.app/api/flutter/driver/trips'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        )
+        .timeout(const Duration(seconds: 15)); // Increased timeout
 
     print('📡 API Response Status: ${response.statusCode}');
     print(
-        '📡 API Response Body: ${response.body.substring(0, 200)}...'); // Log first 200 chars
+      '📡 API Response Body: ${response.body.substring(0, 200)}...',
+    ); // Log first 200 chars
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final trips = data['trips'] as List;
-      final waitingTrips =
-          trips.where((trip) => trip['status'] == 'USER_WAITING').toList();
+      final waitingTrips = trips
+          .where((trip) => trip['status'] == 'USER_WAITING')
+          .toList();
 
       print(
-          '📊 Found ${waitingTrips.length} waiting trips in background fetch');
+        '📊 Found ${waitingTrips.length} waiting trips in background fetch',
+      );
       print('📊 Total trips: ${trips.length}');
 
       if (waitingTrips.isNotEmpty) {
@@ -553,33 +564,6 @@ void main() async {
     final messaging = FirebaseMessaging.instance;
     print('✅ Firebase messaging instance created');
 
-    // iOS-specific configuration for better background notification handling
-    if (Platform.isIOS) {
-      // Request permission with all options enabled
-      final settings = await messaging.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
-
-      print(
-          '📱 iOS Notification Permission Status: ${settings.authorizationStatus}');
-
-      // Enable provisional authorization for better background delivery
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        await messaging.setForegroundNotificationPresentationOptions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-        print('✅ iOS foreground notification options set');
-      }
-    }
-
     // Check if we can get the token (this tests the connection)
     try {
       final token = await messaging.getToken();
@@ -613,15 +597,15 @@ void main() async {
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
     const InitializationSettings initializationSettings =
         InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS,
+        );
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
     print('✅ Local notifications initialized in main');
   }
@@ -712,7 +696,8 @@ void main() async {
     final hasPermissions =
         await NotificationService.checkNotificationPermissions();
     print(
-        '📱 iOS Notification Permissions: ${hasPermissions ? "Granted" : "Not Granted"}');
+      '📱 iOS Notification Permissions: ${hasPermissions ? "Granted" : "Not Granted"}',
+    );
   }
 
   runApp(
@@ -760,9 +745,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
           inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 16,
@@ -837,11 +820,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_user == null) {

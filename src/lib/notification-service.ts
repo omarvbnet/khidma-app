@@ -330,7 +330,7 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     if (availableDrivers.length === 0) {
       console.log(`⚠️ No available drivers found`);
       console.log(`📊 Trip will not be visible to any drivers`);
-      
+
       // Optionally, you could notify drivers in neighboring provinces or all drivers
       // For now, we'll just log and return without sending notifications
       return;
