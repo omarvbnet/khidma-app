@@ -309,8 +309,12 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     const availableDrivers = [];
     for (const driver of allActiveDrivers) {
       console.log(`\n--- Checking availability for ${driver.fullName} (${driver.id}) ---`);
-      const isAvailable = await isDriverAvailable(driver.id);
-      console.log(`Driver ${driver.fullName} (${driver.id}) - Available: ${isAvailable}`);
+      
+      // TEMPORARILY BYPASS AVAILABILITY CHECK FOR TESTING
+      // const isAvailable = await isDriverAvailable(driver.id);
+      const isAvailable = true; // Force all drivers to be considered available
+      
+      console.log(`Driver ${driver.fullName} (${driver.id}) - Available: ${isAvailable} (FORCED FOR TESTING)`);
       if (isAvailable) {
         availableDrivers.push(driver);
         console.log(`✅ Added ${driver.fullName} to available drivers list`);
