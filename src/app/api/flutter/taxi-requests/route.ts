@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verify } from 'jsonwebtoken';
 import { TaxiRequest, User, Driver, TaxiRequest_status, Prisma } from '@prisma/client';
 import { JwtPayload } from 'jsonwebtoken';
-import { notifyAvailableDriversAboutNewTrip } from '@/lib/notification-service';
+import { notifyAvailableDriversAboutNewTrip, startPeriodicNotificationsForTrip, stopPeriodicNotificationsForTrip } from '@/lib/notification-service';
 
 // Middleware to verify JWT token
 async function verifyToken(req: NextRequest) {
@@ -252,6 +252,11 @@ export async function POST(req: NextRequest) {
       await notifyAvailableDriversAboutNewTrip(taxiRequest);
       console.log('✅ All available drivers notified about new trip');
       
+      // Start periodic notifications every 30 seconds
+      console.log('Starting periodic notifications...');
+      await startPeriodicNotificationsForTrip(taxiRequest);
+      console.log('✅ Periodic notifications started for new trip');
+      
       // Verify notifications were created
       const recentNotifications = await prisma.notification.findMany({
         where: {
@@ -338,6 +343,13 @@ export async function PATCH(req: NextRequest) {
         },
       },
     });
+
+    // Stop periodic notifications when a trip status changes from USER_WAITING
+    if (status === TaxiRequest_status.DRIVER_ACCEPTED || status === TaxiRequest_status.DRIVER_IN_WAY ||
+        status === TaxiRequest_status.DRIVER_ARRIVED || status === TaxiRequest_status.USER_PICKED_UP ||
+        status === TaxiRequest_status.DRIVER_IN_PROGRESS) {
+      await stopPeriodicNotificationsForTrip(id);
+    }
 
     return NextResponse.json(updatedRequest);
   } catch (error) {

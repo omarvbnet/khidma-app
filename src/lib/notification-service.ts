@@ -649,4 +649,177 @@ export async function notifyAllDriversAboutNewTrip(trip: any) {
   } catch (error) {
     console.error('❌ Error notifying all drivers about new trip:', error);
   }
+}
+
+// Declare global type for periodic notification intervals
+declare global {
+  var periodicNotificationIntervals: Map<string, NodeJS.Timeout> | undefined;
+}
+
+// Function to send periodic notifications to available drivers
+export async function startPeriodicNotificationsForTrip(trip: any) {
+  try {
+    console.log('\n=== STARTING PERIODIC NOTIFICATIONS FOR TRIP ===');
+    console.log('Trip ID:', trip.id);
+    console.log('User Province:', trip.userProvince);
+
+    // Store the interval ID so we can stop it later
+    const intervalId = setInterval(async () => {
+      try {
+        console.log(`\n🔄 Sending periodic notification for trip ${trip.id}...`);
+        
+        // Check if trip is still waiting for driver
+        const currentTrip = await prisma.taxiRequest.findUnique({
+          where: { id: trip.id },
+          select: { status: true }
+        });
+
+        if (!currentTrip) {
+          console.log(`❌ Trip ${trip.id} not found, stopping periodic notifications`);
+          clearInterval(intervalId);
+          return;
+        }
+
+        if (currentTrip.status !== 'USER_WAITING') {
+          console.log(`✅ Trip ${trip.id} status changed to ${currentTrip.status}, stopping periodic notifications`);
+          clearInterval(intervalId);
+          return;
+        }
+
+        // Get all active drivers (province filtering disabled for testing)
+        const allActiveDrivers = await prisma.user.findMany({
+          where: {
+            role: 'DRIVER',
+            status: 'ACTIVE',
+            // province: trip.userProvince, // TEMPORARILY DISABLED FOR TESTING
+          },
+          include: {
+            driver: true
+          }
+        });
+
+        console.log(`Found ${allActiveDrivers.length} total active drivers (province filtering disabled for testing)`);
+
+        // Filter to only available drivers (those without active trips)
+        const availableDrivers = [];
+        for (const driver of allActiveDrivers) {
+          const isAvailable = await isDriverAvailable(driver.id);
+          if (isAvailable) {
+            availableDrivers.push(driver);
+          }
+        }
+
+        console.log(`Found ${availableDrivers.length} available drivers to notify`);
+
+        if (availableDrivers.length === 0) {
+          console.log(`⚠️ No available drivers found for periodic notification`);
+          return;
+        }
+
+        // Prepare notification data
+        const notificationData: NotificationData = {
+          tripId: trip.id,
+          newStatus: 'NEW_TRIP_AVAILABLE',
+          pickupLocation: trip.pickupLocation,
+          dropoffLocation: trip.dropoffLocation,
+          fare: trip.price,
+          distance: trip.distance,
+          userFullName: trip.userFullName,
+          userPhone: trip.userPhone,
+          userProvince: trip.userProvince,
+        };
+
+        const title = 'Trip Still Available!';
+        const message = `A trip request is still waiting in ${trip.userProvince}. Tap to view details.`;
+        const type = 'NEW_TRIP_AVAILABLE';
+
+        // Collect device tokens for batch notification
+        const deviceTokens: string[] = [];
+        for (const driver of availableDrivers) {
+          if (driver.deviceToken) {
+            deviceTokens.push(driver.deviceToken);
+          }
+        }
+
+        // Send batch push notification if we have device tokens
+        if (deviceTokens.length > 0) {
+          try {
+            console.log(`Sending periodic batch push notification to ${deviceTokens.length} drivers...`);
+            await sendMulticastNotification({
+              tokens: deviceTokens,
+              title,
+              body: message,
+              data: {
+                ...notificationData,
+                type,
+                isPeriodic: 'true',
+                timestamp: new Date().toISOString(),
+              },
+            });
+            console.log(`✅ Periodic batch push notification sent to ${deviceTokens.length} drivers`);
+          } catch (firebaseError) {
+            console.error('❌ Periodic batch Firebase notification failed:', firebaseError);
+          }
+        }
+
+        // Create database notifications for ALL drivers (with or without device tokens)
+        for (const driver of availableDrivers) {
+          try {
+            await sendNotificationWithFallback(
+              driver.id,
+              title,
+              message,
+              {
+                ...notificationData,
+                isPeriodic: 'true',
+                timestamp: new Date().toISOString(),
+              },
+              type
+            );
+          } catch (error) {
+            console.error(`❌ Failed to create periodic database notification for driver ${driver.id}:`, error);
+          }
+        }
+
+        console.log(`✅ Periodic notification sent to ${availableDrivers.length} drivers`);
+
+      } catch (error) {
+        console.error('❌ Error in periodic notification:', error);
+      }
+    }, 30000); // 30 seconds
+
+    // Store the interval ID in a global map so we can stop it later
+    if (!global.periodicNotificationIntervals) {
+      global.periodicNotificationIntervals = new Map();
+    }
+    global.periodicNotificationIntervals.set(trip.id, intervalId);
+
+    console.log(`✅ Periodic notifications started for trip ${trip.id} (every 30 seconds)`);
+
+    // Stop periodic notifications after 10 minutes (20 notifications)
+    setTimeout(() => {
+      if (global.periodicNotificationIntervals?.has(trip.id)) {
+        clearInterval(intervalId);
+        global.periodicNotificationIntervals.delete(trip.id);
+        console.log(`⏰ Periodic notifications stopped for trip ${trip.id} (10 minutes elapsed)`);
+      }
+    }, 600000); // 10 minutes
+
+  } catch (error) {
+    console.error('❌ Error starting periodic notifications:', error);
+  }
+}
+
+// Function to stop periodic notifications for a specific trip
+export async function stopPeriodicNotificationsForTrip(tripId: string) {
+  try {
+    if (global.periodicNotificationIntervals?.has(tripId)) {
+      const intervalId = global.periodicNotificationIntervals.get(tripId);
+      clearInterval(intervalId);
+      global.periodicNotificationIntervals.delete(tripId);
+      console.log(`✅ Periodic notifications stopped for trip ${tripId}`);
+    }
+  } catch (error) {
+    console.error('❌ Error stopping periodic notifications:', error);
+  }
 } 
