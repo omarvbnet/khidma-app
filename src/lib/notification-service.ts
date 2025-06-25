@@ -291,14 +291,14 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
       where: {
         role: 'DRIVER',
         status: 'ACTIVE', // Only active drivers
-        province: trip.userProvince, // Only drivers in the same province
+        // province: trip.userProvince, // TEMPORARILY DISABLED FOR TESTING
       },
       include: {
         driver: true
       }
     });
 
-    console.log(`Found ${allActiveDrivers.length} total active drivers in province: ${trip.userProvince}`);
+    console.log(`Found ${allActiveDrivers.length} total active drivers (province filtering disabled for testing)`);
 
     // Log driver details for debugging
     for (const driver of allActiveDrivers) {
@@ -319,12 +319,12 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
       }
     }
 
-    console.log(`Found ${availableDrivers.length} available drivers in ${trip.userProvince} to notify`);
+    console.log(`Found ${availableDrivers.length} available drivers to notify (province filtering disabled)`);
 
-    // If no available drivers found in the same province, log this information
+    // If no available drivers found, log this information
     if (availableDrivers.length === 0) {
-      console.log(`⚠️ No available drivers found in province: ${trip.userProvince}`);
-      console.log(`📊 Trip will not be visible to drivers outside of ${trip.userProvince}`);
+      console.log(`⚠️ No available drivers found`);
+      console.log(`📊 Trip will not be visible to any drivers`);
       
       // Optionally, you could notify drivers in neighboring provinces or all drivers
       // For now, we'll just log and return without sending notifications
@@ -378,7 +378,7 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
             type,
           },
         });
-        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers in ${trip.userProvince}`);
+        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers`);
       } catch (firebaseError) {
         console.error('❌ Batch Firebase notification failed:', firebaseError);
         // Fall back to individual notifications
@@ -419,7 +419,7 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
       }
     }
 
-    console.log(`✅ All ${availableDrivers.length} drivers in ${trip.userProvince} notified about new trip`);
+    console.log(`✅ All ${availableDrivers.length} drivers notified about new trip`);
 
   } catch (error) {
     console.error('❌ Error notifying available drivers about new trip:', error);
@@ -500,7 +500,7 @@ export async function notifyAllDriversInProvinceAboutNewTrip(trip: any) {
             type,
           },
         });
-        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers in ${trip.userProvince}`);
+        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers`);
       } catch (firebaseError) {
         console.error('❌ Batch Firebase notification failed:', firebaseError);
         // Fall back to individual notifications
