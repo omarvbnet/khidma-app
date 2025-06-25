@@ -1,15 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { TaxiRequest_status } from '@prisma/client';
+import { verify } from 'jsonwebtoken';
 import { notifyAvailableDriversAboutNewTrip } from '@/lib/notification-service';
+
+// Helper function to check if a driver is available for new trips
+async function isDriverAvailable(driverId: string): Promise<boolean> {
+  try {
+    // Check if driver has any active trips
+    const activeTrips = await prisma.taxiRequest.findMany({
+      where: {
+        driverId: driverId,
+        status: {
+          in: [
+            'DRIVER_ACCEPTED',
+            'DRIVER_IN_WAY', 
+            'DRIVER_ARRIVED',
+            'USER_PICKED_UP',
+            'DRIVER_IN_PROGRESS'
+          ]
+        }
+      }
+    });
+
+    // Driver is available if they have no active trips
+    return activeTrips.length === 0;
+  } catch (error) {
+    console.error(`Error checking driver availability for ${driverId}:`, error);
+    return false;
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('\n=== TESTING REAL TRIP CREATION FLOW EXACTLY ===');
-    
-    // Get a test user (same as real flow)
-    const testUser = await prisma.user.findFirst({
-      where: { role: 'USER' },
+    console.log('\n=== TESTING REAL TRIP CREATION FLOW ===');
+
+    // Verify authentication
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.substring(7);
+    let decoded: any;
+    try {
+      decoded = verify(token, process.env.JWT_SECRET!);
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
+    // Get user details to determine province
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
       select: {
         id: true,
         fullName: true,
@@ -18,138 +65,132 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (!testUser) {
-      return NextResponse.json({ error: 'No test user found' }, { status: 404 });
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
     }
 
-    console.log('Using test user:', testUser);
+    console.log('User province:', user.province);
 
-    // Create trip data exactly like the real flow
-    const createData = {
+    // Create a mock trip with the same structure as real trip creation
+    const mockTrip = {
+      id: 'test-trip-flow-' + Date.now(),
       pickupLocation: 'Test Pickup Location',
       dropoffLocation: 'Test Dropoff Location',
-      pickupLat: 33.3152,
-      pickupLng: 44.3661,
-      dropoffLat: 33.3152,
-      dropoffLng: 44.3661,
-      price: 5000,
-      distance: 5.0,
-      status: TaxiRequest_status.USER_WAITING,
+      pickupLat: 24.7136,
+      pickupLng: 46.6753,
+      dropoffLat: 24.7136,
+      dropoffLng: 46.6753,
+      price: 25.00,
+      distance: 5.2,
+      status: 'USER_WAITING',
       tripType: 'ECO',
       driverDeduction: 0,
-      userPhone: testUser.phoneNumber,
-      userFullName: testUser.fullName,
-      userProvince: testUser.province,
-      userId: testUser.id
-    } as const;
+      userPhone: user.phoneNumber,
+      userFullName: user.fullName,
+      userProvince: user.province,
+      userId: user.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-    console.log('Creating taxi request with data:', createData);
-
-    // Create taxi request (exactly like real flow)
-    const taxiRequest = await prisma.taxiRequest.create({
-      data: createData as any
+    console.log('Mock trip created:', {
+      id: mockTrip.id,
+      pickupLocation: mockTrip.pickupLocation,
+      dropoffLocation: mockTrip.dropoffLocation,
+      price: mockTrip.price,
+      userFullName: mockTrip.userFullName,
+      userPhone: mockTrip.userPhone,
+      userProvince: mockTrip.userProvince
     });
 
-    console.log('Successfully created taxi request:', taxiRequest);
-
-    // Get all drivers before notification (for comparison)
-    const allDrivers = await prisma.user.findMany({
-      where: { role: 'DRIVER' },
-      select: { id: true, fullName: true, status: true, deviceToken: true }
-    });
-
-    console.log(`Found ${allDrivers.length} total drivers before notification:`);
-    for (const driver of allDrivers) {
-      console.log(`- ${driver.fullName} (${driver.id}) - Status: ${driver.status} - Has Token: ${!!driver.deviceToken}`);
-    }
-
-    // Notify all available drivers about the new trip (exactly like real flow)
-    let notificationResult = 'success';
-    let notificationError: Error | null = null;
-    
-    try {
-      console.log('\n=== STARTING DRIVER NOTIFICATION PROCESS ===');
-      console.log('Trip details for notification:', {
-        id: taxiRequest.id,
-        pickupLocation: taxiRequest.pickupLocation,
-        dropoffLocation: taxiRequest.dropoffLocation,
-        price: taxiRequest.price,
-        userFullName: taxiRequest.userFullName,
-        userPhone: taxiRequest.userPhone
-      });
-      
-      await notifyAvailableDriversAboutNewTrip(taxiRequest);
-      console.log('✅ All available drivers notified about new trip');
-    } catch (error) {
-      notificationError = error instanceof Error ? error : new Error('Unknown error');
-      console.error('❌ Error notifying drivers about new trip:', notificationError);
-      console.error('Notification error details:', {
-        message: notificationError.message,
-        stack: notificationError.stack || 'No stack trace'
-      });
-      notificationResult = 'failed';
-    }
-
-    // Check if notifications were actually created
-    const recentNotifications = await prisma.notification.findMany({
+    // Get all active drivers in the same province as the user
+    const allActiveDrivers = await prisma.user.findMany({
       where: {
-        type: 'NEW_TRIP_AVAILABLE',
-        createdAt: {
-          gte: new Date(Date.now() - 2 * 60 * 1000) // Last 2 minutes
-        }
+        role: 'DRIVER',
+        status: 'ACTIVE', // Only active drivers
+        province: user.province, // Only drivers in the same province
       },
       include: {
-        user: {
-          select: { fullName: true, role: true }
+        driver: true
+      }
+    });
+
+    console.log(`Found ${allActiveDrivers.length} total active drivers in province: ${user.province}`);
+
+    // Log driver details for debugging
+    for (const driver of allActiveDrivers) {
+      console.log(`- Driver: ${driver.fullName} (${driver.id}) - Province: ${driver.province} - Status: ${driver.status} - Has Token: ${!!driver.deviceToken}`);
+    }
+
+    // Filter to only available drivers (those without active trips)
+    const availableDrivers = [];
+    for (const driver of allActiveDrivers) {
+      console.log(`\n--- Checking availability for ${driver.fullName} (${driver.id}) ---`);
+      const isAvailable = await isDriverAvailable(driver.id);
+      console.log(`Driver ${driver.fullName} (${driver.id}) - Available: ${isAvailable}`);
+      if (isAvailable) {
+        availableDrivers.push(driver);
+        console.log(`✅ Added ${driver.fullName} to available drivers list`);
+      } else {
+        console.log(`❌ ${driver.fullName} is busy, not adding to available list`);
+      }
+    }
+
+    console.log(`Found ${availableDrivers.length} available drivers in ${user.province} to notify`);
+
+    // If no available drivers found in the same province, log this information
+    if (availableDrivers.length === 0) {
+      console.log(`⚠️ No available drivers found in province: ${user.province}`);
+      console.log(`📊 Trip will not be visible to drivers outside of ${user.province}`);
+      
+      return NextResponse.json({
+        message: 'No available drivers found in same province',
+        userProvince: user.province,
+        totalActiveDrivers: allActiveDrivers.length,
+        availableDrivers: 0,
+        mockTrip: {
+          id: mockTrip.id,
+          pickupLocation: mockTrip.pickupLocation,
+          dropoffLocation: mockTrip.dropoffLocation,
+          price: mockTrip.price,
+          userProvince: mockTrip.userProvince
         }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+      });
+    }
 
-    console.log(`Found ${recentNotifications.length} recent NEW_TRIP_AVAILABLE notifications`);
-
-    // Clean up the test trip
-    await prisma.taxiRequest.delete({
-      where: { id: taxiRequest.id }
-    });
-
-    console.log('✅ Test trip cleaned up');
+    // Call the exact same function used in real trip creation
+    console.log('Calling notifyAvailableDriversAboutNewTrip...');
+    await notifyAvailableDriversAboutNewTrip(mockTrip);
+    console.log('✅ notifyAvailableDriversAboutNewTrip completed');
 
     return NextResponse.json({
-      success: true,
-      testTrip: {
-        id: taxiRequest.id,
-        pickupLocation: taxiRequest.pickupLocation,
-        dropoffLocation: taxiRequest.dropoffLocation,
-        price: taxiRequest.price,
-        status: taxiRequest.status
+      message: `Real trip creation flow test completed`,
+      userProvince: user.province,
+      totalActiveDrivers: allActiveDrivers.length,
+      availableDrivers: availableDrivers.length,
+      mockTrip: {
+        id: mockTrip.id,
+        pickupLocation: mockTrip.pickupLocation,
+        dropoffLocation: mockTrip.dropoffLocation,
+        price: mockTrip.price,
+        userProvince: mockTrip.userProvince
       },
-      drivers: allDrivers.map(d => ({
+      driversNotified: availableDrivers.map(d => ({
         id: d.id,
         name: d.fullName,
-        status: d.status,
         hasToken: !!d.deviceToken
-      })),
-      notificationResult,
-      notificationError: notificationError?.message || null,
-      notificationsCreated: recentNotifications.length,
-      notificationDetails: recentNotifications.map(n => ({
-        id: n.id,
-        userId: n.userId,
-        userName: n.user?.fullName,
-        userRole: n.user?.role,
-        title: n.title,
-        message: n.message,
-        createdAt: n.createdAt
       }))
     });
 
   } catch (error) {
-    console.error('❌ Error in test real trip flow:', error);
-    return NextResponse.json({
-      error: 'Test failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    console.error('Error testing real trip creation flow:', error);
+    return NextResponse.json(
+      { error: 'Failed to test real trip creation flow' },
+      { status: 500 }
+    );
   }
 }
 
