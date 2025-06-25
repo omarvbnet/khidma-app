@@ -46,15 +46,19 @@ export async function POST(req: NextRequest) {
       });
 
       console.log('✅ Real format notification sent:', {
-        successCount: result?.successCount,
-        failureCount: result?.failureCount,
+        notificationSuccessCount: result?.notificationResponse?.successCount,
+        notificationFailureCount: result?.notificationResponse?.failureCount,
+        dataSuccessCount: result?.dataResponse?.successCount,
+        dataFailureCount: result?.dataResponse?.failureCount,
       });
 
       return NextResponse.json({
         message: 'Real format notification sent',
         format: 'real',
-        successCount: result?.successCount || 0,
-        failureCount: result?.failureCount || 0,
+        notificationSuccessCount: result?.notificationResponse?.successCount || 0,
+        notificationFailureCount: result?.notificationResponse?.failureCount || 0,
+        dataSuccessCount: result?.dataResponse?.successCount || 0,
+        dataFailureCount: result?.dataResponse?.failureCount || 0,
         notificationData,
       });
 
