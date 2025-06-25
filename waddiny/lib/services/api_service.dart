@@ -508,4 +508,47 @@ class ApiService {
   void dispose() {
     _client.close();
   }
+
+  // Budget Management
+  Future<Map<String, dynamic>> getDriverBudget() async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    final response = await _client.get(
+      Uri.parse('${ApiConstants.baseUrl}/flutter/driver/budget'),
+      headers: ApiConstants.getHeaders(token),
+    );
+
+    final data = await _handleResponse(response);
+    return data;
+  }
+
+  Future<Map<String, dynamic>> checkTripAffordability(String tripId) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    final response = await _client.post(
+      Uri.parse('${ApiConstants.baseUrl}/flutter/driver/budget'),
+      headers: ApiConstants.getHeaders(token),
+      body: json.encode({'tripId': tripId}),
+    );
+
+    final data = await _handleResponse(response);
+    return data;
+  }
+
+  // Add budget to driver (for testing purposes)
+  Future<Map<String, dynamic>> addDriverBudget(double amount) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    final response = await _client.post(
+      Uri.parse('${ApiConstants.baseUrl}/flutter/driver/budget/add'),
+      headers: ApiConstants.getHeaders(token),
+      body: json.encode({'amount': amount}),
+    );
+
+    final data = await _handleResponse(response);
+    return data;
+  }
 }

@@ -26,7 +26,34 @@ class DriverService {
     return trips.where((trip) => trip.status != 'USER_WAITING').toList();
   }
 
+  // Get driver's current budget
+  Future<Map<String, dynamic>> getDriverBudget() async {
+    return await _apiService.getDriverBudget();
+  }
+
+  // Check if driver can afford a specific trip
+  Future<Map<String, dynamic>> checkTripAffordability(String tripId) async {
+    return await _apiService.checkTripAffordability(tripId);
+  }
+
   Future<TaxiRequest> acceptTrip(String tripId) async {
+    // First check if driver can afford this trip
+    try {
+      final affordabilityCheck = await checkTripAffordability(tripId);
+
+      if (!affordabilityCheck['canAfford']) {
+        throw Exception('Insufficient budget to accept this trip. '
+            'Required: ${affordabilityCheck['deductionAmount']} IQD, '
+            'Available: ${affordabilityCheck['currentBudget']} IQD, '
+            'Shortfall: ${affordabilityCheck['shortfall']} IQD');
+      }
+
+      print('✅ Budget check passed. Proceeding with trip acceptance.');
+    } catch (e) {
+      print('❌ Budget check failed: $e');
+      rethrow;
+    }
+
     return await _apiService.updateTripStatus(tripId, 'DRIVER_ACCEPTED');
   }
 
@@ -88,12 +115,15 @@ class DriverService {
   }
 
   Future<Position> getCurrentLocation() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       throw Exception('Location services are disabled.');
     }
 
-    LocationPermission permission = await Geolocator.checkPermission();
+    permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
@@ -102,7 +132,8 @@ class DriverService {
     }
 
     if (permission == LocationPermission.deniedForever) {
-      throw Exception('Location permissions are permanently denied');
+      throw Exception(
+          'Location permissions are permanently denied, we cannot request permissions.');
     }
 
     return await Geolocator.getCurrentPosition();

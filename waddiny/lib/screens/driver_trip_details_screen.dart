@@ -26,11 +26,14 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
   Set<Polyline> _polylines = {};
   bool _isLoading = true;
   bool _isAccepting = false;
+  Map<String, dynamic>? _driverBudget;
+  bool _isLoadingBudget = false;
 
   @override
   void initState() {
     super.initState();
     _initializeMap();
+    _loadDriverBudget();
   }
 
   Future<void> _initializeMap() async {
@@ -95,16 +98,37 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
     }
   }
 
+  Future<void> _loadDriverBudget() async {
+    try {
+      setState(() {
+        _isLoadingBudget = true;
+      });
+
+      final budget = await _driverService.getDriverBudget();
+
+      if (mounted) {
+        setState(() {
+          _driverBudget = budget;
+          _isLoadingBudget = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Error loading driver budget: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingBudget = false;
+        });
+      }
+    }
+  }
+
   Future<void> _acceptTrip() async {
     try {
       setState(() {
         _isAccepting = true;
       });
 
-      // Get driver profile to include driver data
-      final driverProfile = await _driverService.getDriverProfile();
-
-      // Accept the trip with driver data
+      // Accept the trip with driver data (includes budget checking)
       final updatedTrip = await _driverService.acceptTrip(widget.trip.id);
 
       if (!mounted) return;
@@ -126,10 +150,23 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+
+      // Show more detailed error message for budget issues
+      String errorMessage = 'Error accepting trip: $e';
+      if (e.toString().contains('Insufficient budget')) {
+        errorMessage = e.toString();
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error accepting trip: $e'),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'View Budget',
+            textColor: Colors.white,
+            onPressed: () => _showBudgetDetails(),
+          ),
         ),
       );
     } finally {
@@ -138,6 +175,81 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
           _isAccepting = false;
         });
       }
+    }
+  }
+
+  void _showBudgetDetails() {
+    if (_driverBudget != null) {
+      final deductionAmount = widget.trip.price * 0.12;
+      final canAfford = _driverBudget!['budget'] >= deductionAmount;
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Budget Information'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Current Budget: ${_driverBudget!['budget']} IQD'),
+              const SizedBox(height: 8),
+              Text('Trip Price: ${widget.trip.price} IQD'),
+              const SizedBox(height: 8),
+              Text(
+                'Deduction (12%): ${deductionAmount.toStringAsFixed(0)} IQD',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: canAfford ? Colors.green : Colors.red,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text('Driver: ${_driverBudget!['driverName']}'),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: canAfford
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: canAfford
+                        ? Colors.green.withOpacity(0.3)
+                        : Colors.red.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      canAfford ? Icons.check_circle : Icons.error,
+                      color: canAfford ? Colors.green : Colors.red,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        canAfford
+                            ? 'You can afford this trip'
+                            : 'Insufficient budget for this trip',
+                        style: TextStyle(
+                          color: canAfford ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -236,6 +348,134 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
                         Icons.straighten,
                         Colors.purple,
                       ),
+                      // Budget information
+                      if (_driverBudget != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color: Colors.orange.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.account_balance_wallet,
+                                    size: 16,
+                                    color: Colors.orange[700],
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Budget Information',
+                                    style: TextStyle(
+                                      color: Colors.orange[700],
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Your Budget:',
+                                    style: TextStyle(
+                                      color: Colors.orange[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_driverBudget!['budget']} IQD',
+                                    style: TextStyle(
+                                      color: Colors.orange[700],
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Deduction (12%):',
+                                    style: TextStyle(
+                                      color: Colors.orange[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${(widget.trip.price * 0.12).toStringAsFixed(0)} IQD',
+                                    style: TextStyle(
+                                      color: Colors.orange[700],
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _driverBudget!['budget'] >=
+                                          (widget.trip.price * 0.12)
+                                      ? Colors.green.withOpacity(0.1)
+                                      : Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _driverBudget!['budget'] >=
+                                            (widget.trip.price * 0.12)
+                                        ? Colors.green.withOpacity(0.3)
+                                        : Colors.red.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _driverBudget!['budget'] >=
+                                              (widget.trip.price * 0.12)
+                                          ? Icons.check_circle
+                                          : Icons.error,
+                                      size: 14,
+                                      color: _driverBudget!['budget'] >=
+                                              (widget.trip.price * 0.12)
+                                          ? Colors.green
+                                          : Colors.red,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _driverBudget!['budget'] >=
+                                              (widget.trip.price * 0.12)
+                                          ? 'Can afford this trip'
+                                          : 'Insufficient budget',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: _driverBudget!['budget'] >=
+                                                (widget.trip.price * 0.12)
+                                            ? Colors.green
+                                            : Colors.red,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       if (widget.trip.userFullName != null) ...[
                         const SizedBox(height: 12),
                         _buildInfoRow(
@@ -258,9 +498,18 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _isAccepting ? null : _acceptTrip,
+                          onPressed: (_isAccepting ||
+                                  (_driverBudget != null &&
+                                      _driverBudget!['budget'] <
+                                          (widget.trip.price * 0.12)))
+                              ? null
+                              : _acceptTrip,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
+                            backgroundColor: (_driverBudget != null &&
+                                    _driverBudget!['budget'] <
+                                        (widget.trip.price * 0.12))
+                                ? Colors.grey
+                                : Colors.green,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -276,9 +525,13 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
                                         Colors.white),
                                   ),
                                 )
-                              : const Text(
-                                  'Accept Trip',
-                                  style: TextStyle(
+                              : Text(
+                                  (_driverBudget != null &&
+                                          _driverBudget!['budget'] <
+                                              (widget.trip.price * 0.12))
+                                      ? 'Insufficient Budget'
+                                      : 'Accept Trip',
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,

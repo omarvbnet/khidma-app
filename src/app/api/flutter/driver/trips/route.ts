@@ -225,7 +225,9 @@ export async function PUT(req: NextRequest) {
       id: trip.id, 
       currentStatus: trip.status, 
       driverId: trip.driverId,
-      requestedStatus: status 
+      requestedStatus: status,
+      price: trip.price,
+      driverBudget: user.budget
     });
 
     // Validate status transitions
@@ -256,6 +258,37 @@ export async function PUT(req: NextRequest) {
 
     console.log('✅ Status transition is valid');
 
+    // Handle budget deduction when accepting trip
+    if (status === 'DRIVER_ACCEPTED') {
+      console.log('\n💰 PROCESSING BUDGET DEDUCTION ===');
+      
+      // Calculate 12% of trip price
+      const deductionAmount = trip.price * 0.12;
+      console.log('Trip price:', trip.price);
+      console.log('Deduction amount (12%):', deductionAmount);
+      console.log('Driver current budget:', user.budget);
+      
+      // Check if driver has sufficient budget
+      if (user.budget < deductionAmount) {
+        console.log('❌ Insufficient budget for trip acceptance');
+        console.log('Required:', deductionAmount);
+        console.log('Available:', user.budget);
+        console.log('Shortfall:', deductionAmount - user.budget);
+        
+        return NextResponse.json(
+          { 
+            error: 'Insufficient budget to accept this trip',
+            required: deductionAmount,
+            available: user.budget,
+            shortfall: deductionAmount - user.budget
+          },
+          { status: 400 }
+        );
+      }
+      
+      console.log('✅ Sufficient budget available');
+    }
+
     const updateData: any = {
       status: status,
       updatedAt: new Date(),
@@ -269,8 +302,10 @@ export async function PUT(req: NextRequest) {
       console.log('📅 Setting completedAt timestamp');
     }
 
-    // If accepting the trip, add driver information
+    // If accepting the trip, add driver information and handle budget deduction
     if (status === 'DRIVER_ACCEPTED') {
+      const deductionAmount = trip.price * 0.12;
+      
       updateData.driverId = user.driver?.id;
       updateData.driverName = user.driver?.fullName;
       updateData.driverPhone = user.driver?.phoneNumber;
@@ -278,45 +313,87 @@ export async function PUT(req: NextRequest) {
       updateData.carType = user.driver?.carType;
       updateData.licenseId = user.driver?.licenseId;
       updateData.driverRate = user.driver?.rate;
+      updateData.driverDeduction = deductionAmount;
+      
+      console.log('💰 Setting driver deduction:', deductionAmount);
     }
 
     console.log('💾 Update data:', updateData);
 
-    const updatedTrip = await prisma.taxiRequest.update({
-      where: { id: tripId },
-      data: updateData,
-      include: {
-        user: true,
-        driver: true,
-      },
+    // Use a transaction to ensure both trip update and budget deduction happen atomically
+    const result = await prisma.$transaction(async (tx) => {
+      // Update the trip
+      const updatedTrip = await tx.taxiRequest.update({
+        where: { id: tripId },
+        data: updateData,
+        include: {
+          user: true,
+          driver: true,
+        },
+      });
+
+      // If accepting the trip, deduct from driver's budget
+      if (status === 'DRIVER_ACCEPTED') {
+        const deductionAmount = trip.price * 0.12;
+        
+        const updatedUser = await tx.user.update({
+          where: { id: userId },
+          data: {
+            budget: {
+              decrement: deductionAmount
+            }
+          }
+        });
+        
+        console.log('✅ Budget deducted successfully');
+        console.log('New budget balance:', updatedUser.budget);
+        
+        // Log the budget transaction
+        await tx.userLog.create({
+          data: {
+            userId: userId,
+            type: 'BUDGET_DEDUCTION',
+            details: `Deduction of ${deductionAmount} for trip ${tripId}`,
+            oldValue: user.budget.toString(),
+            newValue: updatedUser.budget.toString(),
+            changedById: userId, // Driver is changing their own budget
+          }
+        });
+        
+        console.log('✅ Budget transaction logged');
+      }
+
+      return updatedTrip;
     });
 
     console.log('✅ Trip updated successfully:', {
-      id: updatedTrip.id,
-      status: updatedTrip.status,
-      completedAt: updatedTrip.completedAt
+      id: result.id,
+      status: result.status,
+      completedAt: result.completedAt,
+      driverDeduction: result.driverDeduction
     });
 
     // Send notifications based on status change
     try {
-      await sendTripStatusNotification(updatedTrip, trip.status, status);
+      await sendTripStatusNotification(result, trip.status, status);
     } catch (notificationError) {
       console.error('❌ Error sending notification:', notificationError);
       // Don't fail the request if notification fails
     }
 
     return NextResponse.json({
-      id: updatedTrip.id,
-      status: updatedTrip.status,
-      pickupLocation: updatedTrip.pickupLocation,
-      dropoffLocation: updatedTrip.dropoffLocation,
-      price: updatedTrip.price,
-      distance: updatedTrip.distance,
-      createdAt: updatedTrip.createdAt,
-      acceptedAt: updatedTrip.acceptedAt,
-      completedAt: updatedTrip.completedAt,
-      user: updatedTrip.user,
-      driver: updatedTrip.driver
+      id: result.id,
+      status: result.status,
+      pickupLocation: result.pickupLocation,
+      dropoffLocation: result.dropoffLocation,
+      price: result.price,
+      distance: result.distance,
+      createdAt: result.createdAt,
+      acceptedAt: result.acceptedAt,
+      completedAt: result.completedAt,
+      driverDeduction: result.driverDeduction,
+      user: result.user,
+      driver: result.driver
     });
   } catch (error) {
     console.error('❌ Error updating trip status:', error);
