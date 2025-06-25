@@ -112,7 +112,132 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     print('✅ Test background notification displayed');
     print('Test Notification ID: $testNotificationId');
 
-    // Process the actual notification
+    // ENHANCED TRIP NOTIFICATION DETECTION
+    bool isTripNotification = false;
+    String detectionReason = '';
+
+    // Method 1: Check notification object content
+    if (message.notification != null) {
+      final title = message.notification!.title?.toLowerCase() ?? '';
+      final body = message.notification!.body?.toLowerCase() ?? '';
+
+      print('🔍 Checking notification object:');
+      print('  Title: "$title"');
+      print('  Body: "$body"');
+
+      if (title.contains('trip') ||
+          body.contains('trip') ||
+          title.contains('new') ||
+          body.contains('available') ||
+          title.contains('available') ||
+          body.contains('new')) {
+        isTripNotification = true;
+        detectionReason = 'notification_object_content';
+        print('📨 Trip notification detected from notification object content');
+      }
+    }
+
+    // Method 2: Check data payload
+    if (!isTripNotification && message.data.isNotEmpty) {
+      final dataType = message.data['type']?.toString().toLowerCase() ?? '';
+      final dataKeys =
+          message.data.keys.map((k) => k.toString().toLowerCase()).toList();
+
+      print('🔍 Checking data payload:');
+      print('  Type: "$dataType"');
+      print('  Keys: $dataKeys');
+
+      if (dataType.contains('trip') ||
+          dataType.contains('new') ||
+          dataKeys.any((key) =>
+              key.contains('trip') ||
+              key.contains('pickup') ||
+              key.contains('dropoff'))) {
+        isTripNotification = true;
+        detectionReason = 'data_payload_content';
+        print('📨 Trip notification detected from data payload content');
+      }
+    }
+
+    // Method 3: Check for specific known types
+    if (!isTripNotification) {
+      final knownTypes = [
+        'NEW_TRIP_AVAILABLE',
+        'NEW_TRIPS_AVAILABLE',
+        'trip_created',
+        'new_trip',
+        'TEST_DRIVER_NOTIFICATION'
+      ];
+
+      final messageType = message.data['type']?.toString() ?? '';
+      print('🔍 Checking known types:');
+      print('  Message type: "$messageType"');
+      print('  Known types: $knownTypes');
+
+      if (knownTypes.contains(messageType)) {
+        isTripNotification = true;
+        detectionReason = 'known_type_match';
+        print('📨 Trip notification detected from known type: $messageType');
+      }
+    }
+
+    // Method 4: Check for any trip-related keywords in the entire message
+    if (!isTripNotification) {
+      final allText = [
+        message.notification?.title ?? '',
+        message.notification?.body ?? '',
+        ...message.data.values.map((v) => v.toString()),
+        ...message.data.keys.map((k) => k.toString()),
+      ].join(' ').toLowerCase();
+
+      print('🔍 Checking all text for trip keywords:');
+      print('  All text: "$allText"');
+
+      if (allText.contains('trip') ||
+          allText.contains('pickup') ||
+          allText.contains('dropoff') ||
+          allText.contains('fare') ||
+          allText.contains('driver') ||
+          allText.contains('passenger')) {
+        isTripNotification = true;
+        detectionReason = 'keyword_search';
+        print('📨 Trip notification detected from keyword search');
+      }
+    }
+
+    // Method 5: If it's from our backend, assume it's trip-related
+    if (!isTripNotification && message.from != null) {
+      if (message.from!.contains('fcm.googleapis.com') ||
+          message.from!.contains('khidma-app1.vercel.app')) {
+        isTripNotification = true;
+        detectionReason = 'backend_source';
+        print(
+            '📨 Trip notification detected from backend source: ${message.from}');
+      }
+    }
+
+    // Method 6: If we have any data, assume it's important
+    if (!isTripNotification && message.data.isNotEmpty) {
+      isTripNotification = true;
+      detectionReason = 'has_data_payload';
+      print('📨 Trip notification detected because it has data payload');
+    }
+
+    print('🎯 FINAL DETECTION RESULT:');
+    print('  Is trip notification: $isTripNotification');
+    print('  Detection reason: $detectionReason');
+
+    if (isTripNotification) {
+      print(
+          '🚗 Trip notification detected in background, fetching latest trips...');
+      print('Detection method: $detectionReason');
+
+      // Fetch latest trips from backend
+      await _fetchTripsInBackground(localNotifications);
+      return; // Exit early since we handled the trip notification
+    }
+
+    // Process other messages as before
     String title = 'New Notification';
     String body = 'You have a new notification';
 
