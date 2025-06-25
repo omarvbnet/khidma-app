@@ -155,8 +155,41 @@ export async function POST(req: NextRequest) {
 
     // Call the exact same function used in real trip creation
     console.log('Calling notifyAvailableDriversAboutNewTrip...');
-    await notifyAvailableDriversAboutNewTrip(mockTrip);
-    console.log('✅ notifyAvailableDriversAboutNewTrip completed');
+    
+    let notificationResult = null;
+    let notificationError: any = null;
+    
+    try {
+      await notifyAvailableDriversAboutNewTrip(mockTrip);
+      console.log('✅ notifyAvailableDriversAboutNewTrip completed successfully');
+      notificationResult = 'success';
+    } catch (error) {
+      notificationError = error;
+      console.error('❌ notifyAvailableDriversAboutNewTrip failed:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
+      notificationResult = 'failed';
+    }
+
+    // Check if notifications were actually created in database
+    const recentNotifications = await prisma.notification.findMany({
+      where: {
+        type: 'NEW_TRIP_AVAILABLE',
+        createdAt: {
+          gte: new Date(Date.now() - 2 * 60 * 1000) // Last 2 minutes
+        }
+      },
+      include: {
+        user: {
+          select: { fullName: true, role: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    console.log(`Found ${recentNotifications.length} recent NEW_TRIP_AVAILABLE notifications`);
 
     return NextResponse.json({
       message: `Real trip creation flow test completed`,
@@ -174,6 +207,18 @@ export async function POST(req: NextRequest) {
         id: d.id,
         name: d.fullName,
         hasToken: !!d.deviceToken
+      })),
+      notificationResult,
+      notificationError: notificationError?.message || null,
+      notificationsCreated: recentNotifications.length,
+      notificationDetails: recentNotifications.map(n => ({
+        id: n.id,
+        userId: n.userId,
+        userName: n.user?.fullName,
+        userRole: n.user?.role,
+        title: n.title,
+        message: n.message,
+        createdAt: n.createdAt
       }))
     });
 
