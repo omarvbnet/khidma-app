@@ -1,23 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendMulticastNotification } from '@/lib/firebase-admin';
+import { notifyAvailableDriversAboutNewTrip } from '@/lib/notification-service';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('\n=== TESTING EXACT REAL TRIP NOTIFICATION MATCH ===');
-
-    const { deviceToken } = await req.json();
+    console.log('\n=== TESTING REAL TRIP EXACT MATCH ===');
+    
+    const body = await req.json();
+    const { deviceToken } = body;
 
     if (!deviceToken) {
-      return NextResponse.json(
-        { error: 'Device token is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Device token is required' }, { status: 400 });
     }
 
-    console.log('Device Token:', deviceToken.substring(0, 20) + '...');
+    console.log('Testing with device token:', deviceToken.substring(0, 20) + '...');
 
-    // Get a test user to match real trip creation exactly
+    // Get a test user
     const testUser = await prisma.user.findFirst({
       where: { role: 'USER' },
       select: { id: true, fullName: true, phoneNumber: true, province: true }
@@ -27,105 +25,105 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No test user found' }, { status: 404 });
     }
 
-    // Create the EXACT same notification data as real trip creation
-    const notificationData = {
-      tripId: 'exact-match-test-123',
-      newStatus: 'NEW_TRIP_AVAILABLE',
-      pickupLocation: 'Exact Match Test Pickup',
-      dropoffLocation: 'Exact Match Test Dropoff',
-      fare: '5000',
-      distance: '5.0',
-      userFullName: testUser.fullName,
+    // Create a test trip with the EXACT same data structure as real trips
+    const testTripData = {
+      pickupLocation: 'Real Trip Test Pickup',
+      dropoffLocation: 'Real Trip Test Dropoff',
+      pickupLat: 33.3152,
+      pickupLng: 44.3661,
+      dropoffLat: 33.3152,
+      dropoffLng: 44.3661,
+      price: 5000,
+      distance: 5.0,
+      status: 'USER_WAITING',
+      tripType: 'ECO',
+      driverDeduction: 0,
       userPhone: testUser.phoneNumber,
+      userFullName: testUser.fullName,
       userProvince: testUser.province,
+      userId: testUser.id
     };
 
-    const title = 'New Trip Available!';
-    const message = `A new trip request is available in ${testUser.province}. Tap to view details.`;
-    const type = 'NEW_TRIP_AVAILABLE';
+    console.log('Creating test trip with data:', testTripData);
 
-    console.log('Sending EXACT real trip notification:');
-    console.log('Title:', title);
-    console.log('Message:', message);
-    console.log('Type:', type);
-    console.log('Full notification data:', JSON.stringify(notificationData, null, 2));
-
-    // Use the EXACT same function and structure as real trip creation
-    const result = await sendMulticastNotification({
-      tokens: [deviceToken],
-      title,
-      body: message,
-      data: {
-        ...notificationData,
-        type,
-      },
+    // Create the trip using the EXACT same process as real trip creation
+    const testTrip = await prisma.taxiRequest.create({
+      data: testTripData as any
     });
 
-    console.log('✅ Exact real trip notification sent');
-    console.log('Result:', {
-      notificationSuccessCount: result?.notificationResponse?.successCount,
-      notificationFailureCount: result?.notificationResponse?.failureCount,
-      dataSuccessCount: result?.dataResponse?.successCount,
-      dataFailureCount: result?.dataResponse?.failureCount,
+    console.log('✅ Test trip created:', testTrip.id);
+
+    // Get all drivers before notification
+    const allDrivers = await prisma.user.findMany({
+      where: { role: 'DRIVER' },
+      select: { id: true, fullName: true, status: true, deviceToken: true }
     });
 
-    // Create a database notification for tracking (exactly like real trip creation)
-    const testDriver = await prisma.user.findFirst({
-      where: { role: 'DRIVER' }
-    });
-
-    if (testDriver) {
-      await prisma.notification.create({
-        data: {
-          userId: testDriver.id,
-          type: type,
-          title: title,
-          message: message,
-          data: notificationData,
-        }
-      });
-      console.log('✅ Database notification created (exactly like real trip)');
+    console.log(`Found ${allDrivers.length} total drivers:`);
+    for (const driver of allDrivers) {
+      console.log(`- ${driver.fullName} (${driver.id}) - Status: ${driver.status} - Has Token: ${!!driver.deviceToken}`);
     }
 
-    // Expected Flutter detection analysis for this exact payload
-    const expectedDetection = {
-      hasNotificationObject: true,
-      notificationTitle: title,
-      notificationBody: message,
-      dataType: type,
-      dataKeys: Object.keys(notificationData),
-      shouldDetectByMethod1: title.toLowerCase().includes('trip') || message.toLowerCase().includes('trip') || title.toLowerCase().includes('new') || message.toLowerCase().includes('available'),
-      shouldDetectByMethod2: type.toLowerCase().includes('trip') || type.toLowerCase().includes('new'),
-      shouldDetectByMethod3: ['NEW_TRIP_AVAILABLE', 'NEW_TRIPS_AVAILABLE', 'trip_created', 'new_trip', 'TEST_DRIVER_NOTIFICATION'].includes(type),
-      shouldDetectByMethod4: (title + ' ' + message + ' ' + Object.values(notificationData).join(' ')).toLowerCase().includes('trip'),
-      shouldDetectByMethod5: true, // From backend source
-      shouldDetectByMethod6: true, // Has data payload
-    };
+    // Simulate the EXACT notification process from real trip creation
+    console.log('\n=== STARTING DRIVER NOTIFICATION PROCESS (REAL SIMULATION) ===');
+    console.log('Trip details for notification:', {
+      id: testTrip.id,
+      pickupLocation: testTrip.pickupLocation,
+      dropoffLocation: testTrip.dropoffLocation,
+      price: testTrip.price,
+      userFullName: testTrip.userFullName,
+      userPhone: testTrip.userPhone
+    });
+    
+    // Add a small delay to ensure the trip is fully committed (same as real process)
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    console.log('Calling notifyAvailableDriversAboutNewTrip...');
+    await notifyAvailableDriversAboutNewTrip(testTrip);
+    console.log('✅ All available drivers notified about new trip');
+    
+    // Verify notifications were created
+    const recentNotifications = await prisma.notification.findMany({
+      where: {
+        type: 'NEW_TRIP_AVAILABLE',
+        createdAt: {
+          gte: new Date(Date.now() - 1 * 60 * 1000) // Last 1 minute
+        }
+      },
+      include: {
+        user: {
+          select: { fullName: true, role: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    console.log(`✅ Verification: ${recentNotifications.length} notifications created for this trip`);
+
+    // Clean up the test trip
+    await prisma.taxiRequest.delete({
+      where: { id: testTrip.id }
+    });
+
+    console.log('✅ Test trip cleaned up');
 
     return NextResponse.json({
       success: true,
-      message: 'Exact real trip notification match test completed',
-      notificationData,
-      result: {
-        notificationSuccessCount: result?.notificationResponse?.successCount,
-        notificationFailureCount: result?.notificationResponse?.failureCount,
-        dataSuccessCount: result?.dataResponse?.successCount,
-        dataFailureCount: result?.dataResponse?.failureCount,
+      message: 'Real trip creation simulation completed',
+      testTrip: {
+        id: testTrip.id,
+        pickupLocation: testTrip.pickupLocation,
+        dropoffLocation: testTrip.dropoffLocation,
+        price: testTrip.price
       },
-      expectedFlutterDetection: expectedDetection,
-      instructions: [
-        '1. Put Flutter app in background/closed state',
-        '2. This notification uses EXACT same structure as real trip creation',
-        '3. Check if you receive it in background/closed',
-        '4. If this works but real trips don\'t, there\'s a timing or race condition issue',
-        '5. If this doesn\'t work, there\'s a payload structure issue'
-      ]
+      notificationsCreated: recentNotifications.length,
+      driversFound: allDrivers.length
     });
 
   } catch (error) {
-    console.error('❌ Error in exact real trip notification match test:', error);
+    console.error('❌ Error in real trip exact match test:', error);
     return NextResponse.json(
-      { error: 'Failed to test exact real trip notification match' },
+      { error: 'Test failed', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
