@@ -63,8 +63,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     });
 
     try {
-      final isVerified =
-          await _otpService.verifyOTP(_phoneNumber, _otpController.text);
+      final isVerified = await _otpService.verifyOTPForRegistration(
+          _phoneNumber, _otpController.text);
+
       if (isVerified) {
         if (_isDriver) {
           await _authService.registerDriver(

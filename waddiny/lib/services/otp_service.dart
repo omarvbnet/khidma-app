@@ -59,4 +59,26 @@ class OTPService {
 
     return true;
   }
+
+  Future<bool> verifyOTPForRegistration(String phoneNumber, String otp) async {
+    final formattedPhone = _formatPhoneNumber(phoneNumber);
+    final response = await http.post(
+      Uri.parse('${ApiConstants.baseUrl}/auth/otp/verify'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'phoneNumber': formattedPhone,
+        'otp': otp,
+        'isRegistration': true,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      final error =
+          jsonDecode(response.body)['error'] ?? 'Failed to verify OTP';
+      throw Exception(error);
+    }
+
+    final data = jsonDecode(response.body);
+    return data['verified'] == true;
+  }
 }

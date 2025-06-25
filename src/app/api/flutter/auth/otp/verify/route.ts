@@ -6,11 +6,12 @@ import { sign } from 'jsonwebtoken';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { phoneNumber, otp, deviceToken, platform, appVersion } = body;
+    const { phoneNumber, otp, deviceToken, platform, appVersion, isRegistration = false } = body;
 
     console.log('=== OTP VERIFY REQUEST ===');
     console.log('Phone number received:', phoneNumber);
     console.log('OTP received:', otp);
+    console.log('Is registration:', isRegistration);
     console.log('Device info:', {
       deviceToken: deviceToken ? `${deviceToken.substring(0, 20)}...` : 'not provided',
       platform,
@@ -68,55 +69,73 @@ export async function POST(request: Request) {
     console.log('OTP store after verification:');
     logOTPStore();
 
-    // Find user and handle login
+    // Find user
     const user = await prisma.user.findUnique({
       where: { phoneNumber },
     });
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    // Update user with device information if provided
-    if (deviceToken || platform || appVersion) {
-      console.log('📱 Updating device information for user:', user.id);
+    if (isRegistration) {
+      // For registration, we don't expect the user to exist yet
+      if (user) {
+        return NextResponse.json(
+          { error: 'User already exists with this phone number' },
+          { status: 400 }
+        );
+      }
       
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          deviceToken: deviceToken || user.deviceToken,
-          platform: platform || user.platform,
-          appVersion: appVersion || user.appVersion,
-          updatedAt: new Date(),
+      // Return success for registration OTP verification
+      return NextResponse.json({
+        success: true,
+        message: 'OTP verified successfully for registration',
+        verified: true
+      });
+    } else {
+      // For login, user must exist
+      if (!user) {
+        return NextResponse.json(
+          { error: 'User not found. Please register first.' },
+          { status: 404 }
+        );
+      }
+
+      // Update user with device information if provided
+      if (deviceToken || platform || appVersion) {
+        console.log('📱 Updating device information for user:', user.id);
+        
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            deviceToken: deviceToken || user.deviceToken,
+            platform: platform || user.platform,
+            appVersion: appVersion || user.appVersion,
+            updatedAt: new Date(),
+          },
+        });
+
+        console.log('✅ Device information updated successfully');
+      }
+
+      // Generate JWT token
+      const token = sign(
+        { userId: user.id, role: user.role },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '7d' }
+      );
+
+      console.log('✅ Login successful for user:', user.id);
+
+      return NextResponse.json({
+        token,
+        user: {
+          id: user.id,
+          phoneNumber: user.phoneNumber,
+          fullName: user.fullName,
+          province: user.province,
+          role: user.role,
+          status: user.status,
         },
       });
-
-      console.log('✅ Device information updated successfully');
     }
-
-    // Generate JWT token
-    const token = sign(
-      { userId: user.id, role: user.role },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
-    );
-
-    console.log('✅ Login successful for user:', user.id);
-
-    return NextResponse.json({
-      token,
-      user: {
-        id: user.id,
-        phoneNumber: user.phoneNumber,
-        fullName: user.fullName,
-        province: user.province,
-        role: user.role,
-        status: user.status,
-      },
-    });
   } catch (error) {
     console.error('OTP verification error:', error);
     return NextResponse.json(
