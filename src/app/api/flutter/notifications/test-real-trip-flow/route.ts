@@ -34,45 +34,37 @@ export async function POST(req: NextRequest) {
   try {
     console.log('\n=== TESTING REAL TRIP CREATION FLOW ===');
 
-    // Verify authentication
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const { deviceToken, userProvince = 'Riyadh' } = await req.json();
+
+    if (!deviceToken) {
       return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
+        { error: 'Device token is required' },
+        { status: 400 }
       );
     }
 
-    const token = authHeader.substring(7);
-    let decoded: any;
-    try {
-      decoded = verify(token, process.env.JWT_SECRET!);
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
+    console.log('Device Token:', deviceToken.substring(0, 20) + '...');
+    console.log('User Province:', userProvince);
 
-    // Get user details to determine province
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: {
-        id: true,
-        fullName: true,
-        phoneNumber: true,
-        province: true,
+    // Find the driver with this device token
+    const driver = await prisma.user.findFirst({
+      where: {
+        role: 'DRIVER',
+        deviceToken: deviceToken
       },
+      include: {
+        driver: true
+      }
     });
 
-    if (!user) {
+    if (!driver) {
       return NextResponse.json(
-        { error: 'User not found' },
+        { error: 'Driver with this device token not found' },
         { status: 404 }
       );
     }
 
-    console.log('User province:', user.province);
+    console.log('Found driver:', driver.fullName, 'in province:', driver.province);
 
     // Create a mock trip with the same structure as real trip creation
     const mockTrip = {
@@ -88,10 +80,10 @@ export async function POST(req: NextRequest) {
       status: 'USER_WAITING',
       tripType: 'ECO',
       driverDeduction: 0,
-      userPhone: user.phoneNumber,
-      userFullName: user.fullName,
-      userProvince: user.province,
-      userId: user.id,
+      userPhone: '+1234567890',
+      userFullName: 'Test User',
+      userProvince: userProvince,
+      userId: 'test-user-id',
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -111,14 +103,14 @@ export async function POST(req: NextRequest) {
       where: {
         role: 'DRIVER',
         status: 'ACTIVE', // Only active drivers
-        province: user.province, // Only drivers in the same province
+        province: userProvince, // Only drivers in the same province
       },
       include: {
         driver: true
       }
     });
 
-    console.log(`Found ${allActiveDrivers.length} total active drivers in province: ${user.province}`);
+    console.log(`Found ${allActiveDrivers.length} total active drivers in province: ${userProvince}`);
 
     // Log driver details for debugging
     for (const driver of allActiveDrivers) {
@@ -139,16 +131,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log(`Found ${availableDrivers.length} available drivers in ${user.province} to notify`);
+    console.log(`Found ${availableDrivers.length} available drivers in ${userProvince} to notify`);
 
     // If no available drivers found in the same province, log this information
     if (availableDrivers.length === 0) {
-      console.log(`⚠️ No available drivers found in province: ${user.province}`);
-      console.log(`📊 Trip will not be visible to drivers outside of ${user.province}`);
+      console.log(`⚠️ No available drivers found in province: ${userProvince}`);
+      console.log(`📊 Trip will not be visible to drivers outside of ${userProvince}`);
       
       return NextResponse.json({
         message: 'No available drivers found in same province',
-        userProvince: user.province,
+        userProvince: userProvince,
         totalActiveDrivers: allActiveDrivers.length,
         availableDrivers: 0,
         mockTrip: {
@@ -168,7 +160,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       message: `Real trip creation flow test completed`,
-      userProvince: user.province,
+      userProvince: userProvince,
       totalActiveDrivers: allActiveDrivers.length,
       availableDrivers: availableDrivers.length,
       mockTrip: {
