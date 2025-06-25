@@ -443,6 +443,46 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
     }
   }
 
+  Future<void> _testBudgetFunctionality() async {
+    try {
+      setState(() {
+        _isLoadingBudget = true;
+      });
+
+      final result = await _apiService.testDriverBudget();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Budget test: ${result['message']} - Current: ${result['user']['currentBudget']} IQD'),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+
+        // Refresh budget display
+        await _loadDriverBudget();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Budget test error: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingBudget = false;
+        });
+      }
+    }
+  }
+
   Future<void> _showTripDetails(TaxiRequest request) async {
     try {
       // Validate coordinates more thoroughly
@@ -903,6 +943,12 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
               onPressed: _showBudgetDetails,
               tooltip: 'Budget: ${_driverBudget!['budget']} IQD',
             ),
+          // Test budget button
+          IconButton(
+            icon: const Icon(Icons.science),
+            onPressed: _testBudgetFunctionality,
+            tooltip: 'Test Budget',
+          ),
           IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () {
@@ -919,11 +965,6 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
             icon: const Icon(Icons.refresh),
             onPressed: () => _loadTrips(),
             tooltip: 'Refresh',
-          ),
-          IconButton(
-            icon: const Icon(Icons.science),
-            onPressed: _testNotification,
-            tooltip: 'Test Local Notification',
           ),
           IconButton(
             icon: const Icon(Icons.whatshot),

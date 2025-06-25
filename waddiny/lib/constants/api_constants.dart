@@ -24,6 +24,9 @@ class ApiConstants {
   static const String updateDriverProfile = '/driver/profile';
   static const String driverTrips = '/driver/trips';
   static const String driverCarInfo = '/driver/car-info';
+  static const String driverBudget = '/driver/budget';
+  static const String driverBudgetAdd = '/driver/budget/add';
+  static const String driverBudgetTest = '/driver/budget/test';
 
   // Map configuration
   static const double defaultZoom = 15.0;

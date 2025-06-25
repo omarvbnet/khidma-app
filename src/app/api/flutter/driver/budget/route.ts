@@ -20,10 +20,15 @@ async function verifyToken(req: NextRequest) {
 
 // Get driver's current budget
 export async function GET(req: NextRequest) {
+  console.log('\n=== FETCHING DRIVER BUDGET ===');
+  
   const userId = await verifyToken(req);
   if (!userId) {
+    console.log('❌ Unauthorized - No valid token');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  console.log('✅ Authenticated user ID:', userId);
 
   try {
     const user = await prisma.user.findUnique({
@@ -36,9 +41,19 @@ export async function GET(req: NextRequest) {
       }
     });
 
+    console.log('🔍 User found:', {
+      id: user?.id,
+      fullName: user?.fullName,
+      budget: user?.budget,
+      role: user?.role
+    });
+
     if (!user || user.role !== 'DRIVER') {
+      console.log('❌ User not found or not a driver:', { userId, role: user?.role });
       return NextResponse.json({ error: 'Driver not found' }, { status: 404 });
     }
+
+    console.log('✅ Driver budget fetched successfully:', user.budget);
 
     return NextResponse.json({
       budget: user.budget,
@@ -46,7 +61,7 @@ export async function GET(req: NextRequest) {
       currency: 'IQD' // Iraqi Dinar
     });
   } catch (error) {
-    console.error('Error fetching driver budget:', error);
+    console.error('❌ Error fetching driver budget:', error);
     return NextResponse.json(
       { error: 'Failed to fetch driver budget' },
       { status: 500 }

@@ -514,12 +514,20 @@ class ApiService {
     final token = await getToken();
     if (token == null) throw Exception('Not authenticated');
 
+    print('\n=== FETCHING DRIVER BUDGET FROM API ===');
+    print('Token: ${token.substring(0, 20)}...');
+    print('URL: ${ApiConstants.baseUrl}${ApiConstants.driverBudget}');
+
     final response = await _client.get(
-      Uri.parse('${ApiConstants.baseUrl}/flutter/driver/budget'),
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.driverBudget}'),
       headers: ApiConstants.getHeaders(token),
     );
 
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
     final data = await _handleResponse(response);
+    print('Parsed data: $data');
     return data;
   }
 
@@ -528,7 +536,7 @@ class ApiService {
     if (token == null) throw Exception('Not authenticated');
 
     final response = await _client.post(
-      Uri.parse('${ApiConstants.baseUrl}/flutter/driver/budget'),
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.driverBudget}'),
       headers: ApiConstants.getHeaders(token),
       body: json.encode({'tripId': tripId}),
     );
@@ -543,12 +551,34 @@ class ApiService {
     if (token == null) throw Exception('Not authenticated');
 
     final response = await _client.post(
-      Uri.parse('${ApiConstants.baseUrl}/flutter/driver/budget/add'),
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.driverBudgetAdd}'),
       headers: ApiConstants.getHeaders(token),
       body: json.encode({'amount': amount}),
     );
 
     final data = await _handleResponse(response);
+    return data;
+  }
+
+  // Test budget functionality (for debugging)
+  Future<Map<String, dynamic>> testDriverBudget() async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    print('\n=== TESTING DRIVER BUDGET ===');
+    print('Token: ${token.substring(0, 20)}...');
+    print('URL: ${ApiConstants.baseUrl}${ApiConstants.driverBudgetTest}');
+
+    final response = await _client.get(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.driverBudgetTest}'),
+      headers: ApiConstants.getHeaders(token),
+    );
+
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
+    final data = await _handleResponse(response);
+    print('Test data: $data');
     return data;
   }
 }
