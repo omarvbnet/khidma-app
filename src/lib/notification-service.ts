@@ -291,14 +291,14 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
       where: {
         role: 'DRIVER',
         status: 'ACTIVE', // Only active drivers
-        // province: trip.userProvince, // TEMPORARILY DISABLED FOR TESTING
+        province: trip.userProvince, // Enable province filtering
       },
       include: {
         driver: true
       }
     });
 
-    console.log(`Found ${allActiveDrivers.length} total active drivers (province filtering disabled for testing)`);
+    console.log(`Found ${allActiveDrivers.length} total active drivers in province: ${trip.userProvince}`);
 
     // Log driver details for debugging
     for (const driver of allActiveDrivers) {
@@ -324,7 +324,7 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
       }
     }
 
-    console.log(`Found ${availableDrivers.length} available drivers to notify (province filtering disabled)`);
+    console.log(`Found ${availableDrivers.length} available drivers to notify in province: ${trip.userProvince}`);
 
     // If no available drivers found, log this information
     if (availableDrivers.length === 0) {
@@ -777,19 +777,19 @@ export async function startPeriodicNotificationsForTrip(trip: any) {
           return;
         }
 
-        // Get all active drivers (province filtering disabled for testing)
+        // Get all active drivers (province filtering enabled)
         const allActiveDrivers = await prisma.user.findMany({
           where: {
             role: 'DRIVER',
             status: 'ACTIVE',
-            // province: trip.userProvince, // TEMPORARILY DISABLED FOR TESTING
+            province: trip.userProvince, // Enable province filtering
           },
           include: {
             driver: true
           }
         });
 
-        console.log(`Found ${allActiveDrivers.length} total active drivers (province filtering disabled for testing)`);
+        console.log(`Found ${allActiveDrivers.length} total active drivers in province: ${trip.userProvince}`);
 
         // Filter to only available drivers (those without active trips)
         const availableDrivers = [];
@@ -800,7 +800,7 @@ export async function startPeriodicNotificationsForTrip(trip: any) {
           }
         }
 
-        console.log(`Found ${availableDrivers.length} available drivers to notify`);
+        console.log(`Found ${availableDrivers.length} available drivers to notify in province: ${trip.userProvince}`);
 
         if (availableDrivers.length === 0) {
           console.log(`⚠️ No available drivers found for periodic notification`);
