@@ -381,19 +381,30 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
         
         // Send individual messages to each driver for better iOS compatibility
         const sendPromises = deviceTokens.map(async (token) => {
+          // Convert all data values to strings for Firebase compatibility
+          const stringifiedData = {
+            tripId: String(notificationData.tripId),
+            newStatus: String(notificationData.newStatus),
+            pickupLocation: String(notificationData.pickupLocation),
+            dropoffLocation: String(notificationData.dropoffLocation),
+            fare: String(notificationData.fare),
+            distance: String(notificationData.distance),
+            userFullName: String(notificationData.userFullName),
+            userPhone: String(notificationData.userPhone),
+            userProvince: String(notificationData.userProvince),
+            type: String(type),
+            isPeriodic: 'true',
+            click_action: 'FLUTTER_NOTIFICATION_CLICK',
+            timestamp: new Date().toISOString(),
+          };
+
           const pushMessage = {
             token: token,
             notification: {
               title: title,
               body: message,
             },
-            data: {
-              ...notificationData,
-              type: type,
-              isPeriodic: 'true',
-              click_action: 'FLUTTER_NOTIFICATION_CLICK',
-              timestamp: new Date().toISOString(),
-            },
+            data: stringifiedData,
             android: {
               priority: 'high' as const,
               notification: {
@@ -426,13 +437,7 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
                   category: 'trip_notifications',
                   'thread-id': 'trip_notifications',
                 },
-                data: {
-                  ...notificationData,
-                  type: type,
-                  isPeriodic: 'true',
-                  click_action: 'FLUTTER_NOTIFICATION_CLICK',
-                  timestamp: new Date().toISOString(),
-                },
+                data: stringifiedData,
               },
               headers: {
                 'apns-priority': '10', // High priority for immediate delivery
@@ -838,19 +843,30 @@ export async function startPeriodicNotificationsForTrip(trip: any) {
             
             // Send individual messages to each driver for better iOS compatibility
             const sendPromises = deviceTokens.map(async (token) => {
+              // Convert all data values to strings for Firebase compatibility
+              const stringifiedData = {
+                tripId: String(notificationData.tripId),
+                newStatus: String(notificationData.newStatus),
+                pickupLocation: String(notificationData.pickupLocation),
+                dropoffLocation: String(notificationData.dropoffLocation),
+                fare: String(notificationData.fare),
+                distance: String(notificationData.distance),
+                userFullName: String(notificationData.userFullName),
+                userPhone: String(notificationData.userPhone),
+                userProvince: String(notificationData.userProvince),
+                type: String(type),
+                isPeriodic: 'true',
+                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                timestamp: new Date().toISOString(),
+              };
+
               const pushMessage = {
                 token: token,
                 notification: {
                   title: title,
                   body: message,
                 },
-                data: {
-                  ...notificationData,
-                  type: type,
-                  isPeriodic: 'true',
-                  click_action: 'FLUTTER_NOTIFICATION_CLICK',
-                  timestamp: new Date().toISOString(),
-                },
+                data: stringifiedData,
                 android: {
                   priority: 'high' as const,
                   notification: {
@@ -883,13 +899,7 @@ export async function startPeriodicNotificationsForTrip(trip: any) {
                       category: 'trip_notifications',
                       'thread-id': 'trip_notifications',
                     },
-                    data: {
-                      ...notificationData,
-                      type: type,
-                      isPeriodic: 'true',
-                      click_action: 'FLUTTER_NOTIFICATION_CLICK',
-                      timestamp: new Date().toISOString(),
-                    },
+                    data: stringifiedData,
                   },
                   headers: {
                     'apns-priority': '10', // High priority for immediate delivery
