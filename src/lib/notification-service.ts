@@ -330,7 +330,7 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     if (availableDrivers.length === 0) {
       console.log(`⚠️ No available drivers found`);
       console.log(`📊 Trip will not be visible to any drivers`);
-
+      
       // Optionally, you could notify drivers in neighboring provinces or all drivers
       // For now, we'll just log and return without sending notifications
       return;
@@ -370,55 +370,98 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     console.log(`Drivers with tokens: ${deviceTokens.length}`);
     console.log(`Drivers without tokens: ${driversWithoutTokens.length}`);
 
-    // Send batch push notification if we have device tokens
+    // Send iOS-compatible single messages instead of dual messages
     if (deviceTokens.length > 0) {
       try {
-        console.log('Sending batch push notification with dual strategy...');
-        console.log('Notification data:', {
-          title,
-          body: message,
-          data: {
-            ...notificationData,
-            type,
-          },
+        console.log('Sending iOS-compatible single messages...');
+        
+        // Import Firebase messaging for direct message sending
+        const { getMessaging } = require('firebase-admin/messaging');
+        const messaging = getMessaging();
+        
+        // Send individual messages to each driver for better iOS compatibility
+        const sendPromises = deviceTokens.map(async (token) => {
+          const pushMessage = {
+            token: token,
+            notification: {
+              title: title,
+              body: message,
+            },
+            data: {
+              ...notificationData,
+              type: type,
+              click_action: 'FLUTTER_NOTIFICATION_CLICK',
+              timestamp: new Date().toISOString(),
+            },
+            android: {
+              priority: 'high' as const,
+              notification: {
+                channelId: 'trip_notifications',
+                priority: 'high',
+                defaultSound: true,
+                defaultVibrateTimings: true,
+                icon: '@mipmap/ic_launcher',
+                color: '#2196F3',
+                sound: 'notification_sound',
+                vibrateTimingsMillis: [0, 500, 200, 500],
+                lightSettings: {
+                  color: '#2196F3',
+                  lightOnDurationMillis: 1000,
+                  lightOffDurationMillis: 500,
+                },
+              },
+            },
+            apns: {
+              payload: {
+                aps: {
+                  alert: {
+                    title: title,
+                    body: message,
+                  },
+                  sound: 'default',
+                  badge: 1,
+                  'content-available': 1,
+                  'mutable-content': 1,
+                  category: 'trip_notifications',
+                  'thread-id': 'trip_notifications',
+                },
+                data: {
+                  ...notificationData,
+                  type: type,
+                  click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                  timestamp: new Date().toISOString(),
+                },
+              },
+              headers: {
+                'apns-priority': '10', // High priority for immediate delivery
+                'apns-push-type': 'alert', // Alert type for user-visible notifications
+              },
+            },
+          };
+          
+          return messaging.send(pushMessage);
         });
         
-        const result = await sendMulticastNotification({
-          tokens: deviceTokens,
-          title,
-          body: message,
-          data: {
-            ...notificationData,
-            type,
-          },
+        const results = await Promise.allSettled(sendPromises);
+        
+        let successCount = 0;
+        let failureCount = 0;
+        
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            successCount++;
+            console.log(`✅ Notification sent to driver ${index + 1}: ${result.value}`);
+          } else {
+            failureCount++;
+            console.error(`❌ Failed to send notification to driver ${index + 1}:`, result.reason);
+          }
         });
         
-        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers`);
-        console.log('Notification result:', {
-          notificationSuccessCount: result?.notificationResponse?.successCount,
-          notificationFailureCount: result?.notificationResponse?.failureCount,
-          dataSuccessCount: result?.dataResponse?.successCount,
-          dataFailureCount: result?.dataResponse?.failureCount,
-        });
-        
-        // Log individual responses for debugging
-        if (result?.notificationResponse?.responses) {
-          console.log('Individual notification responses:');
-          result.notificationResponse.responses.forEach((response: any, index: number) => {
-            console.log(`  Driver ${index + 1}: ${response.success ? '✅ Success' : '❌ Failed'} - ${response.messageId || 'No message ID'}`);
-          });
-        }
-        
-        if (result?.dataResponse?.responses) {
-          console.log('Individual data responses:');
-          result.dataResponse.responses.forEach((response: any, index: number) => {
-            console.log(`  Driver ${index + 1}: ${response.success ? '✅ Success' : '❌ Failed'} - ${response.messageId || 'No message ID'}`);
-          });
-        }
+        console.log(`✅ iOS-compatible notifications sent: ${successCount} success, ${failureCount} failed`);
         
       } catch (firebaseError) {
-        console.error('❌ Batch Firebase notification failed:', firebaseError);
-        // Fall back to individual notifications
+        console.error('❌ iOS-compatible notification failed:', firebaseError);
+        // Fall back to individual notifications using the old method
         console.log('Falling back to individual notifications...');
         for (const driver of availableDrivers) {
           if (driver.deviceToken) {
