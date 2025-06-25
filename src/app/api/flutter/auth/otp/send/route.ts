@@ -8,6 +8,22 @@ const twilioClient = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
+// Helper function to format phone number for Twilio
+function formatPhoneForTwilio(phoneNumber: string): string {
+  // Remove any non-numeric characters except +
+  let cleaned = phoneNumber.replaceAll(/[^\d+]/g, '');
+  
+  // If it doesn't start with +, add it
+  if (!cleaned.startsWith('+')) {
+    cleaned = '+' + cleaned;
+  }
+  
+  console.log('Original phone number:', phoneNumber);
+  console.log('Formatted for Twilio:', cleaned);
+  
+  return cleaned;
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -52,9 +68,11 @@ export async function POST(request: Request) {
 
     // In production, send OTP via Twilio
     try {
+      const formattedPhone = formatPhoneForTwilio(phoneNumber);
+      
       await twilioClient.messages.create({
         body: `Your Waddiny verification code is: ${otp}`,
-        to: phoneNumber,
+        to: formattedPhone,
         from: process.env.TWILIO_PHONE_NUMBER,
       });
 
