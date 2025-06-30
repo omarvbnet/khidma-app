@@ -19,6 +19,23 @@ if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && proc
   console.warn('⚠️ Firebase Admin SDK not initialized - missing environment variables');
 }
 
+// Helper function to validate device token format
+function isValidDeviceToken(token: string): boolean {
+  if (!token || typeof token !== 'string') {
+    return false;
+  }
+  
+  // Basic validation for FCM token format
+  // FCM tokens are typically 140+ characters and contain alphanumeric characters and some special chars
+  if (token.length < 100) {
+    return false;
+  }
+  
+  // Check if token contains only valid characters
+  const validTokenRegex = /^[A-Za-z0-9:_-]+$/;
+  return validTokenRegex.test(token);
+}
+
 // Helper function to convert all data values to strings (FCM requirement)
 function convertDataToStrings(data: Record<string, any>): Record<string, string> {
   const stringData: Record<string, string> = {};
@@ -53,6 +70,15 @@ export async function sendPushNotification({
     return null;
   }
 
+  // Validate device token
+  if (!isValidDeviceToken(token)) {
+    console.error('❌ Invalid device token format:', {
+      token: token ? `${token.substring(0, 20)}...` : 'null',
+      length: token?.length || 0,
+    });
+    throw new Error('Invalid device token format');
+  }
+
   try {
     // Convert all data values to strings (FCM requirement)
     const stringData = convertDataToStrings(data);
@@ -60,6 +86,7 @@ export async function sendPushNotification({
     console.log('📱 Converting notification data to strings:', {
       originalData: data,
       stringData: stringData,
+      token: `${token.substring(0, 20)}...`,
     });
 
     // Create both notification and data-only messages for better background delivery
@@ -176,6 +203,30 @@ export async function sendPushNotification({
     return { notificationResponse, dataResponse };
   } catch (error) {
     console.error('❌ Error sending push notification:', error);
+    
+    // Handle specific Firebase errors
+    if (error instanceof Error) {
+      if (error.message.includes('Requested entity was not found')) {
+        console.error('🔍 Device token not found - token may be invalid or expired:', {
+          token: `${token.substring(0, 20)}...`,
+          error: error.message,
+        });
+        throw new Error('Device token not found - token may be invalid or expired');
+      } else if (error.message.includes('Invalid registration token')) {
+        console.error('🔍 Invalid registration token:', {
+          token: `${token.substring(0, 20)}...`,
+          error: error.message,
+        });
+        throw new Error('Invalid registration token');
+      } else if (error.message.includes('Registration token is not valid')) {
+        console.error('🔍 Registration token is not valid:', {
+          token: `${token.substring(0, 20)}...`,
+          error: error.message,
+        });
+        throw new Error('Registration token is not valid');
+      }
+    }
+    
     throw error;
   }
 }
@@ -197,6 +248,24 @@ export async function sendMulticastNotification({
     return null;
   }
 
+  // Filter out invalid tokens
+  const validTokens = tokens.filter(token => isValidDeviceToken(token));
+  const invalidTokens = tokens.filter(token => !isValidDeviceToken(token));
+  
+  if (invalidTokens.length > 0) {
+    console.warn('⚠️ Filtered out invalid device tokens:', {
+      totalTokens: tokens.length,
+      validTokens: validTokens.length,
+      invalidTokens: invalidTokens.length,
+      invalidTokenExamples: invalidTokens.slice(0, 3).map(t => `${t.substring(0, 20)}...`),
+    });
+  }
+
+  if (validTokens.length === 0) {
+    console.warn('⚠️ No valid device tokens found for multicast notification');
+    return null;
+  }
+
   try {
     // Convert all data values to strings (FCM requirement)
     const stringData = convertDataToStrings(data);
@@ -204,6 +273,7 @@ export async function sendMulticastNotification({
     console.log('📱 Converting multicast notification data to strings:', {
       originalData: data,
       stringData: stringData,
+      validTokensCount: validTokens.length,
     });
 
     // Create notification message with correct format for sendEachForMulticast
@@ -309,11 +379,11 @@ export async function sendMulticastNotification({
     const [notificationResponse, dataResponse] = await Promise.all([
       messaging.sendEachForMulticast({
         ...notificationMessage,
-        tokens,
+        tokens: validTokens,
       }),
       messaging.sendEachForMulticast({
         ...dataOnlyMessage,
-        tokens,
+        tokens: validTokens,
       }),
     ]);
 

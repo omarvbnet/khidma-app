@@ -41,6 +41,31 @@ function convertDataToStrings(data: Record<string, any>): Record<string, string>
   return stringData;
 }
 
+// Helper function to clean up invalid device token
+async function cleanupInvalidDeviceToken(userId: string, error: any) {
+  try {
+    // Check if the error indicates an invalid token
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isTokenError = errorMessage.includes('Requested entity was not found') ||
+                        errorMessage.includes('Invalid registration token') ||
+                        errorMessage.includes('Registration token is not valid');
+
+    if (isTokenError) {
+      console.log(`🧹 Cleaning up invalid device token for user ${userId}`);
+      
+      // Clear the device token from the database
+      await prisma.user.update({
+        where: { id: userId },
+        data: { deviceToken: null }
+      });
+      
+      console.log(`✅ Invalid device token cleared for user ${userId}`);
+    }
+  } catch (cleanupError) {
+    console.error(`❌ Error cleaning up invalid device token for user ${userId}:`, cleanupError);
+  }
+}
+
 // Helper function to send push notification with fallback
 async function sendNotificationWithFallback(
   userId: string,
@@ -89,6 +114,10 @@ async function sendNotificationWithFallback(
         console.log(`📱 Push notification sent to user ${userId}: ${title}`);
       } catch (firebaseError) {
         console.error(`❌ Firebase notification failed for user ${userId}:`, firebaseError);
+        
+        // Clean up invalid device token if needed
+        await cleanupInvalidDeviceToken(userId, firebaseError);
+        
         // Continue with database notification even if Firebase fails
       }
     } else {
