@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../services/auth_service.dart';
 import '../l10n/app_localizations.dart';
 import 'user_main_screen.dart';
@@ -30,6 +31,15 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
+        // Force a new device token when user logs in
+        print('🔄 Forcing new device token for login...');
+        try {
+          await FirebaseMessaging.instance.deleteToken();
+          print('✅ Old FCM token deleted');
+        } catch (e) {
+          print('⚠️ Could not delete old FCM token: $e');
+        }
+
         final authService = Provider.of<AuthService>(context, listen: false);
         final response = await authService.login(
           _phoneController.text,

@@ -24,6 +24,23 @@ async function getUserDeviceToken(userId: string): Promise<string | null> {
   }
 }
 
+// Helper function to convert all data values to strings (FCM requirement)
+function convertDataToStrings(data: Record<string, any>): Record<string, string> {
+  const stringData: Record<string, string> = {};
+  
+  for (const [key, value] of Object.entries(data)) {
+    if (value === null || value === undefined) {
+      stringData[key] = '';
+    } else if (typeof value === 'object') {
+      stringData[key] = JSON.stringify(value);
+    } else {
+      stringData[key] = String(value);
+    }
+  }
+  
+  return stringData;
+}
+
 // Helper function to send push notification with fallback
 async function sendNotificationWithFallback(
   userId: string,
@@ -49,16 +66,24 @@ async function sendNotificationWithFallback(
     
     if (deviceToken) {
       try {
+        // Convert all data values to strings for Firebase compatibility
+        const stringData = convertDataToStrings({
+          ...data,
+          notificationId: notification.id,
+          type,
+        });
+        
+        console.log('📱 Converting notification data to strings:', {
+          originalData: data,
+          stringData: stringData,
+        });
+
         // Send Firebase push notification
         await sendPushNotification({
           token: deviceToken,
           title,
           body: message,
-          data: {
-            ...data,
-            notificationId: notification.id,
-            type,
-          },
+          data: stringData,
         });
         
         console.log(`📱 Push notification sent to user ${userId}: ${title}`);
@@ -425,106 +450,25 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     console.log(`Drivers with tokens: ${deviceTokens.length}`);
     console.log(`Drivers without tokens: ${driversWithoutTokens.length}`);
 
-    // Send iOS-compatible single messages instead of batch multicast
+    // Send batch push notification if we have device tokens
     if (deviceTokens.length > 0) {
       try {
-        console.log(`Sending periodic iOS-compatible notifications to ${deviceTokens.length} drivers...`);
-        
-        // Import Firebase messaging for direct message sending
-        const { getMessaging } = require('firebase-admin/messaging');
-        const messaging = getMessaging();
-        
-        // Send individual messages to each driver for better iOS compatibility
-        const sendPromises = deviceTokens.map(async (token) => {
-          // Convert all data values to strings for Firebase compatibility
-          const stringifiedData = {
-            tripId: String(notificationData.tripId),
-            newStatus: String(notificationData.newStatus),
-            pickupLocation: String(notificationData.pickupLocation),
-            dropoffLocation: String(notificationData.dropoffLocation),
-            fare: String(notificationData.fare),
-            distance: String(notificationData.distance),
-            userFullName: String(notificationData.userFullName),
-            userPhone: String(notificationData.userPhone),
-            userProvince: String(notificationData.userProvince),
-            type: String(type),
-            isPeriodic: 'true',
-            click_action: 'FLUTTER_NOTIFICATION_CLICK',
-            timestamp: new Date().toISOString(),
-          };
-
-          const pushMessage = {
-            token: token,
-            notification: {
-              title: title,
-              body: message,
-            },
-            data: stringifiedData,
-            android: {
-              priority: 'high' as const,
-              notification: {
-                channelId: 'trip_notifications',
-                priority: 'high',
-                defaultSound: true,
-                defaultVibrateTimings: true,
-                icon: '@mipmap/ic_launcher',
-                color: '#2196F3',
-                sound: 'notification_sound',
-                vibrateTimingsMillis: [0, 500, 200, 500],
-                lightSettings: {
-                  color: '#2196F3',
-                  lightOnDurationMillis: 1000,
-                  lightOffDurationMillis: 500,
-                },
-              },
-            },
-            apns: {
-              payload: {
-                aps: {
-                  alert: {
-                    title: title,
-                    body: message,
-                  },
-                  sound: 'default',
-                  badge: 1,
-                  'content-available': 1,
-                  'mutable-content': 1,
-                  category: 'trip_notifications',
-                  'thread-id': 'trip_notifications',
-                },
-                data: stringifiedData,
-              },
-              headers: {
-                'apns-priority': '10', // High priority for immediate delivery
-                'apns-push-type': 'alert', // Alert type for user-visible notifications
-              },
-            },
-          };
-          
-          return messaging.send(pushMessage);
+        // Convert all data values to strings for Firebase compatibility
+        const stringData = convertDataToStrings({
+          ...notificationData,
+          type,
         });
         
-        const results = await Promise.allSettled(sendPromises);
-        
-        let successCount = 0;
-        let failureCount = 0;
-        
-        results.forEach((result, index) => {
-          if (result.status === 'fulfilled') {
-            successCount++;
-            console.log(`✅ Periodic notification sent to driver ${index + 1}: ${result.value}`);
-          } else {
-            failureCount++;
-            console.error(`❌ Failed to send periodic notification to driver ${index + 1}:`, result.reason);
-          }
+        await sendMulticastNotification({
+          tokens: deviceTokens,
+          title,
+          body: message,
+          data: stringData,
         });
-        
-        console.log(`✅ Periodic iOS-compatible notifications sent: ${successCount} success, ${failureCount} failed`);
-        
+        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers`);
       } catch (firebaseError) {
-        console.error('❌ Periodic iOS-compatible notification failed:', firebaseError);
-        // Fall back to individual notifications using the old method
-        console.log('Falling back to individual periodic notifications...');
+        console.error('❌ Batch Firebase notification failed:', firebaseError);
+        // Fall back to individual notifications
         for (const driver of availableDrivers) {
           if (driver.deviceToken) {
             try {
@@ -532,15 +476,11 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
                 driver.id,
                 title,
                 message,
-                {
-                  ...notificationData,
-                  isPeriodic: 'true',
-                  timestamp: new Date().toISOString(),
-                },
+                notificationData,
                 type
               );
             } catch (error) {
-              console.error(`❌ Failed to send periodic notification to driver ${driver.id}:`, error);
+              console.error(`❌ Failed to send notification to driver ${driver.id}:`, error);
             }
           }
         }

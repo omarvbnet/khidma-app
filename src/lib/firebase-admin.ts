@@ -19,6 +19,23 @@ if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && proc
   console.warn('⚠️ Firebase Admin SDK not initialized - missing environment variables');
 }
 
+// Helper function to convert all data values to strings (FCM requirement)
+function convertDataToStrings(data: Record<string, any>): Record<string, string> {
+  const stringData: Record<string, string> = {};
+  
+  for (const [key, value] of Object.entries(data)) {
+    if (value === null || value === undefined) {
+      stringData[key] = '';
+    } else if (typeof value === 'object') {
+      stringData[key] = JSON.stringify(value);
+    } else {
+      stringData[key] = String(value);
+    }
+  }
+  
+  return stringData;
+}
+
 // Send push notification
 export async function sendPushNotification({
   token,
@@ -29,7 +46,7 @@ export async function sendPushNotification({
   token: string;
   title: string;
   body: string;
-  data?: Record<string, string>;
+  data?: Record<string, any>;
 }) {
   if (!messaging) {
     console.warn('⚠️ Firebase Admin SDK not available - skipping push notification');
@@ -37,6 +54,14 @@ export async function sendPushNotification({
   }
 
   try {
+    // Convert all data values to strings (FCM requirement)
+    const stringData = convertDataToStrings(data);
+    
+    console.log('📱 Converting notification data to strings:', {
+      originalData: data,
+      stringData: stringData,
+    });
+
     // Create both notification and data-only messages for better background delivery
     const notificationMessage = {
       token,
@@ -45,7 +70,7 @@ export async function sendPushNotification({
         body,
       },
       data: {
-        ...data,
+        ...stringData,
         click_action: 'FLUTTER_NOTIFICATION_CLICK',
         sound: 'default',
         title: title, // Include title in data for background handling
@@ -95,23 +120,23 @@ export async function sendPushNotification({
     const dataOnlyMessage = {
       token,
       data: {
-        ...data,
+        ...stringData,
         title: title,
         body: body,
         click_action: 'FLUTTER_NOTIFICATION_CLICK',
         sound: 'default',
-        type: data.type || 'NEW_TRIP_AVAILABLE',
+        type: stringData.type || 'NEW_TRIP_AVAILABLE',
         timestamp: new Date().toISOString(),
       },
       android: {
         priority: 'high',
         data: {
-          ...data,
+          ...stringData,
           title: title,
           body: body,
           click_action: 'FLUTTER_NOTIFICATION_CLICK',
           sound: 'default',
-          type: data.type || 'NEW_TRIP_AVAILABLE',
+          type: stringData.type || 'NEW_TRIP_AVAILABLE',
           timestamp: new Date().toISOString(),
         },
       },
@@ -124,10 +149,10 @@ export async function sendPushNotification({
             'thread-id': 'trip_notifications',
           },
           data: {
-            ...data,
+            ...stringData,
             title: title,
             body: body,
-            type: data.type || 'NEW_TRIP_AVAILABLE',
+            type: stringData.type || 'NEW_TRIP_AVAILABLE',
             timestamp: new Date().toISOString(),
           },
         },
@@ -165,7 +190,7 @@ export async function sendMulticastNotification({
   tokens: string[];
   title: string;
   body: string;
-  data?: Record<string, string>;
+  data?: Record<string, any>;
 }) {
   if (!messaging) {
     console.warn('⚠️ Firebase Admin SDK not available - skipping multicast notification');
@@ -173,6 +198,14 @@ export async function sendMulticastNotification({
   }
 
   try {
+    // Convert all data values to strings (FCM requirement)
+    const stringData = convertDataToStrings(data);
+    
+    console.log('📱 Converting multicast notification data to strings:', {
+      originalData: data,
+      stringData: stringData,
+    });
+
     // Create notification message with correct format for sendEachForMulticast
     const notificationMessage = {
       notification: {
@@ -180,7 +213,7 @@ export async function sendMulticastNotification({
         body,
       },
       data: {
-        ...data,
+        ...stringData,
         click_action: 'FLUTTER_NOTIFICATION_CLICK',
         sound: 'default',
         title: title,
@@ -229,23 +262,23 @@ export async function sendMulticastNotification({
     // Also send a data-only message for background handler logic
     const dataOnlyMessage = {
       data: {
-        ...data,
+        ...stringData,
         title: title,
         body: body,
         click_action: 'FLUTTER_NOTIFICATION_CLICK',
         sound: 'default',
-        type: data.type || 'NEW_TRIP_AVAILABLE',
+        type: stringData.type || 'NEW_TRIP_AVAILABLE',
         timestamp: new Date().toISOString(),
       },
       android: {
         priority: 'high',
         data: {
-          ...data,
+          ...stringData,
           title: title,
           body: body,
           click_action: 'FLUTTER_NOTIFICATION_CLICK',
           sound: 'default',
-          type: data.type || 'NEW_TRIP_AVAILABLE',
+          type: stringData.type || 'NEW_TRIP_AVAILABLE',
           timestamp: new Date().toISOString(),
         },
       },
@@ -258,10 +291,10 @@ export async function sendMulticastNotification({
             'thread-id': 'trip_notifications',
           },
           data: {
-            ...data,
+            ...stringData,
             title: title,
             body: body,
-            type: data.type || 'NEW_TRIP_AVAILABLE',
+            type: stringData.type || 'NEW_TRIP_AVAILABLE',
             timestamp: new Date().toISOString(),
           },
         },
