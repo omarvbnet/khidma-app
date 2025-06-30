@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../contexts/language_provider.dart';
+import '../services/auth_service.dart';
 import '../main.dart'; // Import to use getLocalizations helper
 
 class LanguageSwitcher extends StatelessWidget {
@@ -154,6 +155,16 @@ class LanguageSwitcher extends StatelessWidget {
     }
 
     await languageProvider.changeLanguage(languageCode);
+
+    // Update language preference in backend
+    try {
+      final authService = AuthService();
+      await authService.updateUserLanguage(languageCode);
+      print('✅ Language preference updated in backend: $languageCode');
+    } catch (e) {
+      print('⚠️ Failed to update language preference in backend: $e');
+      // Continue even if backend update fails
+    }
 
     // Show confirmation
     if (context.mounted) {

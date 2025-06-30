@@ -1755,4 +1755,66 @@ class AppLocalizationsKu extends AppLocalizations {
 
   @override
   String get searchForDestinationsWithin50kmOfYourCurrentPosition => 'گەڕان بۆ ئامانجەکان لە ناو ٥٠ کم لە شوێنی ئێستای تۆدا';
+
+  @override
+  String get notificationNewTripAvailable => 'گەشتێکی نوێ بەردەستە!';
+
+  @override
+  String notificationNewTripMessage(Object province) {
+    return 'گەشتێکی نوێ بەردەستە لە $province. کلیک بکە بۆ بینینی وردەکاری.';
+  }
+
+  @override
+  String get notificationDriverAcceptedTitle => 'شۆفێر گەشتەکەت قبوڵی کرد!';
+
+  @override
+  String get notificationDriverAcceptedMessage => 'شۆفێرێک داواکاری گەشتەکەت قبوڵی کرد. بەم زووانە لە ڕێگەدا دەبێت.';
+
+  @override
+  String get notificationDriverInWayTitle => 'شۆفێر لە ڕێگەدایە!';
+
+  @override
+  String get notificationDriverInWayMessage => 'شۆفێرەکەت بەرەو شوێنی وەرگرتن دەڕوات.';
+
+  @override
+  String get notificationDriverArrivedTitle => 'شۆفێر هات!';
+
+  @override
+  String get notificationDriverArrivedMessage => 'شۆفێرەکەت گەیشت بۆ شوێنی وەرگرتن.';
+
+  @override
+  String get notificationUserPickedUpTitle => 'گەشتەکە دەستی پێکرد!';
+
+  @override
+  String get notificationUserPickedUpMessage => 'وەرگیرایت. چێژ لە گەشتەکەت وەربگرە!';
+
+  @override
+  String get notificationTripCompletedTitle => 'گەشتەکە تەواو بوو!';
+
+  @override
+  String get notificationTripCompletedMessage => 'گەشتەکەت بە سەرکەوتوویی تەواو بوو. سوپاس بۆ بەکارهێنانی خزمەتگوزاریەکەمان!';
+
+  @override
+  String get notificationTripCancelledTitle => 'گەشتەکە هەڵوەشێندرایەوە';
+
+  @override
+  String get notificationTripCancelledMessage => 'گەشتەکەت هەڵوەشێندرایەوە.';
+
+  @override
+  String get notificationTripInProgressTitle => 'گەشت لە پڕۆسەدایە';
+
+  @override
+  String get notificationTripInProgressMessage => 'گەشتەکەت لە پڕۆسەدایە.';
+
+  @override
+  String get notificationDriverArrivedDropoffTitle => 'گەیشت بۆ ئامانج';
+
+  @override
+  String get notificationDriverArrivedDropoffMessage => 'گەیشتیت بۆ ئامانجەکەت.';
+
+  @override
+  String get notificationDriverInProgressTitle => 'لە ڕێگەدا بۆ ئامانج';
+
+  @override
+  String get notificationDriverInProgressMessage => 'شۆفێرەکەت دەتات بەرەو ئامانجەکەت.';
 }

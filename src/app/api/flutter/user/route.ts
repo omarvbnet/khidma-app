@@ -74,13 +74,14 @@ export async function PUT(req: NextRequest) {
 
     const decoded = verify(token, process.env.JWT_SECRET || 'your-secret-key') as { userId: string };
 
-    const { fullName, province } = await req.json();
+    const { fullName, province, language } = await req.json();
 
     const user = await prisma.user.update({
       where: { id: decoded.userId },
       data: {
         fullName: fullName || undefined,
         province: province || undefined,
+        language: language || undefined,
       },
     });
 
@@ -91,6 +92,7 @@ export async function PUT(req: NextRequest) {
       province: user.province,
       role: user.role,
       status: user.status,
+      language: user.language,
     });
   } catch (error) {
     console.error('Error in user profile update route:', error);

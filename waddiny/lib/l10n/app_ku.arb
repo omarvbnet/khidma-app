@@ -597,5 +597,26 @@
   "reset": "سڕینەوە",
   "searchForDestination": "گەڕان بۆ ئامانج...",
   "tapToSetAsDestination": "کلیک بکە بۆ دانانی وەک ئامانج",
-  "searchForDestinationsWithin50kmOfYourCurrentPosition": "گەڕان بۆ ئامانجەکان لە ناو ٥٠ کم لە شوێنی ئێستای تۆدا"
+  "searchForDestinationsWithin50kmOfYourCurrentPosition": "گەڕان بۆ ئامانجەکان لە ناو ٥٠ کم لە شوێنی ئێستای تۆدا",
+
+  "notificationNewTripAvailable": "گەشتێکی نوێ بەردەستە!",
+  "notificationNewTripMessage": "گەشتێکی نوێ بەردەستە لە {province}. کلیک بکە بۆ بینینی وردەکاری.",
+  "notificationDriverAcceptedTitle": "شۆفێر گەشتەکەت قبوڵی کرد!",
+  "notificationDriverAcceptedMessage": "شۆفێرێک داواکاری گەشتەکەت قبوڵی کرد. بەم زووانە لە ڕێگەدا دەبێت.",
+  "notificationDriverInWayTitle": "شۆفێر لە ڕێگەدایە!",
+  "notificationDriverInWayMessage": "شۆفێرەکەت بەرەو شوێنی وەرگرتن دەڕوات.",
+  "notificationDriverArrivedTitle": "شۆفێر هات!",
+  "notificationDriverArrivedMessage": "شۆفێرەکەت گەیشت بۆ شوێنی وەرگرتن.",
+  "notificationUserPickedUpTitle": "گەشتەکە دەستی پێکرد!",
+  "notificationUserPickedUpMessage": "وەرگیرایت. چێژ لە گەشتەکەت وەربگرە!",
+  "notificationTripCompletedTitle": "گەشتەکە تەواو بوو!",
+  "notificationTripCompletedMessage": "گەشتەکەت بە سەرکەوتوویی تەواو بوو. سوپاس بۆ بەکارهێنانی خزمەتگوزاریەکەمان!",
+  "notificationTripCancelledTitle": "گەشتەکە هەڵوەشێندرایەوە",
+  "notificationTripCancelledMessage": "گەشتەکەت هەڵوەشێندرایەوە.",
+  "notificationTripInProgressTitle": "گەشت لە پڕۆسەدایە",
+  "notificationTripInProgressMessage": "گەشتەکەت لە پڕۆسەدایە.",
+  "notificationDriverArrivedDropoffTitle": "گەیشت بۆ ئامانج",
+  "notificationDriverArrivedDropoffMessage": "گەیشتیت بۆ ئامانجەکەت.",
+  "notificationDriverInProgressTitle": "لە ڕێگەدا بۆ ئامانج",
+  "notificationDriverInProgressMessage": "شۆفێرەکەت دەتات بەرەو ئامانجەکەت."
 } 

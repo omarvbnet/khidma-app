@@ -3338,6 +3338,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search for destinations within 50km of your current position'**
   String get searchForDestinationsWithin50kmOfYourCurrentPosition;
+
+  /// No description provided for @notificationNewTripAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'New Trip Available!'**
+  String get notificationNewTripAvailable;
+
+  /// No description provided for @notificationNewTripMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A new trip request is available in {province}. Tap to view details.'**
+  String notificationNewTripMessage(Object province);
+
+  /// No description provided for @notificationDriverAcceptedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Accepted Your Trip!'**
+  String get notificationDriverAcceptedTitle;
+
+  /// No description provided for @notificationDriverAcceptedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A driver has accepted your trip request. They will be on their way soon.'**
+  String get notificationDriverAcceptedMessage;
+
+  /// No description provided for @notificationDriverInWayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver is on the Way!'**
+  String get notificationDriverInWayTitle;
+
+  /// No description provided for @notificationDriverInWayMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your driver is heading to your pickup location.'**
+  String get notificationDriverInWayMessage;
+
+  /// No description provided for @notificationDriverArrivedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Has Arrived!'**
+  String get notificationDriverArrivedTitle;
+
+  /// No description provided for @notificationDriverArrivedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your driver has arrived at the pickup location.'**
+  String get notificationDriverArrivedMessage;
+
+  /// No description provided for @notificationUserPickedUpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip Started!'**
+  String get notificationUserPickedUpTitle;
+
+  /// No description provided for @notificationUserPickedUpMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have been picked up. Enjoy your ride!'**
+  String get notificationUserPickedUpMessage;
+
+  /// No description provided for @notificationTripCompletedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip Completed!'**
+  String get notificationTripCompletedTitle;
+
+  /// No description provided for @notificationTripCompletedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your trip has been completed successfully. Thank you for using our service!'**
+  String get notificationTripCompletedMessage;
+
+  /// No description provided for @notificationTripCancelledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip Cancelled'**
+  String get notificationTripCancelledTitle;
+
+  /// No description provided for @notificationTripCancelledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your trip has been cancelled.'**
+  String get notificationTripCancelledMessage;
+
+  /// No description provided for @notificationTripInProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip in Progress'**
+  String get notificationTripInProgressTitle;
+
+  /// No description provided for @notificationTripInProgressMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your trip is currently in progress.'**
+  String get notificationTripInProgressMessage;
+
+  /// No description provided for @notificationDriverArrivedDropoffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived at Destination'**
+  String get notificationDriverArrivedDropoffTitle;
+
+  /// No description provided for @notificationDriverArrivedDropoffMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have arrived at your destination.'**
+  String get notificationDriverArrivedDropoffMessage;
+
+  /// No description provided for @notificationDriverInProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On the Way to Destination'**
+  String get notificationDriverInProgressTitle;
+
+  /// No description provided for @notificationDriverInProgressMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your driver is taking you to your destination.'**
+  String get notificationDriverInProgressMessage;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

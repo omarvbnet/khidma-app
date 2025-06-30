@@ -598,5 +598,26 @@
   "reset": "Sıfırla",
   "searchForDestination": "Hedef ara...",
   "tapToSetAsDestination": "Hedef olarak ayarla",
-  "searchForDestinationsWithin50kmOfYourCurrentPosition": "Mevcut konumunuzdan 50km içinde hedefler arayın"
+  "searchForDestinationsWithin50kmOfYourCurrentPosition": "Mevcut konumunuzdan 50km içinde hedefler arayın",
+
+  "notificationNewTripAvailable": "Yeni Yolculuk Mevcut!",
+  "notificationNewTripMessage": "{province} bölgesinde yeni bir yolculuk talebi mevcut. Detayları görmek için dokunun.",
+  "notificationDriverAcceptedTitle": "Sürücü Yolculuğunuzu Kabul Etti!",
+  "notificationDriverAcceptedMessage": "Bir sürücü yolculuk talebinizi kabul etti. Yakında yolda olacaklar.",
+  "notificationDriverInWayTitle": "Sürücü Yolda!",
+  "notificationDriverInWayMessage": "Sürücünüz alış noktanıza doğru yolda.",
+  "notificationDriverArrivedTitle": "Sürücü Vardı!",
+  "notificationDriverArrivedMessage": "Sürücünüz alış noktasına vardı.",
+  "notificationUserPickedUpTitle": "Yolculuk Başladı!",
+  "notificationUserPickedUpMessage": "Alındınız. Yolculuğunuzun tadını çıkarın!",
+  "notificationTripCompletedTitle": "Yolculuk Tamamlandı!",
+  "notificationTripCompletedMessage": "Yolculuğunuz başarıyla tamamlandı. Hizmetimizi kullandığınız için teşekkürler!",
+  "notificationTripCancelledTitle": "Yolculuk İptal Edildi",
+  "notificationTripCancelledMessage": "Yolculuğunuz iptal edildi.",
+  "notificationTripInProgressTitle": "Yolculuk Devam Ediyor",
+  "notificationTripInProgressMessage": "Yolculuğunuz şu anda devam ediyor.",
+  "notificationDriverArrivedDropoffTitle": "Hedefe Vardı",
+  "notificationDriverArrivedDropoffMessage": "Hedefinize vardınız.",
+  "notificationDriverInProgressTitle": "Hedefe Giderken",
+  "notificationDriverInProgressMessage": "Sürücünüz sizi hedefinize götürüyor."
 } 

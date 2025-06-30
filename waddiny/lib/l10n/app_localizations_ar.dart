@@ -1749,4 +1749,66 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get searchForDestinationsWithin50kmOfYourCurrentPosition => 'ابحث عن وجهات ضمن 50 كم من موقعك الحالي';
+
+  @override
+  String get notificationNewTripAvailable => 'رحلة جديدة متاحة!';
+
+  @override
+  String notificationNewTripMessage(Object province) {
+    return 'رحلة جديدة متاحة في $province. اضغط لعرض التفاصيل.';
+  }
+
+  @override
+  String get notificationDriverAcceptedTitle => 'قبل السائق رحلتك!';
+
+  @override
+  String get notificationDriverAcceptedMessage => 'قبل سائق طلب رحلتك. سيكون في الطريق قريباً.';
+
+  @override
+  String get notificationDriverInWayTitle => 'السائق في الطريق!';
+
+  @override
+  String get notificationDriverInWayMessage => 'سائقك متجه إلى موقع الاستلام.';
+
+  @override
+  String get notificationDriverArrivedTitle => 'وصل السائق!';
+
+  @override
+  String get notificationDriverArrivedMessage => 'وصل سائقك إلى موقع الاستلام.';
+
+  @override
+  String get notificationUserPickedUpTitle => 'بدأت الرحلة!';
+
+  @override
+  String get notificationUserPickedUpMessage => 'تم استلامك. استمتع برحلتك!';
+
+  @override
+  String get notificationTripCompletedTitle => 'اكتملت الرحلة!';
+
+  @override
+  String get notificationTripCompletedMessage => 'اكتملت رحلتك بنجاح. شكراً لاستخدام خدمتنا!';
+
+  @override
+  String get notificationTripCancelledTitle => 'تم إلغاء الرحلة';
+
+  @override
+  String get notificationTripCancelledMessage => 'تم إلغاء رحلتك.';
+
+  @override
+  String get notificationTripInProgressTitle => 'الرحلة قيد التنفيذ';
+
+  @override
+  String get notificationTripInProgressMessage => 'رحلتك قيد التنفيذ حالياً.';
+
+  @override
+  String get notificationDriverArrivedDropoffTitle => 'وصل إلى الوجهة';
+
+  @override
+  String get notificationDriverArrivedDropoffMessage => 'وصلت إلى وجهتك.';
+
+  @override
+  String get notificationDriverInProgressTitle => 'في الطريق إلى الوجهة';
+
+  @override
+  String get notificationDriverInProgressMessage => 'سائقك يأخذك إلى وجهتك.';
 }

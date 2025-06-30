@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import { sendPushNotification, sendMulticastNotification } from './firebase-admin';
+import { NotificationLocalizationService, LocalizedNotification } from './notification-localization';
 
 export interface NotificationData {
   tripId: string;
@@ -171,56 +172,73 @@ export async function sendTripStatusNotification(
   if (trip.userId) {
     console.log('📱 Sending notification to user:', trip.userId);
     
-    let userTitle = '';
-    let userMessage = '';
+    // Get user data to determine language preference
+    const user = await prisma.user.findUnique({
+      where: { id: trip.userId },
+      select: { phoneNumber: true, language: true }
+    });
+
+    const userLanguage = NotificationLocalizationService.getUserLanguage(user);
+    console.log(`🌍 User language preference: ${userLanguage}`);
+
     let userType = 'TRIP_STATUS_CHANGE';
 
+    // Map status to notification type
     switch (newStatus) {
       case 'DRIVER_ACCEPTED':
-        userTitle = 'Driver Accepted Your Trip!';
-        userMessage = 'A driver has accepted your trip request. They will be on their way soon.';
         userType = 'DRIVER_ACCEPTED';
         break;
-      
       case 'DRIVER_IN_WAY':
-        userTitle = 'Driver is on the Way!';
-        userMessage = 'Your driver is heading to your pickup location.';
+        userType = 'DRIVER_IN_WAY';
         break;
-      
       case 'DRIVER_ARRIVED':
-        userTitle = 'Driver Has Arrived!';
-        userMessage = 'Your driver has arrived at the pickup location.';
         userType = 'DRIVER_ARRIVED';
         break;
-      
       case 'USER_PICKED_UP':
-        userTitle = 'Trip Started!';
-        userMessage = 'You have been picked up. Enjoy your ride!';
         userType = 'USER_PICKED_UP';
         break;
-      
+      case 'DRIVER_IN_PROGRESS':
+        userType = 'DRIVER_IN_PROGRESS';
+        break;
+      case 'DRIVER_ARRIVED_DROPOFF':
+        userType = 'DRIVER_ARRIVED_DROPOFF';
+        break;
       case 'TRIP_COMPLETED':
-        userTitle = 'Trip Completed!';
-        userMessage = 'Your trip has been completed successfully. Thank you for using our service!';
         userType = 'TRIP_COMPLETED';
         break;
-      
       case 'TRIP_CANCELLED':
-        userTitle = 'Trip Cancelled';
-        userMessage = 'Your trip has been cancelled.';
         userType = 'TRIP_CANCELLED';
         break;
-      
       default:
         console.log('⚠️ No notification for user status:', newStatus);
         return; // Don't send notification for other statuses
     }
 
+    // Get localized notification message
+    const localizedNotification = NotificationLocalizationService.getLocalizedNotification(
+      userType,
+      userLanguage,
+      {
+        province: trip.userProvince,
+        pickupLocation: trip.pickupLocation,
+        dropoffLocation: trip.dropoffLocation,
+        price: trip.price,
+        distance: trip.distance,
+        userFullName: trip.userFullName,
+        userPhone: trip.userPhone,
+      }
+    );
+
+    console.log(`🌍 Localized notification (${userLanguage}):`, {
+      title: localizedNotification.title,
+      message: localizedNotification.message
+    });
+
     try {
       await sendNotificationWithFallback(
         trip.userId,
-        userTitle,
-        userMessage,
+        localizedNotification.title,
+        localizedNotification.message,
         notificationData,
         userType
       );
@@ -244,6 +262,15 @@ export async function sendNewTripNotification(
   trip: any,
   driverId: string
 ) {
+  // Get driver data to determine language preference
+  const driver = await prisma.user.findUnique({
+    where: { id: driverId },
+    select: { phoneNumber: true, language: true }
+  });
+
+  const driverLanguage = NotificationLocalizationService.getUserLanguage(driver);
+  console.log(`🌍 Driver language preference: ${driverLanguage}`);
+
   const notificationData: NotificationData = {
     tripId: trip.id,
     newStatus: 'NEW_TRIP_AVAILABLE',
@@ -255,17 +282,33 @@ export async function sendNewTripNotification(
     userPhone: trip.userPhone,
   };
 
-  const title = 'New Trip Available!';
-  const message = 'A new trip request is available in your area. Tap to view details.';
-  const type = 'NEW_TRIP_AVAILABLE';
+  // Get localized notification message
+  const localizedNotification = NotificationLocalizationService.getLocalizedNotification(
+    'NEW_TRIP_AVAILABLE',
+    driverLanguage,
+    {
+      province: trip.userProvince,
+      pickupLocation: trip.pickupLocation,
+      dropoffLocation: trip.dropoffLocation,
+      price: trip.price,
+      distance: trip.distance,
+      userFullName: trip.userFullName,
+      userPhone: trip.userPhone,
+    }
+  );
+
+  console.log(`🌍 Localized notification (${driverLanguage}):`, {
+    title: localizedNotification.title,
+    message: localizedNotification.message
+  });
 
   try {
     await sendNotificationWithFallback(
       driverId,
-      title,
-      message,
+      localizedNotification.title,
+      localizedNotification.message,
       notificationData,
-      type
+      'NEW_TRIP_AVAILABLE'
     );
   } catch (error) {
     console.error('Error sending new trip notification:', error);

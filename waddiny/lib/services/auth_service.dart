@@ -146,11 +146,16 @@ class AuthService {
         print('⚠️ Could not get device information: $e');
       }
 
+      // Get current language preference
+      final prefs = await SharedPreferences.getInstance();
+      final currentLanguage = prefs.getString('language') ?? 'en';
+
       final requestBody = {
         'phoneNumber': formattedPhone,
         'password': password,
         'fullName': fullName,
         'role': 'USER',
+        'language': currentLanguage,
       };
 
       // Add device information if available
@@ -223,6 +228,10 @@ class AuthService {
         print('⚠️ Could not get device information: $e');
       }
 
+      // Get current language preference
+      final prefs = await SharedPreferences.getInstance();
+      final currentLanguage = prefs.getString('language') ?? 'en';
+
       final requestBody = {
         'phoneNumber': formattedPhone,
         'password': password,
@@ -231,6 +240,7 @@ class AuthService {
         'carId': carId,
         'carType': carType,
         'licenseId': licenseId,
+        'language': currentLanguage,
       };
 
       // Add device information if available
@@ -564,6 +574,52 @@ class AuthService {
       }
     } catch (e) {
       print('❌ Error updating device information: $e');
+      throw e;
+    }
+  }
+
+  // Update user language preference
+  Future<void> updateUserLanguage(String language) async {
+    try {
+      print('🌍 Updating user language preference to: $language');
+
+      final token = await getToken();
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+
+      final response = await http.put(
+        Uri.parse('${ApiConstants.baseUrl}/user'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'language': language,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ User language preference updated successfully');
+
+        // Update local user data
+        final data = json.decode(response.body);
+        if (data['language'] != null) {
+          final prefs = await SharedPreferences.getInstance();
+          final userDataString = prefs.getString('userData');
+          if (userDataString != null) {
+            final userData = json.decode(userDataString);
+            userData['language'] = data['language'];
+            await prefs.setString('userData', json.encode(userData));
+          }
+        }
+      } else {
+        print('❌ Failed to update language preference: ${response.statusCode}');
+        print('Response: ${response.body}');
+        throw Exception('Failed to update language preference');
+      }
+    } catch (e) {
+      print('❌ Error updating language preference: $e');
       throw e;
     }
   }

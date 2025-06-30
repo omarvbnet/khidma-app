@@ -1755,4 +1755,66 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchForDestinationsWithin50kmOfYourCurrentPosition => 'Search for destinations within 50km of your current position';
+
+  @override
+  String get notificationNewTripAvailable => 'New Trip Available!';
+
+  @override
+  String notificationNewTripMessage(Object province) {
+    return 'A new trip request is available in $province. Tap to view details.';
+  }
+
+  @override
+  String get notificationDriverAcceptedTitle => 'Driver Accepted Your Trip!';
+
+  @override
+  String get notificationDriverAcceptedMessage => 'A driver has accepted your trip request. They will be on their way soon.';
+
+  @override
+  String get notificationDriverInWayTitle => 'Driver is on the Way!';
+
+  @override
+  String get notificationDriverInWayMessage => 'Your driver is heading to your pickup location.';
+
+  @override
+  String get notificationDriverArrivedTitle => 'Driver Has Arrived!';
+
+  @override
+  String get notificationDriverArrivedMessage => 'Your driver has arrived at the pickup location.';
+
+  @override
+  String get notificationUserPickedUpTitle => 'Trip Started!';
+
+  @override
+  String get notificationUserPickedUpMessage => 'You have been picked up. Enjoy your ride!';
+
+  @override
+  String get notificationTripCompletedTitle => 'Trip Completed!';
+
+  @override
+  String get notificationTripCompletedMessage => 'Your trip has been completed successfully. Thank you for using our service!';
+
+  @override
+  String get notificationTripCancelledTitle => 'Trip Cancelled';
+
+  @override
+  String get notificationTripCancelledMessage => 'Your trip has been cancelled.';
+
+  @override
+  String get notificationTripInProgressTitle => 'Trip in Progress';
+
+  @override
+  String get notificationTripInProgressMessage => 'Your trip is currently in progress.';
+
+  @override
+  String get notificationDriverArrivedDropoffTitle => 'Arrived at Destination';
+
+  @override
+  String get notificationDriverArrivedDropoffMessage => 'You have arrived at your destination.';
+
+  @override
+  String get notificationDriverInProgressTitle => 'On the Way to Destination';
+
+  @override
+  String get notificationDriverInProgressMessage => 'Your driver is taking you to your destination.';
 }

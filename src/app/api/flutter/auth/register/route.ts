@@ -6,11 +6,12 @@ import { Role, Prisma, User, Driver, UserStatus } from '@prisma/client';
 
 export async function POST(req: Request) {
   try {
-    const { phoneNumber, password, fullName, province = 'Baghdad', role = 'USER', carId, carType, licenseId, deviceToken, platform, appVersion } = await req.json();
+    const { phoneNumber, password, fullName, province = 'Baghdad', role = 'USER', carId, carType, licenseId, deviceToken, platform, appVersion, language } = await req.json();
 
     console.log('📱 Flutter registration attempt:', {
       phoneNumber,
       role,
+      language,
       deviceToken: deviceToken ? `${deviceToken.substring(0, 20)}...` : 'not provided',
       platform,
       appVersion,
@@ -58,6 +59,7 @@ export async function POST(req: Request) {
       deviceToken: deviceToken || null,
       platform: platform || null,
       appVersion: appVersion || null,
+      language: language || null,
       driver: role === 'DRIVER' ? {
         create: {
           carId,

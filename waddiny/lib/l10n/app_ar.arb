@@ -598,5 +598,26 @@
   "reset": "إعادة تعيين",
   "searchForDestination": "ابحث عن وجهة...",
   "tapToSetAsDestination": "اضغط لتعيين كوجهة",
-  "searchForDestinationsWithin50kmOfYourCurrentPosition": "ابحث عن وجهات ضمن 50 كم من موقعك الحالي"
+  "searchForDestinationsWithin50kmOfYourCurrentPosition": "ابحث عن وجهات ضمن 50 كم من موقعك الحالي",
+
+  "notificationNewTripAvailable": "رحلة جديدة متاحة!",
+  "notificationNewTripMessage": "رحلة جديدة متاحة في {province}. اضغط لعرض التفاصيل.",
+  "notificationDriverAcceptedTitle": "قبل السائق رحلتك!",
+  "notificationDriverAcceptedMessage": "قبل سائق طلب رحلتك. سيكون في الطريق قريباً.",
+  "notificationDriverInWayTitle": "السائق في الطريق!",
+  "notificationDriverInWayMessage": "سائقك متجه إلى موقع الاستلام.",
+  "notificationDriverArrivedTitle": "وصل السائق!",
+  "notificationDriverArrivedMessage": "وصل سائقك إلى موقع الاستلام.",
+  "notificationUserPickedUpTitle": "بدأت الرحلة!",
+  "notificationUserPickedUpMessage": "تم استلامك. استمتع برحلتك!",
+  "notificationTripCompletedTitle": "اكتملت الرحلة!",
+  "notificationTripCompletedMessage": "اكتملت رحلتك بنجاح. شكراً لاستخدام خدمتنا!",
+  "notificationTripCancelledTitle": "تم إلغاء الرحلة",
+  "notificationTripCancelledMessage": "تم إلغاء رحلتك.",
+  "notificationTripInProgressTitle": "الرحلة قيد التنفيذ",
+  "notificationTripInProgressMessage": "رحلتك قيد التنفيذ حالياً.",
+  "notificationDriverArrivedDropoffTitle": "وصل إلى الوجهة",
+  "notificationDriverArrivedDropoffMessage": "وصلت إلى وجهتك.",
+  "notificationDriverInProgressTitle": "في الطريق إلى الوجهة",
+  "notificationDriverInProgressMessage": "سائقك يأخذك إلى وجهتك."
 } 

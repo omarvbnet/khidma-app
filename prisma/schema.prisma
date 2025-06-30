@@ -21,6 +21,7 @@ model User {
   deviceToken  String?       // Device token for push notifications
   platform     String?       // Platform (ios/android)
   appVersion   String?       // App version
+  language     String?       // Preferred language (e.g., 'en', 'ar', 'ku', 'tr')
   driver       Driver?
   orders       Order[]
   taxiRequests TaxiRequest[]

@@ -1755,4 +1755,66 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get searchForDestinationsWithin50kmOfYourCurrentPosition => 'Mevcut konumunuzdan 50km içinde hedefler arayın';
+
+  @override
+  String get notificationNewTripAvailable => 'Yeni Yolculuk Mevcut!';
+
+  @override
+  String notificationNewTripMessage(Object province) {
+    return '$province bölgesinde yeni bir yolculuk talebi mevcut. Detayları görmek için dokunun.';
+  }
+
+  @override
+  String get notificationDriverAcceptedTitle => 'Sürücü Yolculuğunuzu Kabul Etti!';
+
+  @override
+  String get notificationDriverAcceptedMessage => 'Bir sürücü yolculuk talebinizi kabul etti. Yakında yolda olacaklar.';
+
+  @override
+  String get notificationDriverInWayTitle => 'Sürücü Yolda!';
+
+  @override
+  String get notificationDriverInWayMessage => 'Sürücünüz alış noktanıza doğru yolda.';
+
+  @override
+  String get notificationDriverArrivedTitle => 'Sürücü Vardı!';
+
+  @override
+  String get notificationDriverArrivedMessage => 'Sürücünüz alış noktasına vardı.';
+
+  @override
+  String get notificationUserPickedUpTitle => 'Yolculuk Başladı!';
+
+  @override
+  String get notificationUserPickedUpMessage => 'Alındınız. Yolculuğunuzun tadını çıkarın!';
+
+  @override
+  String get notificationTripCompletedTitle => 'Yolculuk Tamamlandı!';
+
+  @override
+  String get notificationTripCompletedMessage => 'Yolculuğunuz başarıyla tamamlandı. Hizmetimizi kullandığınız için teşekkürler!';
+
+  @override
+  String get notificationTripCancelledTitle => 'Yolculuk İptal Edildi';
+
+  @override
+  String get notificationTripCancelledMessage => 'Yolculuğunuz iptal edildi.';
+
+  @override
+  String get notificationTripInProgressTitle => 'Yolculuk Devam Ediyor';
+
+  @override
+  String get notificationTripInProgressMessage => 'Yolculuğunuz şu anda devam ediyor.';
+
+  @override
+  String get notificationDriverArrivedDropoffTitle => 'Hedefe Vardı';
+
+  @override
+  String get notificationDriverArrivedDropoffMessage => 'Hedefinize vardınız.';
+
+  @override
+  String get notificationDriverInProgressTitle => 'Hedefe Giderken';
+
+  @override
+  String get notificationDriverInProgressMessage => 'Sürücünüz sizi hedefinize götürüyor.';
 }

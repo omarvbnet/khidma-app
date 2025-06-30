@@ -598,5 +598,26 @@
   "reset": "Reset",
   "searchForDestination": "Search for destination...",
   "tapToSetAsDestination": "Tap to set as destination",
-  "searchForDestinationsWithin50kmOfYourCurrentPosition": "Search for destinations within 50km of your current position"
+  "searchForDestinationsWithin50kmOfYourCurrentPosition": "Search for destinations within 50km of your current position",
+
+  "notificationNewTripAvailable": "New Trip Available!",
+  "notificationNewTripMessage": "A new trip request is available in {province}. Tap to view details.",
+  "notificationDriverAcceptedTitle": "Driver Accepted Your Trip!",
+  "notificationDriverAcceptedMessage": "A driver has accepted your trip request. They will be on their way soon.",
+  "notificationDriverInWayTitle": "Driver is on the Way!",
+  "notificationDriverInWayMessage": "Your driver is heading to your pickup location.",
+  "notificationDriverArrivedTitle": "Driver Has Arrived!",
+  "notificationDriverArrivedMessage": "Your driver has arrived at the pickup location.",
+  "notificationUserPickedUpTitle": "Trip Started!",
+  "notificationUserPickedUpMessage": "You have been picked up. Enjoy your ride!",
+  "notificationTripCompletedTitle": "Trip Completed!",
+  "notificationTripCompletedMessage": "Your trip has been completed successfully. Thank you for using our service!",
+  "notificationTripCancelledTitle": "Trip Cancelled",
+  "notificationTripCancelledMessage": "Your trip has been cancelled.",
+  "notificationTripInProgressTitle": "Trip in Progress",
+  "notificationTripInProgressMessage": "Your trip is currently in progress.",
+  "notificationDriverArrivedDropoffTitle": "Arrived at Destination",
+  "notificationDriverArrivedDropoffMessage": "You have arrived at your destination.",
+  "notificationDriverInProgressTitle": "On the Way to Destination",
+  "notificationDriverInProgressMessage": "Your driver is taking you to your destination."
 }
