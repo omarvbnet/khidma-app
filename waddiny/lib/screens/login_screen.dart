@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../l10n/app_localizations.dart';
 import 'user_main_screen.dart';
 import 'driver_main_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -36,6 +38,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
         // Check user role and navigate accordingly
         final userData = response['user'];
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_role', userData['role']);
         if (userData['role'] == 'DRIVER') {
           Navigator.pushReplacement(
             context,
@@ -61,13 +65,13 @@ class _LoginScreenState extends State<LoginScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Choose Registration Type'),
+        title: Text(AppLocalizations.of(context)!.chooseRegistrationType),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.person),
-              title: const Text('Register as User'),
+              title: Text(AppLocalizations.of(context)!.registerAsUser),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(
@@ -79,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.drive_eta),
-              title: const Text('Register as Driver'),
+              title: Text(AppLocalizations.of(context)!.registerAsDriver),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(
@@ -99,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
@@ -107,6 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: 60),
                 const Icon(
                   Icons.local_taxi,
                   size: 80,
@@ -114,22 +119,23 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
                 Text(
-                  'Welcome Back',
+                  AppLocalizations.of(context)!.welcomeBack,
                   style: Theme.of(context).textTheme.headlineMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
                 TextFormField(
                   controller: _phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Phone Number',
-                    prefixIcon: Icon(Icons.phone),
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.phoneNumber,
+                    prefixIcon: const Icon(Icons.phone),
+                    border: const OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.phone,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your phone number';
+                      return AppLocalizations.of(context)!
+                          .pleaseEnterPhoneNumber;
                     }
                     return null;
                   },
@@ -137,15 +143,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock),
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.password,
+                    prefixIcon: const Icon(Icons.lock),
+                    border: const OutlineInputBorder(),
                   ),
                   obscureText: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
+                      return AppLocalizations.of(context)!.pleaseEnterPassword;
                     }
                     return null;
                   },
@@ -158,13 +164,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator()
-                      : const Text('Login'),
+                      : Text(AppLocalizations.of(context)!.login),
                 ),
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: _showRegistrationDialog,
-                  child: const Text('Don\'t have an account? Register'),
+                  child: Text(AppLocalizations.of(context)!.dontHaveAccount),
                 ),
+                const SizedBox(height: 60),
               ],
             ),
           ),

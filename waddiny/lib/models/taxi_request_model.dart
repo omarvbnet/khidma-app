@@ -58,6 +58,44 @@ class TaxiRequest {
   factory TaxiRequest.fromJson(Map<String, dynamic> json) {
     final rawStatus = (json['status'] ?? 'USER_WAITING') as String;
 
+    // Debug: Log the raw JSON data for coordinates
+    print('TaxiRequest.fromJson - Raw coordinates:');
+    print(
+        '  pickupLat: ${json['pickupLat']} (type: ${json['pickupLat']?.runtimeType})');
+    print(
+        '  pickupLng: ${json['pickupLng']} (type: ${json['pickupLng']?.runtimeType})');
+    print(
+        '  dropoffLat: ${json['dropoffLat']} (type: ${json['dropoffLat']?.runtimeType})');
+    print(
+        '  dropoffLng: ${json['dropoffLng']} (type: ${json['dropoffLng']?.runtimeType})');
+
+    // Helper function to safely convert to double
+    double safeToDouble(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is num) return value.toDouble();
+      if (value is String) {
+        try {
+          return double.parse(value);
+        } catch (e) {
+          print('Error parsing string to double: $value');
+          return 0.0;
+        }
+      }
+      print('Invalid value type for double conversion: $value');
+      return 0.0;
+    }
+
+    final pickupLat = safeToDouble(json['pickupLat']);
+    final pickupLng = safeToDouble(json['pickupLng']);
+    final dropoffLat = safeToDouble(json['dropoffLat']);
+    final dropoffLng = safeToDouble(json['dropoffLng']);
+
+    print('TaxiRequest.fromJson - Parsed coordinates:');
+    print('  pickupLat: $pickupLat');
+    print('  pickupLng: $pickupLng');
+    print('  dropoffLat: $dropoffLat');
+    print('  dropoffLng: $dropoffLng');
+
     return TaxiRequest(
       id: json['id']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
@@ -65,10 +103,10 @@ class TaxiRequest {
       status: rawStatus.toUpperCase(),
       pickupLocation: json['pickupLocation']?.toString() ?? '',
       dropoffLocation: json['dropoffLocation']?.toString() ?? '',
-      pickupLat: (json['pickupLat'] ?? 0.0).toDouble(),
-      pickupLng: (json['pickupLng'] ?? 0.0).toDouble(),
-      dropoffLat: (json['dropoffLat'] ?? 0.0).toDouble(),
-      dropoffLng: (json['dropoffLng'] ?? 0.0).toDouble(),
+      pickupLat: pickupLat,
+      pickupLng: pickupLng,
+      dropoffLat: dropoffLat,
+      dropoffLng: dropoffLng,
       price: (json['price'] ?? 0.0).toDouble(),
       distance: (json['distance'] ?? 0.0).toDouble(),
       driverDeduction: (json['driverDeduction'] ?? 0.0).toDouble(),

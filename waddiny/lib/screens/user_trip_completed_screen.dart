@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/trip_model.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart'; // Import to use getLocalizations helper
 
 class UserTripCompletedScreen extends StatefulWidget {
   final Trip trip;
@@ -124,7 +126,7 @@ class _UserTripCompletedScreenState extends State<UserTripCompletedScreen>
 
                   // Success message
                   Text(
-                    'Trip Completed!',
+                    getLocalizations(context).tripCompletedTitle,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.green[700],
@@ -134,7 +136,7 @@ class _UserTripCompletedScreenState extends State<UserTripCompletedScreen>
                   const SizedBox(height: 16),
 
                   Text(
-                    'Thank you for using our service',
+                    getLocalizations(context).thankYouForUsingService,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Colors.grey[600],
                         ),
@@ -153,28 +155,28 @@ class _UserTripCompletedScreenState extends State<UserTripCompletedScreen>
                       child: Column(
                         children: [
                           _buildTripDetail(
-                            'From',
+                            getLocalizations(context).fromLabel,
                             widget.trip.pickupLocation,
                             Icons.location_on,
                             Colors.blue,
                           ),
                           const SizedBox(height: 16),
                           _buildTripDetail(
-                            'To',
+                            getLocalizations(context).toLabel,
                             widget.trip.dropoffLocation,
                             Icons.flag,
                             Colors.red,
                           ),
                           const SizedBox(height: 16),
                           _buildTripDetail(
-                            'Distance',
+                            getLocalizations(context).distance,
                             '${widget.trip.distance.toStringAsFixed(1)} km',
                             Icons.route,
                             Colors.purple,
                           ),
                           const SizedBox(height: 16),
                           _buildTripDetail(
-                            'Fare',
+                            getLocalizations(context).fareLabel,
                             '${widget.trip.fare} IQD',
                             Icons.attach_money,
                             Colors.green,
@@ -209,7 +211,8 @@ class _UserTripCompletedScreenState extends State<UserTripCompletedScreen>
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Returning to home in $_countdown seconds',
+                          getLocalizations(context)
+                              .countdownMessage(_countdown),
                           style: TextStyle(
                             color: Colors.blue[700],
                             fontWeight: FontWeight.w500,
@@ -220,15 +223,20 @@ class _UserTripCompletedScreenState extends State<UserTripCompletedScreen>
                   ),
                   const SizedBox(height: 24),
 
-                  // Manual navigation button
-                  TextButton(
-                    onPressed: _navigateToHome,
-                    child: const Text(
-                      'Go to Home Now',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                  // Return to home button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _navigateToHome,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
+                      child: Text(getLocalizations(context).returnToHomeNow),
                     ),
                   ),
                 ],

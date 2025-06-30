@@ -40,6 +40,49 @@ export async function POST(request: NextRequest) {
       appVersion,
     });
 
+    // Get user details to verify role
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        fullName: true,
+        role: true,
+        status: true,
+        deviceToken: true,
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    console.log('👤 User details:', {
+      id: user.id,
+      fullName: user.fullName,
+      role: user.role,
+      status: user.status,
+      hasExistingToken: !!user.deviceToken,
+    });
+
+    // Clear any existing device tokens for this device token (prevent conflicts)
+    if (deviceToken) {
+      await prisma.user.updateMany({
+        where: {
+          deviceToken: deviceToken,
+          id: { not: decoded.userId }, // Don't update the current user
+        },
+        data: {
+          deviceToken: null,
+          platform: null,
+          appVersion: null,
+        },
+      });
+      console.log('🧹 Cleared device token from other users');
+    }
+
     // Update user with device token
     const updatedUser = await prisma.user.update({
       where: { id: decoded.userId },
@@ -51,7 +94,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log('✅ Device token registered successfully for user:', updatedUser.id);
+    console.log('✅ Device token registered successfully for user:', {
+      id: updatedUser.id,
+      fullName: updatedUser.fullName,
+      role: updatedUser.role,
+      deviceToken: deviceToken ? `${deviceToken.substring(0, 20)}...` : 'null',
+    });
 
     return NextResponse.json({
       success: true,

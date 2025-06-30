@@ -4,11 +4,14 @@ import '../services/trip_service.dart';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
 import '../models/trip_model.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart'; // Import to use getLocalizations helper
 import 'user_pending_screen.dart';
 import 'user_waiting_screen.dart';
 import 'user_select_trip_screen.dart';
 import 'user_navigation_screen.dart';
 import 'user_trip_completed_screen.dart';
+import '../components/language_switcher.dart';
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({Key? key}) : super(key: key);
@@ -201,9 +204,31 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
     if (_isLoading) {
       print('Showing loading screen');
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: CircularProgressIndicator(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                getLocalizations(context).loadingTripInformation,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+              ),
+              const SizedBox(height: 24),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isLoading = true;
+                  });
+                  _loadCurrentTrip();
+                },
+                child: Text(getLocalizations(context).retry),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -264,7 +289,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   Widget _buildHomeScreen() {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        title: Text(getLocalizations(context).home),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -287,14 +312,15 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Welcome, ${_user?.fullName ?? 'User'}!',
+                        getLocalizations(context)
+                            .welcomeUser(_user?.fullName ?? 'User'),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Where would you like to go?',
+                        getLocalizations(context).whereWouldYouLikeToGo,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               color: Colors.grey[600],
                             ),
@@ -303,6 +329,10 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 24),
+
+              // Language switcher
+              LanguageSwitcher(),
               const SizedBox(height: 24),
 
               // Create trip button
@@ -316,7 +346,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   );
                 },
                 icon: const Icon(Icons.add_location_alt),
-                label: const Text('Create New Trip'),
+                label: Text(getLocalizations(context).createNewTrip),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -325,126 +355,6 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Trip history section
-              Text(
-                'Recent Trips',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: FutureBuilder<List<Trip>>(
-                  future: _tripService.getUserTrips(_user!.id),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Text(
-                          'Error loading trips: ${snapshot.error}',
-                          style: TextStyle(color: Colors.red[700]),
-                        ),
-                      );
-                    }
-
-                    final trips = snapshot.data ?? [];
-                    if (trips.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.history,
-                              size: 64,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No trips yet',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    return ListView.builder(
-                      itemCount: trips.length,
-                      itemBuilder: (context, index) {
-                        final trip = trips[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.all(16),
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: _getStatusColor(trip.status)
-                                    .withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                _getStatusIcon(trip.status),
-                                color: _getStatusColor(trip.status),
-                              ),
-                            ),
-                            title: Text(
-                              'Trip to ${trip.dropoffLocation}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 4),
-                                Text(
-                                  'From: ${trip.pickupLocation}',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Status: ${trip.status}',
-                                  style: TextStyle(
-                                    color: _getStatusColor(trip.status),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Price: ${trip.fare} IQD',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.arrow_forward_ios),
-                              onPressed: () {
-                                // TODO: Navigate to trip details
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
             ],
           ),
         ),
@@ -499,6 +409,31 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         return Icons.cancel;
       default:
         return Icons.info;
+    }
+  }
+
+  String getLocalizedStatus(BuildContext context, String status) {
+    switch (status.toUpperCase()) {
+      case 'USER_WAITING':
+        return getLocalizations(context).statusUserWaiting;
+      case 'DRIVER_ACCEPTED':
+        return getLocalizations(context).statusDriverAccepted;
+      case 'DRIVER_IN_WAY':
+        return getLocalizations(context).statusDriverInWay;
+      case 'DRIVER_ARRIVED':
+        return getLocalizations(context).statusDriverArrived;
+      case 'USER_PICKED_UP':
+        return getLocalizations(context).statusUserPickedUp;
+      case 'DRIVER_IN_PROGRESS':
+        return getLocalizations(context).statusDriverInProgress;
+      case 'DRIVER_ARRIVED_DROPOFF':
+        return getLocalizations(context).statusDriverArrivedDropoff;
+      case 'TRIP_COMPLETED':
+        return getLocalizations(context).statusTripCompleted;
+      case 'TRIP_CANCELLED':
+        return getLocalizations(context).statusTripCancelled;
+      default:
+        return status;
     }
   }
 }

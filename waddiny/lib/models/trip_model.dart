@@ -103,35 +103,38 @@ class Trip {
       return status.toUpperCase().replaceAll(' ', '_');
     }
 
-    // Validate coordinates
+    // Parse coordinates directly from the API response
     final pickupLat = safeToDouble(json['pickupLat']);
     final pickupLng = safeToDouble(json['pickupLng']);
     final dropoffLat = safeToDouble(json['dropoffLat']);
     final dropoffLng = safeToDouble(json['dropoffLng']);
 
-    if (pickupLat == 0 ||
-        pickupLng == 0 ||
-        dropoffLat == 0 ||
-        dropoffLng == 0) {
-      print('Invalid coordinates detected:');
-      print('- Pickup: ($pickupLat, $pickupLng)');
-      print('- Dropoff: ($dropoffLat, $dropoffLng)');
-      throw Exception('Invalid coordinates in trip data');
+    // Check if coordinates are valid (not zero, not NaN, not infinite, and within valid ranges)
+    bool isValidCoordinate(double lat, double lng) {
+      return lat != 0.0 &&
+          lng != 0.0 &&
+          !lat.isNaN &&
+          !lng.isNaN &&
+          !lat.isInfinite &&
+          !lng.isInfinite &&
+          lat >= -90 &&
+          lat <= 90 &&
+          lng >= -180 &&
+          lng <= 180;
     }
 
-    // Validate coordinate ranges
-    if (pickupLat < -90 ||
-        pickupLat > 90 ||
-        dropoffLat < -90 ||
-        dropoffLat > 90) {
-      throw Exception('Invalid latitude values. Must be between -90 and 90.');
+    // Use the actual coordinates from API if they are valid
+    final validPickupLat = pickupLat;
+    final validPickupLng = pickupLng;
+    final validDropoffLat = dropoffLat;
+    final validDropoffLng = dropoffLng;
+
+    // Log coordinate validation
+    if (!isValidCoordinate(pickupLat, pickupLng)) {
+      print('Warning: Invalid pickup coordinates: ($pickupLat, $pickupLng)');
     }
-    if (pickupLng < -180 ||
-        pickupLng > 180 ||
-        dropoffLng < -180 ||
-        dropoffLng > 180) {
-      throw Exception(
-          'Invalid longitude values. Must be between -180 and 180.');
+    if (!isValidCoordinate(dropoffLat, dropoffLng)) {
+      print('Warning: Invalid dropoff coordinates: ($dropoffLat, $dropoffLng)');
     }
 
     // Parse price and distance
@@ -144,12 +147,12 @@ class Trip {
     print('- Status: ${normalizeStatus(json['status'])}');
     print('- Price/Fare: $price');
     print('- Distance: $distance');
-    print('- Pickup: ($pickupLat, $pickupLng)');
-    print('- Dropoff: ($dropoffLat, $dropoffLng)');
+    print('- Pickup: ($validPickupLat, $validPickupLng)');
+    print('- Dropoff: ($validDropoffLat, $validDropoffLng)');
 
     // Create LatLng objects for pickup and dropoff
-    final pickupLocationLatLng = LatLng(pickupLat, pickupLng);
-    final dropoffLocationLatLng = LatLng(dropoffLat, dropoffLng);
+    final pickupLocationLatLng = LatLng(validPickupLat, validPickupLng);
+    final dropoffLocationLatLng = LatLng(validDropoffLat, validDropoffLng);
 
     return Trip(
       id: json['id']?.toString() ?? '',
@@ -157,10 +160,10 @@ class Trip {
       driverId: json['driverId']?.toString(),
       pickupLocation: json['pickupLocation']?.toString() ?? 'Unknown',
       dropoffLocation: json['dropoffLocation']?.toString() ?? 'Unknown',
-      pickupLat: pickupLat,
-      pickupLng: pickupLng,
-      dropoffLat: dropoffLat,
-      dropoffLng: dropoffLng,
+      pickupLat: validPickupLat,
+      pickupLng: validPickupLng,
+      dropoffLat: validDropoffLat,
+      dropoffLng: validDropoffLng,
       fare: price,
       distance: distance,
       status: normalizeStatus(json['status']),

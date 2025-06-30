@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
+import '../components/language_switcher.dart';
+import '../l10n/app_localizations.dart';
 import 'login_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
@@ -93,7 +95,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('User Profile'),
+        title: Text(AppLocalizations.of(context)!.userProfile),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -112,7 +114,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
             const SizedBox(height: 24),
             _buildInfoCard(
-              title: 'Personal Information',
+              title: AppLocalizations.of(context)!.personalInformation,
               children: [
                 _buildInfoRow('Full Name', _user!.fullName),
                 _buildInfoRow('Phone Number', _user!.phoneNumber),
@@ -121,7 +123,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
             const SizedBox(height: 16),
             _buildInfoCard(
-              title: 'Account Information',
+              title: AppLocalizations.of(context)!.accountInformation,
               children: [
                 _buildInfoRow('Account Type', _user!.role),
                 _buildInfoRow('Status', _user!.status),
@@ -130,6 +132,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 _buildInfoRow('Member Since', _formatDate(_user!.createdAt)),
               ],
             ),
+            const SizedBox(height: 16),
+            // Language Switcher
+            LanguageSwitcher(),
           ],
         ),
       ),

@@ -16,6 +16,8 @@ import 'package:sensors_plus/sensors_plus.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../constants/app_constants.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart'; // Import to use getLocalizations helper
 
 class DriverNavigationScreen extends StatefulWidget {
   final Trip trip;
@@ -72,7 +74,12 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
       // Initialize map even if car icon fails
       _initializeMap();
     });
-    _startMagnetometerUpdates();
+
+    // Start magnetometer updates to track phone rotation
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _startMagnetometerUpdates();
+    });
+
     // Auto-switch to DRIVER_IN_PROGRESS 30s after pickup
     if (widget.trip.status == 'USER_PICKED_UP') {
       _autoProgressTimer = Timer(const Duration(seconds: 30), () {
@@ -137,41 +144,163 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
     }
   }
 
+  double _getCarRotationOffset() {
+    // Add offset to make car point in the correct direction
+    // This may need adjustment based on the car icon image orientation
+    return 0.0; // Adjust this value if car is not pointing in the right direction
+  }
+
+  void _adjustCarRotation() {
+    // Maps.me style navigation - no direction controls needed
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.map, color: Colors.white),
+            SizedBox(width: 8),
+            Expanded(
+              child:
+                  Text(getLocalizations(context).mapsMeStyleNavigationMessage),
+            ),
+          ],
+        ),
+        duration: Duration(seconds: 4),
+        backgroundColor: Colors.blue,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  void _testHeadingDirection() {
+    // Show actual movement tracking test instructions
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.gps_fixed, color: Colors.blue),
+              SizedBox(width: 8),
+              Text(getLocalizations(context).actualMovementTestTitle),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(getLocalizations(context)
+                  .actualMovementTrackingInstructionsTitle),
+              SizedBox(height: 12),
+              Text(getLocalizations(context).movePhoneLeftMessage),
+              Text(getLocalizations(context).movePhoneRightMessage),
+              Text(getLocalizations(context).bothFollowActualMovementMessage),
+              Text(getLocalizations(context).gpsBasedMovementTrackingMessage),
+              Text(getLocalizations(context).realTimeMovementFollowingMessage),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(getLocalizations(context).okButton),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _tryAlternativeCalibration() {
+    // Show Maps.me navigation information
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.map, color: Colors.blue),
+              SizedBox(width: 8),
+              Text(getLocalizations(context).mapsMeInfo),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(getLocalizations(context).mapsMeStyleFeatures),
+              SizedBox(height: 12),
+              Text('• Route to destination'),
+              Text('• GPS-based navigation'),
+              Text('• Clean interface'),
+              Text('• No direction controls'),
+              Text('• Focus on the road ahead'),
+              SizedBox(height: 8),
+              Text(
+                getLocalizations(context)
+                    .distanceKm(_distanceToDestination.toStringAsFixed(1)),
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(getLocalizations(context).ok),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _startMagnetometerUpdates() {
     _magnetometerSubscription =
         magnetometerEvents.listen((MagnetometerEvent event) {
-      // Calculate heading from magnetometer data
-      double heading = atan2(event.y, event.x) * (180 / pi);
-      // Convert to 0-360 range
-      heading = (heading + 360) % 360;
+      // Use GPS heading for actual phone movement instead of magnetometer rotation
+      // Both camera and marker follow actual movement direction
 
-      if (_deviceHeading != heading) {
-        setState(() {
-          _deviceHeading = heading;
-        });
-        // Update both camera and marker with the new heading
-        _updateCameraRotation(heading);
-        if (_currentLocation != null) {
-          _updateMarkers();
-        }
+      // Keep the current GPS heading for actual movement tracking
+      // Don't update with magnetometer data - use GPS for real movement
+
+      // Debug logging for actual movement tracking
+      print(
+          '📱 Actual movement tracking - GPS heading: ${_currentHeading.toStringAsFixed(1)}° (X: ${event.x.toStringAsFixed(2)}, Y: ${event.y.toStringAsFixed(2)})');
+
+      // Update both camera and marker with GPS heading (actual movement)
+      _updateCameraRotation(_currentHeading);
+      if (_currentLocation != null) {
+        _updateMarkers();
       }
     });
+  }
+
+  double _getCalibratedHeading(double rawHeading) {
+    // Return GPS heading directly for Maps.me style
+    return rawHeading;
   }
 
   void _updateMarkers() {
     if (_currentLocation == null) return;
 
+    // Both camera and marker follow actual phone movement using GPS heading
+    final double carRotation =
+        _currentHeading; // Use GPS heading for actual movement
+
     setState(() {
       _markers = {
-        // Current location marker (car)
+        // Current location marker (car) - rotate to match actual movement direction
         Marker(
           markerId: const MarkerId('current'),
           position: _currentLocation!,
           icon: _carIcon ??
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          rotation: _currentHeading,
-          anchor: const Offset(0.5, 0.5),
-          flat: true,
+          rotation:
+              carRotation, // Use GPS heading for actual movement direction
+          anchor: const Offset(0.5, 0.5), // Center the rotation point
+          flat: true, // Keep marker flat on the map
           infoWindow: const InfoWindow(title: 'Your Location'),
         ),
         // Pickup marker
@@ -191,29 +320,32 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
         ),
       };
     });
+
+    // Debug logging for car marker rotation
+    print('🚗 Car follows actual movement: ${carRotation.toStringAsFixed(1)}°');
   }
 
   void _updateCameraRotation(double heading) {
     if (_mapController.future != null && _currentLocation != null) {
       _mapController.future.then((controller) {
-        // Calculate the camera position based on the heading
-        final double offset = 0.0002;
-        final double headingRadians = heading * (pi / 180);
-        final double newLat =
-            _currentLocation!.latitude + (offset * cos(headingRadians));
-        final double newLng =
-            _currentLocation!.longitude + (offset * sin(headingRadians));
+        // Camera follows phone rotation exactly with same degree
+        final double cameraBearing = heading;
 
         controller.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
-              target: LatLng(newLat, newLng),
-              zoom: 18,
-              bearing: heading, // Use device heading directly
-              tilt: 60,
+              target: _currentLocation!, // Focus on driver's current location
+              zoom: 17.5, // Maps.me style zoom
+              bearing:
+                  cameraBearing, // Use phone heading for camera - same degree as phone
+              tilt: 60, // Maps.me style 3D perspective
             ),
           ),
         );
+
+        // Debug logging for camera rotation
+        print(
+            '📱 Camera follows phone rotation exactly - bearing: ${cameraBearing.toStringAsFixed(1)}°');
       });
     }
   }
@@ -224,42 +356,26 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
     });
     _updateMarkers();
     _checkDistance();
+
+    // Update camera to work like Maps.me - follows GPS heading for route navigation
+    _updateCameraToFollowDriver();
+  }
+
+  void _updateCameraToFollowDriver() {
+    // Update camera to work like Maps.me - follows GPS heading for route navigation
+    if (_currentLocation != null) {
+      _updateCameraRotation(_currentHeading);
+    }
   }
 
   void _updateHeading(double heading) {
     setState(() {
-      _currentHeading = heading;
-      // Update car marker rotation
-      _markers = {
-        ..._markers.where((m) => m.markerId.value != 'current'),
-        Marker(
-          markerId: const MarkerId('current'),
-          position: _currentLocation!,
-          icon: _carIcon ??
-              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          rotation: heading,
-          anchor: const Offset(0.5, 0.5),
-          flat: true,
-          infoWindow: const InfoWindow(title: 'Your Location'),
-        ),
-      };
+      _currentHeading =
+          heading; // Keep GPS heading for Maps.me style navigation
     });
 
-    // Update camera bearing to match car heading
-    if (_mapController.future != null && _currentLocation != null) {
-      _mapController.future.then((controller) {
-        controller.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: _currentLocation!,
-              zoom: 18,
-              bearing: heading,
-              tilt: 60,
-            ),
-          ),
-        );
-      });
-    }
+    // Update camera with GPS heading for route navigation
+    _updateCameraRotation(heading);
   }
 
   void _updateSpeed(double speed) {
@@ -270,23 +386,30 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
 
   Future<void> _updateTripStatus(String newStatus) async {
     try {
+      // Don't update if already in the target status
+      if (_status == newStatus) {
+        print('Already in status: $newStatus, skipping update');
+        return;
+      }
+
       setState(() {
         _isUpdating = true;
       });
 
       print('\n=== UPDATING TRIP STATUS ===');
       print('Trip ID: ${widget.trip.id}');
-      print('Current Status: ${widget.trip.status}');
+      print('Current Status: $_status');
       print('New Status: $newStatus');
 
       // Validate status transition using current trip status
       bool isValidTransition = false;
-      switch (widget.trip.status.toUpperCase()) {
+      switch (_status.toUpperCase()) {
         case 'USER_WAITING':
           isValidTransition = newStatus == 'DRIVER_ACCEPTED';
           break;
         case 'DRIVER_ACCEPTED':
-          isValidTransition = newStatus == 'DRIVER_IN_WAY';
+          isValidTransition =
+              newStatus == 'DRIVER_IN_WAY' || newStatus == 'DRIVER_ARRIVED';
           break;
         case 'DRIVER_IN_WAY':
           isValidTransition = newStatus == 'DRIVER_ARRIVED';
@@ -306,7 +429,7 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
 
       if (!isValidTransition) {
         throw Exception(
-            'Invalid status transition from ${widget.trip.status} to $newStatus');
+            'Invalid status transition from $_status to $newStatus');
       }
 
       final updatedTaxiRequest =
@@ -330,10 +453,15 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
           newStatus: newStatus,
         );
 
+        // Call the callback to notify the main screen about the status change
+        if (widget.onTripStatusChanged != null) {
+          widget.onTripStatusChanged!(newStatus);
+        }
+
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Trip ${newStatus.toLowerCase()} successfully'),
+            content: Text(getLocalizations(context).tripStatusSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -351,7 +479,7 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating trip: $e'),
+            content: Text(getLocalizations(context).errorUpdatingTrip),
             backgroundColor: Colors.red,
           ),
         );
@@ -361,22 +489,29 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading ||
+        widget.trip == null ||
+        widget.trip.pickupLat == 0.0 ||
+        widget.trip.dropoffLat == 0.0) {
+      // Show loading spinner until trip data is fetched and valid
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_getStatusText(widget.trip.status)),
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(getLocalizations(context).driverNavigation),
+        centerTitle: true,
       ),
       body: Stack(
         children: [
           GoogleMap(
             initialCameraPosition: CameraPosition(
-              target: widget.isPickup
-                  ? LatLng(widget.trip.pickupLat, widget.trip.pickupLng)
-                  : LatLng(widget.trip.dropoffLat, widget.trip.dropoffLng),
-              zoom: 18,
-              tilt: 60,
+              target: _currentLocation ??
+                  LatLng(widget.trip.pickupLat, widget.trip.pickupLng),
+              zoom: 17.5, // Maps.me style zoom
+              tilt: 60, // Maps.me style 3D perspective
             ),
             markers: _markers,
             polylines: _polylines,
@@ -385,22 +520,16 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
             myLocationButtonEnabled: false,
             compassEnabled: true,
             mapToolbarEnabled: false,
-            rotateGesturesEnabled: true,
-            tiltGesturesEnabled: true,
+            rotateGesturesEnabled:
+                false, // Disable manual rotation for Maps.me style
+            tiltGesturesEnabled: true, // Allow tilt adjustments
             zoomGesturesEnabled: true,
             scrollGesturesEnabled: true,
             onCameraMove: (CameraPosition position) {
-              if (position.bearing != _currentHeading) {
-                setState(() {
-                  _currentHeading = position.bearing;
-                });
-              }
+              // Don't override device heading when user manually moves camera
+              // Let magnetometer continue to control rotation
             },
           ),
-          if (_isLoading)
-            const Center(
-              child: CircularProgressIndicator(),
-            ),
           if (_distanceToDestination <= 0.05 && widget.isPickup)
             Positioned(
               top: 16,
@@ -421,25 +550,25 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           _buildInfoColumn(
-                            'Distance',
+                            getLocalizations(context).distance,
                             '${widget.trip.distance.toStringAsFixed(1)} km',
                             Icons.route,
                             Colors.blue,
                           ),
                           _buildInfoColumn(
-                            'Time',
+                            getLocalizations(context).time,
                             _calculateTripDuration(),
                             Icons.timer,
                             Colors.orange,
                           ),
                           _buildInfoColumn(
-                            'Speed',
+                            getLocalizations(context).speed,
                             '${(_currentSpeed * 3.6).toStringAsFixed(1)} km/h',
                             Icons.speed,
                             Colors.green,
                           ),
                           _buildInfoColumn(
-                            'Fare',
+                            getLocalizations(context).fare,
                             '${widget.trip.fare} IQD',
                             Icons.attach_money,
                             Colors.purple,
@@ -451,7 +580,184 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
                 ),
               ),
             ),
-          if (widget.trip.status == 'DRIVER_IN_PROGRESS')
+          // Debug info panel when close to pickup
+          if ((_status == 'DRIVER_ACCEPTED' || _status == 'DRIVER_IN_WAY') &&
+              _distanceToDestination <= 0.3 &&
+              widget.isPickup)
+            Positioned(
+              top: 16,
+              left: 16,
+              right: 16,
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                color: Colors.orange.withOpacity(0.9),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info, color: Colors.white, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            getLocalizations(context).debugInfo,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        getLocalizations(context).status,
+                        style: TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                      Text(
+                        getLocalizations(context).distance,
+                        style: TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                      Text(
+                        getLocalizations(context).autoArrival,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          // Permanent heading indicator
+          Positioned(
+            top: 80,
+            right: 16,
+            child: GestureDetector(
+              onTap: _calibrateMagnetometer,
+              onLongPress: _adjustCarRotation,
+              onDoubleTap: _testHeadingDirection,
+              child: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.compass_calibration,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '${_currentHeading.toStringAsFixed(0)}°',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                    ),
+                    Text(
+                      _getDirectionText(_currentHeading),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Camera controls
+          Positioned(
+            top: 140,
+            right: 16,
+            child: GestureDetector(
+              onTap: _forceCameraUpdate,
+              child: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.directions_car,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      getLocalizations(context).actual,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      getLocalizations(context).movement,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Reset camera button
+          Positioned(
+            top: 200,
+            right: 16,
+            child: GestureDetector(
+              onTap: _resetCamera,
+              child: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      getLocalizations(context).reset,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      getLocalizations(context).north,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (_status == 'DRIVER_IN_PROGRESS')
             Positioned(
               top: 16,
               left: 16,
@@ -467,25 +773,25 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildInfoColumn(
-                        'Speed',
+                        getLocalizations(context).speed,
                         '${(_currentSpeed * 3.6).toStringAsFixed(1)} km/h',
                         Icons.speed,
                         Colors.green,
                       ),
                       _buildInfoColumn(
-                        'Time',
+                        getLocalizations(context).time,
                         _estimatedTime,
                         Icons.timer,
                         Colors.orange,
                       ),
                       _buildInfoColumn(
-                        'Distance',
+                        getLocalizations(context).distance,
                         '${_distanceToDestination.toStringAsFixed(1)} km',
                         Icons.route,
                         Colors.blue,
                       ),
                       _buildInfoColumn(
-                        'Fare',
+                        getLocalizations(context).fare,
                         '${widget.trip.fare} IQD',
                         Icons.attach_money,
                         Colors.purple,
@@ -496,13 +802,97 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
               ),
             ),
           _buildStatusButtons(),
+          // GPS heading indicator
+          Positioned(
+            top: 80,
+            right: 16,
+            child: GestureDetector(
+              onTap: _testHeadingDirection,
+              child: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.gps_fixed,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '${_currentHeading.toStringAsFixed(0)}°',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                    ),
+                    Text(
+                      _getDirectionText(_currentHeading),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Phone rotation indicator
+          Positioned(
+            top: 80,
+            right: 16,
+            child: GestureDetector(
+              onTap: _testHeadingDirection,
+              child: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.gps_fixed,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '${_currentHeading.toStringAsFixed(0)}°',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                    ),
+                    Text(
+                      _getDirectionText(_currentHeading),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildStatusButtons() {
-    if (!_showArrivedButton && !_showPickupButton)
+    // Show manual arrived button for pickup when close but not auto-arrived
+    final bool showManualArrivedButton =
+        (_status == 'DRIVER_ACCEPTED' || _status == 'DRIVER_IN_WAY') &&
+            _distanceToDestination <= 0.3 && // Within 300m
+            !_isUpdating;
+
+    if (!_showArrivedButton && !_showPickupButton && !showManualArrivedButton)
       return const SizedBox.shrink();
 
     return Positioned(
@@ -519,9 +909,38 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (_showPickupButton) ...[
+              if (showManualArrivedButton) ...[
                 Text(
-                  'User picked up?',
+                  getLocalizations(context).closeToPickupLocation,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  getLocalizations(context).distance,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _isUpdating
+                      ? null
+                      : () => _updateTripStatus('DRIVER_ARRIVED'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(getLocalizations(context).iHaveArrived),
+                ),
+              ] else if (_showPickupButton) ...[
+                Text(
+                  getLocalizations(context).userPickedUp,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -530,11 +949,17 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _infoChip(Icons.speed,
-                        '${_currentSpeed.toStringAsFixed(1)} km/h'),
-                    _infoChip(Icons.timer, _estimatedTime),
-                    _infoChip(Icons.directions_car,
-                        '${_distanceToDestination.toStringAsFixed(1)} km'),
+                    Flexible(
+                      child: _infoChip(Icons.speed,
+                          '${_currentSpeed.toStringAsFixed(1)} km/h'),
+                    ),
+                    Flexible(
+                      child: _infoChip(Icons.timer, _estimatedTime),
+                    ),
+                    Flexible(
+                      child: _infoChip(Icons.directions_car,
+                          '${_distanceToDestination.toStringAsFixed(1)} km'),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -548,11 +973,11 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('Confirm Picked Up'),
+                  child: Text(getLocalizations(context).confirmPickedUp),
                 ),
               ] else ...[
                 Text(
-                  'You have arrived at your destination!',
+                  getLocalizations(context).youHaveArrivedAtYourDestination,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -570,7 +995,7 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('Complete Trip'),
+                  child: Text(getLocalizations(context).completeTrip),
                 ),
               ]
             ],
@@ -604,21 +1029,21 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
   String _getStatusText(String status) {
     switch (status.toUpperCase()) {
       case 'USER_WAITING':
-        return 'Waiting for Driver';
+        return getLocalizations(context).waitingForDriver;
       case 'DRIVER_ACCEPTED':
-        return 'Driver Accepted';
+        return getLocalizations(context).driverAccepted;
       case 'DRIVER_IN_WAY':
-        return 'Driver is on the way';
+        return getLocalizations(context).driverIsOnTheWay;
       case 'DRIVER_ARRIVED':
-        return 'Driver has arrived';
+        return getLocalizations(context).driverHasArrived;
       case 'USER_PICKED_UP':
-        return 'You are picked up';
+        return getLocalizations(context).youArePickedUp;
       case 'DRIVER_IN_PROGRESS':
-        return 'On the way to destination';
+        return getLocalizations(context).onTheWayToDestination;
       case 'TRIP_COMPLETED':
-        return 'Trip completed';
+        return getLocalizations(context).tripCompleted;
       default:
-        return 'Unknown status';
+        return getLocalizations(context).unknownStatus;
     }
   }
 
@@ -634,11 +1059,6 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
     try {
       print('Initializing map...');
 
-      // Validate trip coordinates before proceeding
-      if (!_validateTripCoordinates()) {
-        throw Exception('Invalid trip coordinates detected');
-      }
-
       // Get current location
       final position = await _locationService.getCurrentLocation();
       _currentLocation = LatLng(position.latitude, position.longitude);
@@ -651,6 +1071,15 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
       // Get route details
       await _getRouteDetails();
 
+      // Initialize camera with Maps.me style settings after a short delay
+      Future.delayed(Duration(milliseconds: 500), () {
+        if (mounted && _currentLocation != null) {
+          _forceCameraUpdate();
+          print(
+              '🗺️ Maps.me style camera initialized with heading: ${_currentHeading.toStringAsFixed(1)}°');
+        }
+      });
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -661,14 +1090,9 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = e.toString();
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error initializing map: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // Don't show error message to user if map initialization fails
+        // The app will continue to work with basic functionality
       }
     }
   }
@@ -835,8 +1259,8 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
     if (_currentLocation == null) return;
 
     // Calculate destination based on current status
-    final bool goingToPickup = widget.trip.status == 'DRIVER_ACCEPTED' ||
-        widget.trip.status == 'DRIVER_IN_WAY';
+    final bool goingToPickup =
+        _status == 'DRIVER_ACCEPTED' || _status == 'DRIVER_IN_WAY';
 
     final destination = goingToPickup
         ? LatLng(widget.trip.pickupLat, widget.trip.pickupLng)
@@ -849,19 +1273,32 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
       destination.longitude,
     );
 
+    // Debug logging
+    if (goingToPickup && distance <= 300) {
+      // Log when within 300m of pickup
+      print(
+          '📍 Distance to pickup: ${distance.toStringAsFixed(1)}m, Status: $_status, IsUpdating: $_isUpdating');
+    }
+
     setState(() {
       _distanceToDestination = distance / 1000; // Convert to kilometers
       _estimatedTime = _calculateEstimatedTime(distance);
     });
 
     if (goingToPickup) {
-      // Auto-arrive at pickup within 200 m
-      if (distance <= 200 && widget.trip.status == 'DRIVER_IN_WAY') {
+      // Auto-arrive at pickup within 150 m - handle both DRIVER_ACCEPTED and DRIVER_IN_WAY
+      if (distance <= 150 &&
+          (_status == 'DRIVER_ACCEPTED' || _status == 'DRIVER_IN_WAY') &&
+          !_isUpdating) {
+        print(
+            '🚗 Driver close to pickup (${distance.toStringAsFixed(1)}m), auto-arriving...');
+        print(
+            '📍 Current status: $_status, Distance: ${distance.toStringAsFixed(1)}m, IsUpdating: $_isUpdating');
         _updateTripStatus('DRIVER_ARRIVED');
       }
 
       // Show "User picked up" button once arrived
-      if (widget.trip.status == 'DRIVER_ARRIVED') {
+      if (_status == 'DRIVER_ARRIVED') {
         setState(() {
           _showPickupButton = true;
         });
@@ -882,8 +1319,8 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
         });
       }
 
-      // Auto-arrive at drop-off within 200 m
-      if (distance <= 200 && widget.trip.status == 'DRIVER_IN_PROGRESS') {
+      // Auto-arrive at drop-off within 200 m - only if not already completed
+      if (distance <= 200 && _status == 'DRIVER_IN_PROGRESS' && !_isUpdating) {
         _updateTripStatus('TRIP_COMPLETED');
       }
     }
@@ -995,19 +1432,154 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
   }
 
   Future<void> _onPickupPressed() async {
+    print('🚀 Pickup button pressed - updating status to USER_PICKED_UP');
     await _updateTripStatus('USER_PICKED_UP');
+
+    // Call the callback to notify the main screen about the status change
+    if (widget.onTripStatusChanged != null) {
+      widget.onTripStatusChanged!('USER_PICKED_UP');
+    }
 
     // After 30 seconds automatically set DRIVER_IN_PROGRESS
     _autoProgressTimer?.cancel();
     _autoProgressTimer = Timer(const Duration(seconds: 30), () {
       _updateTripStatus('DRIVER_IN_PROGRESS');
+      if (widget.onTripStatusChanged != null) {
+        widget.onTripStatusChanged!('DRIVER_IN_PROGRESS');
+      }
     });
   }
 
   Widget _infoChip(IconData icon, String label) {
-    return Chip(
-      label: Text(label),
-      avatar: Icon(icon),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.grey[700]),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  String _getDirectionText(double heading) {
+    if (heading >= 315 || heading < 45) return 'N';
+    if (heading >= 45 && heading < 135) return 'E';
+    if (heading >= 135 && heading < 225) return 'S';
+    if (heading >= 225 && heading < 315) return 'W';
+    return 'N';
+  }
+
+  void _calibrateMagnetometer() {
+    // Show Maps.me style navigation instructions
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.map, color: Colors.blue),
+              SizedBox(width: 8),
+              Text(getLocalizations(context).mapsMeNavigation),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(getLocalizations(context).mapsMeStyleNavigationInstructions),
+              SizedBox(height: 12),
+              Text('1. GPS-based route navigation'),
+              Text('2. No phone rotation required'),
+              Text('3. Clean, simple interface'),
+              Text('4. Focus on the route ahead'),
+              SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'GPS Heading: ${_currentHeading.toStringAsFixed(1)}°\n'
+                  'Distance: ${_distanceToDestination.toStringAsFixed(1)} km',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(getLocalizations(context).ok),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _forceCameraUpdate() {
+    // Force camera update with Maps.me style settings
+    if (_currentLocation != null) {
+      _mapController.future.then((controller) {
+        controller.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: _currentLocation!,
+              zoom: 17.5, // Maps.me style zoom
+              bearing: _currentHeading, // Use GPS heading for route navigation
+              tilt: 60, // Maps.me style 3D perspective
+            ),
+          ),
+        );
+        print(
+            '🗺️ Maps.me style camera forced update - bearing: ${_currentHeading.toStringAsFixed(1)}°');
+      });
+    }
+  }
+
+  void _resetCamera() {
+    // Reset camera to default orientation (North-facing) at same location
+    if (_currentLocation != null) {
+      _mapController.future.then((controller) {
+        controller.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: _currentLocation!,
+              zoom: 17.5, // Maps.me style zoom
+              bearing: 0, // Reset to North (0 degrees)
+              tilt: 60, // Maps.me style 3D perspective
+            ),
+          ),
+        );
+
+        // Reset GPS heading to North
+        setState(() {
+          _currentHeading = 0;
+        });
+
+        print('🗺️ Maps.me style camera reset to North (0°) at same location');
+
+        // Update markers with reset heading
+        _updateMarkers();
+      });
+    }
   }
 }

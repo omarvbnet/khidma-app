@@ -13,6 +13,7 @@ import '../services/api_service.dart';
 import 'driver_trip_details_screen.dart';
 import 'driver_arrived_screen.dart';
 import '../services/notification_service.dart';
+import '../components/language_switcher.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({Key? key}) : super(key: key);
@@ -136,8 +137,23 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
 
     if (_isLoading) {
       print('Showing loading screen');
-      return const Center(
-        child: CircularProgressIndicator(),
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Loading trip information...',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 

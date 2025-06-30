@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/otp_service.dart';
 import '../services/auth_service.dart';
+import '../l10n/app_localizations.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   const OTPVerificationScreen({Key? key}) : super(key: key);
@@ -52,7 +53,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   Future<void> _verifyOTP() async {
     if (_otpController.text.isEmpty) {
       setState(() {
-        _error = 'Please enter the OTP';
+        _error = AppLocalizations.of(context)!.pleaseEnterOtp;
       });
       return;
     }
@@ -103,7 +104,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Verify Phone Number'),
+        title: Text(AppLocalizations.of(context)!.verifyPhoneNumber),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -111,16 +112,16 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Enter the OTP sent to $_phoneNumber',
+              AppLocalizations.of(context)!.enterOtpSentTo(_phoneNumber),
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             TextFormField(
               controller: _otpController,
-              decoration: const InputDecoration(
-                labelText: 'OTP',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.otp,
+                border: const OutlineInputBorder(),
               ),
               keyboardType: TextInputType.number,
               maxLength: 6,
@@ -140,11 +141,11 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               onPressed: _isLoading ? null : _verifyOTP,
               child: _isLoading
                   ? const CircularProgressIndicator()
-                  : const Text('Verify OTP'),
+                  : Text(AppLocalizations.of(context)!.verifyOtp),
             ),
             TextButton(
               onPressed: _isLoading ? null : _sendOTP,
-              child: const Text('Resend OTP'),
+              child: Text(AppLocalizations.of(context)!.resendOtp),
             ),
           ],
         ),

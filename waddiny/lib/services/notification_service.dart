@@ -133,12 +133,8 @@ class NotificationService {
         print('From: ${message.from}');
         print('Sent Time: ${message.sentTime}');
 
-        // ALWAYS show local notification for foreground messages
-        // This ensures notifications appear even when app is open
-        _showLocalNotificationFromFirebase(message);
-
-        // Also trigger any custom handlers
-        _handleForegroundMessage(message);
+        // Apply role-based filtering for all incoming messages
+        _handleIncomingMessage(message);
       });
 
       // Handle notification tap when app is in background
@@ -176,18 +172,50 @@ class NotificationService {
     }
   }
 
-  // Handle foreground messages with custom logic
-  static void _handleForegroundMessage(RemoteMessage message) {
-    print('🎯 Handling foreground message with custom logic');
+  // Handle incoming messages with role-based filtering
+  static void _handleIncomingMessage(RemoteMessage message) async {
+    print('\n🎯 HANDLING INCOMING MESSAGE WITH ROLE-BASED FILTERING');
+    print('==================================================');
 
-    // You can add custom logic here based on message type
-    if (message.data['type'] == 'NEW_TRIP_AVAILABLE' ||
-        message.data['type'] == 'NEW_TRIPS_AVAILABLE' ||
-        message.data['type'] == 'trip_created' ||
-        message.data['type'] == 'new_trip') {
-      print('🚗 New trip notification detected in foreground');
-      // Add any custom logic for new trip notifications
+    // Get user role from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final userRole = prefs.getString('user_role') ?? 'USER';
+    final userToken = prefs.getString('token');
+
+    print('👤 Current user role: $userRole');
+    print('🔑 User token exists: ${userToken != null ? "Yes" : "No"}');
+    print('📨 Message type: ${message.data['type']}');
+    print('📨 Message data: ${message.data}');
+    print('📨 Notification title: ${message.notification?.title}');
+    print('📨 Notification body: ${message.notification?.body}');
+
+    // Check if this is a new trip notification
+    final isNewTripNotification =
+        message.data['type'] == 'NEW_TRIP_AVAILABLE' ||
+            message.data['type'] == 'NEW_TRIPS_AVAILABLE' ||
+            message.data['type'] == 'trip_created' ||
+            message.data['type'] == 'new_trip' ||
+            message.data['type'] == 'TRIP_CREATED';
+
+    print('🚗 Is new trip notification: $isNewTripNotification');
+
+    // Apply role-based filtering
+    if (isNewTripNotification) {
+      if (userRole == 'DRIVER') {
+        print('✅ DRIVER: Allowing new trip notification');
+        _showLocalNotificationFromFirebase(message);
+      } else {
+        print(
+            '❌ USER: BLOCKING new trip notification - users should not receive driver notifications');
+        print('🚫 Notification blocked for user with role: $userRole');
+        return; // Block the notification for users
+      }
+    } else {
+      print('✅ Allowing non-trip notification for role: $userRole');
+      _showLocalNotificationFromFirebase(message);
     }
+
+    print('==================================================');
   }
 
   // Show local notification from Firebase message
@@ -876,6 +904,7 @@ class NotificationService {
 
       final prefs = await SharedPreferences.getInstance();
       final userToken = prefs.getString('token');
+      final userRole = prefs.getString('user_role') ?? 'USER';
 
       if (userToken == null) {
         print('⚠️ No user token found - cannot send device token to server');
@@ -884,6 +913,14 @@ class NotificationService {
       }
 
       print('✅ User token found, sending device token...');
+      print('👤 User role: $userRole');
+
+      final requestBody = {
+        'deviceToken': deviceToken,
+        'platform': Platform.isIOS ? 'ios' : 'android',
+        'appVersion': '1.0.0',
+        'userRole': userRole, // Include user role for backend filtering
+      };
 
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/users/device-token'),
@@ -891,15 +928,12 @@ class NotificationService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $userToken',
         },
-        body: jsonEncode({
-          'deviceToken': deviceToken,
-          'platform': Platform.isIOS ? 'ios' : 'android',
-          'appVersion': '1.0.0',
-        }),
+        body: jsonEncode(requestBody),
       );
 
       if (response.statusCode == 200) {
         print('✅ Device token sent to server successfully');
+        print('👤 Role associated: $userRole');
       } else {
         print(
             '❌ Failed to send device token to server: ${response.statusCode}');
@@ -1488,6 +1522,64 @@ class NotificationService {
       print('✅ Manual device token registration completed');
     } catch (e) {
       print('❌ Error in manual device token registration: $e');
+    }
+  }
+
+  // Clear device token from server
+  static Future<void> clearDeviceTokenFromServer() async {
+    try {
+      print('\n🗑️ CLEARING DEVICE TOKEN FROM SERVER');
+
+      final prefs = await SharedPreferences.getInstance();
+      final userToken = prefs.getString('token');
+
+      if (userToken == null) {
+        print('⚠️ No user token found - cannot clear device token from server');
+        return;
+      }
+
+      print('✅ User token found, clearing device token...');
+
+      final response = await http.delete(
+        Uri.parse('${ApiConstants.baseUrl}/users/device-token'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $userToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ Device token cleared from server successfully');
+      } else {
+        print(
+            '❌ Failed to clear device token from server: ${response.statusCode}');
+        print('Response: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error clearing device token from server: $e');
+    }
+  }
+
+  // Check if current user is a driver
+  static Future<bool> isCurrentUserDriver() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userRole = prefs.getString('user_role') ?? 'USER';
+      return userRole == 'DRIVER';
+    } catch (e) {
+      print('❌ Error checking user role: $e');
+      return false;
+    }
+  }
+
+  // Get current user role
+  static Future<String> getCurrentUserRole() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('user_role') ?? 'USER';
+    } catch (e) {
+      print('❌ Error getting user role: $e');
+      return 'USER';
     }
   }
 }

@@ -5,6 +5,8 @@ import 'dart:math';
 import '../services/trip_service.dart';
 import '../services/auth_service.dart';
 import '../services/map_service.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart'; // Import to use getLocalizations helper
 import 'user_single_trip_screen.dart';
 
 class UserWaitingScreen extends StatefulWidget {
@@ -157,8 +159,8 @@ class _UserWaitingScreenState extends State<UserWaitingScreen> {
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Trip cancelled successfully'),
+        SnackBar(
+          content: Text(getLocalizations(context).tripCancelledSuccessfully),
           backgroundColor: Colors.green,
         ),
       );
@@ -175,7 +177,8 @@ class _UserWaitingScreenState extends State<UserWaitingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error cancelling trip: $e'),
+            content: Text(
+                getLocalizations(context).errorCancellingTrip(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -272,7 +275,7 @@ class _UserWaitingScreenState extends State<UserWaitingScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Waiting for driver...',
+                                getLocalizations(context).waitingForDriverTitle,
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleLarge
@@ -301,28 +304,28 @@ class _UserWaitingScreenState extends State<UserWaitingScreen> {
                           ),
                           const SizedBox(height: 16),
                           _buildInfoRow(
-                            'From',
+                            getLocalizations(context).fromLabel,
                             widget.trip['pickupLocation'],
                             Icons.location_on,
                             Colors.green,
                           ),
                           const SizedBox(height: 12),
                           _buildInfoRow(
-                            'To',
+                            getLocalizations(context).toLabel,
                             widget.trip['dropoffLocation'],
                             Icons.location_on,
                             Colors.red,
                           ),
                           const SizedBox(height: 12),
                           _buildInfoRow(
-                            'Price',
+                            getLocalizations(context).priceLabel,
                             '${widget.trip['fare']} IQD',
                             Icons.attach_money,
                             Colors.orange,
                           ),
                           const SizedBox(height: 12),
                           _buildInfoRow(
-                            'Distance',
+                            getLocalizations(context).distance,
                             '${widget.trip['distance'].toStringAsFixed(1)} km',
                             Icons.route,
                             Colors.blue,
@@ -359,7 +362,8 @@ class _UserWaitingScreenState extends State<UserWaitingScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                child: const Text('Cancel Trip'),
+                                child: Text(
+                                    getLocalizations(context).cancelTripButton),
                               ),
                             ),
                           if (_isCancelling)

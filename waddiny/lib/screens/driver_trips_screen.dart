@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/trip_service.dart';
 import '../services/auth_service.dart';
 import '../models/trip_model.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart'; // Import to use getLocalizations helper
 
 class DriverTripsScreen extends StatefulWidget {
   const DriverTripsScreen({Key? key}) : super(key: key);
@@ -70,7 +72,8 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
     if (_trips.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('My Trips'),
+          title: Text(getLocalizations(context).tripHistory),
+          centerTitle: true,
           elevation: 0,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -93,7 +96,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'No trips yet',
+                getLocalizations(context).noTripsAvailable,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: Colors.grey[800],
                       fontWeight: FontWeight.bold,
@@ -101,7 +104,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Your trip history will appear here',
+                getLocalizations(context).tripHistory,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -114,7 +117,8 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Trips'),
+        title: Text(getLocalizations(context).tripHistory),
+        centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -141,7 +145,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Trip #${trip.id.substring(0, 8)}',
+                          '${getLocalizations(context).trip} #${trip.id.substring(0, 8)}',
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -152,28 +156,28 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildInfoRow(
-                      'From',
+                      getLocalizations(context).from,
                       trip.pickupLocation,
                       Icons.location_on,
                       Colors.green,
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
-                      'To',
+                      getLocalizations(context).to,
                       trip.dropoffLocation,
                       Icons.location_on,
                       Colors.red,
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
-                      'Date',
+                      getLocalizations(context).date,
                       _formatDate(trip.createdAt),
                       Icons.calendar_today,
                       Colors.blue,
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
-                      'Price',
+                      getLocalizations(context).price,
                       '${trip.fare} IQD',
                       Icons.attach_money,
                       Colors.orange,
@@ -181,7 +185,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                     if (trip.driverId != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Driver ID',
+                        getLocalizations(context).driverId,
                         trip.driverId!,
                         Icons.person,
                         Colors.purple,
@@ -190,7 +194,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                     if (trip.userId != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'User ID',
+                        getLocalizations(context).userId,
                         trip.userId,
                         Icons.person,
                         Colors.purple,
@@ -198,7 +202,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                     ],
                     const SizedBox(height: 12),
                     _buildInfoRow(
-                      'Province',
+                      getLocalizations(context).province,
                       trip.userProvince,
                       Icons.location_city,
                       Colors.blue,
@@ -206,7 +210,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                     if (trip.acceptedAt != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Accepted At',
+                        getLocalizations(context).acceptedAt,
                         _formatDate(trip.acceptedAt!),
                         Icons.access_time,
                         Colors.green,
@@ -215,7 +219,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
                     if (trip.completedAt != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Completed At',
+                        getLocalizations(context).completedAt,
                         _formatDate(trip.completedAt!),
                         Icons.check_circle,
                         Colors.blue,
@@ -237,23 +241,23 @@ class _DriverTripsScreenState extends State<DriverTripsScreen> {
     switch (status.toUpperCase()) {
       case 'TRIP_COMPLETED':
         color = Colors.green;
-        displayStatus = 'Completed';
+        displayStatus = getLocalizations(context).statusCompleted;
         break;
       case 'TRIP_CANCELLED':
         color = Colors.red;
-        displayStatus = 'Cancelled';
+        displayStatus = getLocalizations(context).statusCancelled;
         break;
       case 'DRIVER_IN_PROGRESS':
         color = Colors.blue;
-        displayStatus = 'In Progress';
+        displayStatus = getLocalizations(context).statusInProgress;
         break;
       case 'DRIVER_ACCEPTED':
         color = Colors.orange;
-        displayStatus = 'Accepted';
+        displayStatus = getLocalizations(context).statusAccepted;
         break;
       case 'USER_WAITING':
         color = Colors.orangeAccent;
-        displayStatus = 'Waiting';
+        displayStatus = getLocalizations(context).statusWaiting;
         break;
       default:
         color = Colors.grey;

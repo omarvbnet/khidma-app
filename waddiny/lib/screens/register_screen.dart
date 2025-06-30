@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../l10n/app_localizations.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -107,7 +108,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isDriver ? 'Register as Driver' : 'Register as User'),
+        title: Text(_isDriver
+            ? AppLocalizations.of(context)!.registerAsDriver
+            : AppLocalizations.of(context)!.registerAsUser),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -118,13 +121,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               TextFormField(
                 controller: _fullNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Full Name',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.fullName,
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your full name';
+                    return AppLocalizations.of(context)!.pleaseEnterFullName;
                   }
                   return null;
                 },
@@ -132,14 +135,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.phoneNumber,
+                  border: const OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.phone,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your phone number';
+                    return AppLocalizations.of(context)!.pleaseEnterPhoneNumber;
                   }
                   return null;
                 },
@@ -147,17 +150,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.password,
+                  border: const OutlineInputBorder(),
                 ),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a password';
+                    return AppLocalizations.of(context)!.pleaseEnterPassword;
                   }
                   if (value.length < 6) {
-                    return 'Password must be at least 6 characters';
+                    return AppLocalizations.of(context)!.passwordMinLength;
                   }
                   return null;
                 },
@@ -166,13 +169,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _carIdController,
-                  decoration: const InputDecoration(
-                    labelText: 'Car ID',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.carId,
+                    border: const OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your car ID';
+                      return AppLocalizations.of(context)!.pleaseEnterCarId;
                     }
                     return null;
                   },
@@ -180,13 +183,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _carTypeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Car Type',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.carType,
+                    border: const OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your car type';
+                      return AppLocalizations.of(context)!.pleaseEnterCarType;
                     }
                     return null;
                   },
@@ -194,13 +197,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _licenseIdController,
-                  decoration: const InputDecoration(
-                    labelText: 'License ID',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.licenseId,
+                    border: const OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your license ID';
+                      return AppLocalizations.of(context)!.pleaseEnterLicenseId;
                     }
                     return null;
                   },
@@ -221,7 +224,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 onPressed: _isLoading ? null : _verifyPhoneNumber,
                 child: _isLoading
                     ? const CircularProgressIndicator()
-                    : const Text('Verify Phone Number'),
+                    : Text(AppLocalizations.of(context)!.verifyPhoneNumber),
               ),
             ],
           ),

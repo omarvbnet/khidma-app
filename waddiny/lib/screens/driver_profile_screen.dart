@@ -3,6 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../constants/api_constants.dart';
+import '../components/language_switcher.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart'; // Import to use getLocalizations helper
 
 class DriverProfileScreen extends StatefulWidget {
   const DriverProfileScreen({super.key});
@@ -92,92 +95,106 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
   @override
   Widget build(BuildContext context) {
     print('Building profile with car info: $_carInfo'); // Debug print
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Driver Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-          ),
-        ],
+        title: Text(getLocalizations(context).profile),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Profile Header
+            Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Profile Header
-                  Center(
-                    child: Column(
-                      children: [
-                        const CircleAvatar(
-                          radius: 50,
-                          child: Icon(Icons.person, size: 50),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _userData?['fullName'] ?? 'N/A',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                        Text(
-                          _userData?['phoneNumber'] ?? 'N/A',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  // Car Information Card
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Car Information',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 16),
-                          _buildInfoRow('Car ID', _carInfo?['carId'] ?? 'N/A'),
-                          _buildInfoRow(
-                              'Car Type', _carInfo?['carType'] ?? 'N/A'),
-                          _buildInfoRow(
-                              'License ID', _carInfo?['licenseId'] ?? 'N/A'),
-                          _buildInfoRow('Rating', '${_carInfo?['rate'] ?? 0}'),
-                        ],
-                      ),
-                    ),
+                  const CircleAvatar(
+                    radius: 50,
+                    child: Icon(Icons.person, size: 50),
                   ),
                   const SizedBox(height: 16),
-                  // Account Information Card
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Account Information',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 16),
-                          _buildInfoRow('Budget',
-                              '${_userData?['budget']?.toStringAsFixed(2) ?? '0.00'} IQD'),
-                          _buildInfoRow(
-                              'Province', _userData?['province'] ?? 'N/A'),
-                          _buildInfoRow(
-                              'Status', _userData?['status'] ?? 'N/A'),
-                        ],
-                      ),
-                    ),
+                  Text(
+                    _userData?['fullName'] ?? 'N/A',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  Text(
+                    _userData?['phoneNumber'] ?? 'N/A',
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 32),
+            // Car Information Card
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      getLocalizations(context).carInformation,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInfoRow(getLocalizations(context).carId,
+                        _carInfo?['carId'] ?? 'N/A'),
+                    _buildInfoRow(getLocalizations(context).carType,
+                        _carInfo?['carType'] ?? 'N/A'),
+                    _buildInfoRow(getLocalizations(context).licenseId,
+                        _carInfo?['licenseId'] ?? 'N/A'),
+                    _buildInfoRow(getLocalizations(context).rating,
+                        '${_carInfo?['rate'] ?? 0}'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Account Information Card
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      getLocalizations(context).accountInformation,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInfoRow(getLocalizations(context).budget,
+                        '${_userData?['budget']?.toStringAsFixed(2) ?? '0.00'} IQD'),
+                    _buildInfoRow(getLocalizations(context).province,
+                        _userData?['province'] ?? 'N/A'),
+                    _buildInfoRow(getLocalizations(context).accountStatus,
+                        _userData?['status'] ?? 'N/A'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Language Switcher
+            LanguageSwitcher(),
+          ],
+        ),
+      ),
     );
   }
 

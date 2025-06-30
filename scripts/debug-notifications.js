@@ -55,7 +55,7 @@ async function debugNotifications() {
       'JWT_SECRET',
       'DATABASE_URL'
     ];
-
+    
     for (const envVar of envVars) {
       const value = process.env[envVar];
       if (value) {
@@ -79,7 +79,7 @@ async function debugNotifications() {
       if (fs.existsSync(file)) {
         const stats = fs.statSync(file);
         console.log(`✅ ${file}: EXISTS (${stats.size} bytes)`);
-      } else {
+    } else {
         console.log(`❌ ${file}: MISSING`);
       }
     }
@@ -119,7 +119,7 @@ async function debugNotifications() {
       'waddiny/ios/Runner/Info.plist',
       'waddiny/ios/Runner/AppDelegate.swift'
     ];
-
+    
     for (const file of iosFiles) {
       if (fs.existsSync(file)) {
         const content = fs.readFileSync(file, 'utf8');
@@ -169,7 +169,7 @@ async function debugNotifications() {
         }
       } else {
         console.log(`❌ ${file}: MISSING`);
-      }
+    }
     }
     console.log('');
 
@@ -227,7 +227,7 @@ async function debugNotifications() {
           console.log(`✅ ${file}: EXISTS`);
           console.log(`   - Background message handler: ${hasBackgroundHandler ? '✅' : '❌'}`);
         }
-      } else {
+    } else {
         console.log(`❌ ${file}: MISSING`);
       }
     }

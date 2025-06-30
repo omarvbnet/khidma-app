@@ -12,7 +12,13 @@ import 'driver_navigation_screen.dart';
 
 class DriverArrivedScreen extends StatefulWidget {
   final TaxiRequest trip;
-  const DriverArrivedScreen({super.key, required this.trip});
+  final Function(String)? onTripStatusChanged;
+
+  const DriverArrivedScreen({
+    super.key,
+    required this.trip,
+    this.onTripStatusChanged,
+  });
 
   @override
   State<DriverArrivedScreen> createState() => _DriverArrivedScreenState();
@@ -40,89 +46,151 @@ class _DriverArrivedScreenState extends State<DriverArrivedScreen> {
   }
 
   Future<void> _init() async {
-    await _getCurrentLocation();
-    await _buildMarkersAndRoute();
-    _locationTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+    try {
       await _getCurrentLocation();
-      await _updateRoute();
-    });
-    setState(() => _isLoading = false);
+      await _buildMarkersAndRoute();
+      _locationTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+        if (mounted) {
+          await _getCurrentLocation();
+          await _updateRoute();
+        }
+      });
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      print('Error in _init: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Future<void> _getCurrentLocation() async {
-    final pos = await _locationService.getCurrentLocation();
-    _currentLocation = LatLng(pos.latitude, pos.longitude);
-    _currentSpeed = pos.speed;
+    try {
+      final pos = await _locationService.getCurrentLocation();
+      if (mounted) {
+        _currentLocation = LatLng(pos.latitude, pos.longitude);
+        _currentSpeed = pos.speed;
+      }
+    } catch (e) {
+      print('Error getting current location: $e');
+      // Use a default location if current location fails
+      if (mounted && _currentLocation == null) {
+        _currentLocation = LatLng(widget.trip.pickupLat, widget.trip.pickupLng);
+      }
+    }
   }
 
   Future<void> _buildMarkersAndRoute() async {
-    final pickup = LatLng(widget.trip.pickupLat, widget.trip.pickupLng);
-    final dropoff = LatLng(widget.trip.dropoffLat, widget.trip.dropoffLng);
-    _markers = {
-      Marker(
-        markerId: const MarkerId('current'),
-        position: _currentLocation ?? pickup,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-        infoWindow: const InfoWindow(title: 'Your Location'),
-      ),
-      Marker(
-        markerId: const MarkerId('pickup'),
-        position: pickup,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        infoWindow: const InfoWindow(title: 'Pickup'),
-      ),
-      Marker(
-        markerId: const MarkerId('dropoff'),
-        position: dropoff,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: const InfoWindow(title: 'Dropoff'),
-      ),
-    };
-    await _updateRoute();
+    try {
+      final pickup = LatLng(widget.trip.pickupLat, widget.trip.pickupLng);
+      final dropoff = LatLng(widget.trip.dropoffLat, widget.trip.dropoffLng);
+
+      if (!mounted) return;
+
+      _markers = {
+        Marker(
+          markerId: const MarkerId('current'),
+          position: _currentLocation ?? pickup,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+          infoWindow: const InfoWindow(title: 'Your Location'),
+        ),
+        Marker(
+          markerId: const MarkerId('pickup'),
+          position: pickup,
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          infoWindow: const InfoWindow(title: 'Pickup'),
+        ),
+        Marker(
+          markerId: const MarkerId('dropoff'),
+          position: dropoff,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: const InfoWindow(title: 'Dropoff'),
+        ),
+      };
+
+      if (mounted) {
+        await _updateRoute();
+      }
+    } catch (e) {
+      print('Error building markers and route: $e');
+    }
   }
 
   Future<void> _updateRoute() async {
     if (_currentLocation == null) return;
-    final result = await _mapService.getRouteDetails(_currentLocation!,
-        LatLng(widget.trip.dropoffLat, widget.trip.dropoffLng));
-    if (result['polyline'] != null) {
-      _polylines = _mapService.decodePolyline(result['polyline']);
+
+    try {
+      final result = await _mapService.getRouteDetails(_currentLocation!,
+          LatLng(widget.trip.dropoffLat, widget.trip.dropoffLng));
+
+      if (!mounted) return;
+
+      if (result['polyline'] != null) {
+        _polylines = _mapService.decodePolyline(result['polyline']);
+      }
+
+      final rawDist = result['distance'];
+      double km = 0;
+      if (rawDist is num) {
+        km = rawDist / 1000;
+      } else if (rawDist is String) {
+        final cleaned = rawDist.replaceAll(RegExp(r'[^0-9.]'), '');
+        km = double.tryParse(cleaned) ?? 0;
+      }
+      _distance = km;
+      _estimatedTime = result['duration'] ?? '';
+
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      print('Error updating route: $e');
+      // Don't call setState on error to avoid null check issues
     }
-    final rawDist = result['distance'];
-    double km = 0;
-    if (rawDist is num) {
-      km = rawDist / 1000;
-    } else if (rawDist is String) {
-      final cleaned = rawDist.replaceAll(RegExp(r'[^0-9.]'), '');
-      km = double.tryParse(cleaned) ?? 0;
-    }
-    _distance = km;
-    _estimatedTime = result['duration'] ?? '';
-    setState(() {});
   }
 
   Future<void> _onPickup() async {
     if (_isUpdating) return;
     setState(() => _isUpdating = true);
     try {
+      print('🚀 Starting pickup process for trip: ${widget.trip.id}');
       final updated =
           await _apiService.updateTripStatus(widget.trip.id, 'USER_PICKED_UP');
-      final tripObj = Trip.fromJson(updated.toJson());
+      print('✅ Trip status updated to USER_PICKED_UP');
+
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => DriverNavigationScreen(
-            trip: tripObj,
-            isPickup: false,
-            onTripStatusChanged: (_) {},
-          ),
+
+      // Call the callback to notify the main screen about the status change
+      if (widget.onTripStatusChanged != null) {
+        widget.onTripStatusChanged!('USER_PICKED_UP');
+      }
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Passenger picked up successfully!'),
+          backgroundColor: Colors.green,
         ),
       );
+
+      // Give the main screen time to refresh its trip data
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      // Pop back to the main screen - it will automatically refresh and show the navigation screen
+      Navigator.pop(context);
     } catch (e) {
+      print('❌ Error during pickup: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isUpdating = false);
@@ -137,68 +205,75 @@ class _DriverArrivedScreenState extends State<DriverArrivedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Only show map if trip data is loaded and coordinates are valid
+    if (_isLoading ||
+        widget.trip == null ||
+        widget.trip.pickupLat == 0.0 ||
+        widget.trip.dropoffLat == 0.0) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pick up Passenger'),
         actions: [],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Stack(children: [
-              GoogleMap(
-                initialCameraPosition: CameraPosition(
-                    target: _currentLocation ??
-                        LatLng(widget.trip.pickupLat, widget.trip.pickupLng),
-                    zoom: 16),
-                markers: _markers,
-                polylines: _polylines,
-                myLocationEnabled: true,
-                onMapCreated: (c) => _controller.complete(c),
-              ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Card(
-                  margin: const EdgeInsets.all(12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          alignment: WrapAlignment.center,
-                          children: [
-                            _infoChip(Icons.speed,
-                                '${_currentSpeed.toStringAsFixed(1)} km/h'),
-                            _infoChip(Icons.timer, _estimatedTime),
-                            _infoChip(Icons.route,
-                                '${_distance.toStringAsFixed(1)} km'),
-                            _infoChip(Icons.attach_money,
-                                '${widget.trip.price.toStringAsFixed(0)} IQD'),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isUpdating ? null : _onPickup,
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.orange),
-                            child: _isUpdating
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white)
-                                : const Text('User Picked Up'),
-                          ),
-                        )
-                      ],
-                    ),
+      body: Stack(children: [
+        GoogleMap(
+          initialCameraPosition: CameraPosition(
+              target: _currentLocation ??
+                  LatLng(widget.trip.pickupLat, widget.trip.pickupLng),
+              zoom: 16),
+          markers: _markers,
+          polylines: _polylines,
+          myLocationEnabled: true,
+          onMapCreated: (c) => _controller.complete(c),
+        ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Card(
+            margin: const EdgeInsets.all(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _infoChip(Icons.speed,
+                          '${_currentSpeed.toStringAsFixed(1)} km/h'),
+                      _infoChip(Icons.timer, _estimatedTime),
+                      _infoChip(
+                          Icons.route, '${_distance.toStringAsFixed(1)} km'),
+                      _infoChip(Icons.attach_money,
+                          '${widget.trip.price.toStringAsFixed(0)} IQD'),
+                    ],
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isUpdating ? null : _onPickup,
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange),
+                      child: _isUpdating
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('User Picked Up'),
+                    ),
+                  )
+                ],
               ),
-            ]),
+            ),
+          ),
+        ),
+      ]),
     );
   }
 

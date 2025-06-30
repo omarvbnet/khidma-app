@@ -5,12 +5,15 @@ import '../services/auth_service.dart';
 import '../services/trip_service.dart';
 import '../services/driver_service.dart';
 import '../models/user_model.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart'; // Import to use getLocalizations helper
 import 'dart:async';
 import '../screens/driver_trip_details_screen.dart';
 import '../screens/driver_home_screen.dart';
 import '../services/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:convert';
+import '../components/language_switcher.dart';
 
 class DriverWaitingTripsScreen extends StatefulWidget {
   const DriverWaitingTripsScreen({super.key});
@@ -47,9 +50,6 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
 
   Future<void> _initializeScreen() async {
     print('🚀 Initializing driver waiting trips screen');
-
-    // First, set up notification listeners
-    _setupNotificationListener();
 
     // Load driver budget
     await _loadDriverBudget();
@@ -103,7 +103,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
       if (user?.status != 'ACTIVE') {
         setState(() {
           _isLoading = false;
-          _error = 'Your account is not active. Please contact support.';
+          _error = getLocalizations(context).accountNotActive;
         });
         return;
       }
@@ -112,7 +112,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Error checking user status: $e';
+        _error = getLocalizations(context).errorLoadingData(e.toString());
       });
     }
   }
@@ -134,8 +134,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
       final trips = await _apiService.getDriverTrips().timeout(
         const Duration(seconds: 30),
         onTimeout: () {
-          throw Exception(
-              'Request timeout - please check your internet connection');
+          throw Exception(getLocalizations(context).requestTimeout);
         },
       );
 
@@ -163,7 +162,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = 'Error loading trips: $e';
+          _error = getLocalizations(context).errorLoadingTrips(e.toString());
         });
 
         // Show retry option for network errors
@@ -172,9 +171,9 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Network error. Tap to retry.'),
+                content: Text(getLocalizations(context).networkError),
                 action: SnackBarAction(
-                  label: 'Retry',
+                  label: getLocalizations(context).retry,
                   onPressed: () => _loadTrips(isRetry: true),
                 ),
                 duration: const Duration(seconds: 5),
@@ -190,8 +189,8 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
   void _showNewTripsNotification(int tripCount) {
     if (tripCount > 0) {
       NotificationService.showLocalNotification(
-        title: 'New Trips Available!',
-        body: '$tripCount new trip${tripCount > 1 ? 's' : ''} waiting for you',
+        title: getLocalizations(context).newTripsAvailable,
+        body: getLocalizations(context).newTripsWaiting(tripCount),
         payload: jsonEncode({
           'type': 'NEW_TRIPS_AVAILABLE',
           'count': tripCount,
@@ -204,8 +203,10 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
 
   Future<void> _acceptTrip(TaxiRequest trip) async {
     try {
+      // Use a more specific loading state instead of the general _isLoading
       setState(() {
-        _isLoading = true;
+        // Don't set _isLoading = true here to avoid showing the loading screen
+        // The button will show its own loading state
       });
 
       // Use driver service which includes budget checking
@@ -216,11 +217,11 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
       // Refresh budget after successful acceptance
       await _loadDriverBudget();
 
-      Navigator.of(context).pushAndRemoveUntil(
+      // Use a smoother navigation transition
+      Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const DriverHomeScreen(),
         ),
-        (route) => false,
       );
     } catch (e) {
       if (mounted) {
@@ -243,12 +244,6 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
           ),
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
   }
 
@@ -257,25 +252,27 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Budget Information'),
+          title: Text(getLocalizations(context).budgetInformationTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Current Budget: ${_driverBudget!['budget']} IQD'),
+              Text(getLocalizations(context)
+                  .currentBudgetLabel(_driverBudget!['budget'])),
               const SizedBox(height: 8),
-              Text('Driver: ${_driverBudget!['driverName']}'),
+              Text(getLocalizations(context)
+                  .driverNameLabel(_driverBudget!['driverName'])),
               const SizedBox(height: 16),
-              const Text(
-                'Note: 12% of trip price is deducted when accepting a trip.',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+              Text(
+                getLocalizations(context).budgetDeductionNote,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+              child: Text(getLocalizations(context).okButton),
             ),
             // Test button to add budget
             TextButton(
@@ -283,7 +280,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
                 Navigator.of(context).pop();
                 _addTestBudget();
               },
-              child: const Text('Add 1000 IQD (Test)'),
+              child: Text(getLocalizations(context).addTestBudgetButton),
             ),
           ],
         ),
@@ -298,7 +295,8 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Budget added: ${result['newBudget']} IQD'),
+            content: Text(getLocalizations(context)
+                .budgetAddedMessage(result['newBudget'])),
             backgroundColor: Colors.green,
           ),
         );
@@ -310,7 +308,8 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error adding budget: $e'),
+            content: Text(getLocalizations(context)
+                .errorAddingBudgetMessage(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -329,8 +328,8 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                'Budget test: ${result['message']} - Current: ${result['user']['currentBudget']} IQD'),
+            content: Text(getLocalizations(context).budgetTestMessage(
+                result['message'], result['user']['currentBudget'])),
             backgroundColor: Colors.blue,
             duration: const Duration(seconds: 5),
           ),
@@ -343,7 +342,8 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Budget test error: $e'),
+            content:
+                Text(getLocalizations(context).budgetTestError(e.toString())),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
@@ -407,139 +407,6 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
     return true;
   }
 
-  // Setup Firebase notification listener for real-time updates
-  void _setupNotificationListener() {
-    print('🔔 Setting up notification listener for driver waiting screen');
-
-    // Verify Firebase messaging is available
-    try {
-      final messaging = FirebaseMessaging.instance;
-      print('✅ Firebase messaging instance available');
-
-      // Check current permission status
-      messaging.getNotificationSettings().then((settings) {
-        print('📱 Current notification settings:');
-        print('- Authorization Status: ${settings.authorizationStatus}');
-        print('- Alert: ${settings.alert}');
-        print('- Badge: ${settings.badge}');
-        print('- Sound: ${settings.sound}');
-      });
-
-      // Get current token for verification
-      messaging.getToken().then((token) {
-        if (token != null) {
-          print('✅ FCM Token available: ${token.substring(0, 20)}...');
-        } else {
-          print('❌ FCM Token is null');
-        }
-      });
-    } catch (e) {
-      print('❌ Error accessing Firebase messaging: $e');
-    }
-
-    // Listen for foreground messages (when app is open)
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('📨 Received foreground message in driver waiting screen:');
-      print('- Title: ${message.notification?.title}');
-      print('- Body: ${message.notification?.body}');
-      print('- Data: ${message.data}');
-      print('- Type: ${message.data['type']}');
-      print('- Message ID: ${message.messageId}');
-      print('- From: ${message.from}');
-      print('- Sent Time: ${message.sentTime}');
-
-      // Check if this is a new trip notification
-      if (message.data['type'] == 'NEW_TRIP_AVAILABLE' ||
-          message.data['type'] == 'NEW_TRIPS_AVAILABLE' ||
-          message.data['type'] == 'trip_created' ||
-          message.data['type'] == 'new_trip') {
-        print('🚗 New trip notification detected, refreshing trips...');
-
-        // Use efficient refresh for notification-triggered updates
-        _handleNotificationTripRefresh();
-
-        // Show user feedback
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  'New trip available: ${message.notification?.body ?? 'Check the list below'}'),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 3),
-              action: SnackBarAction(
-                label: 'View',
-                textColor: Colors.white,
-                onPressed: () {
-                  // Trips should already be refreshed
-                },
-              ),
-            ),
-          );
-        }
-      } else {
-        print('ℹ️ General notification received, refreshing trips...');
-        _handleNotificationTripRefresh();
-      }
-    }, onError: (error) {
-      print('❌ Error in foreground message listener: $error');
-    });
-
-    // Listen for notification taps when app is in background
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('👆 Notification tapped (background): ${message.data}');
-      print('👆 Background notification title: ${message.notification?.title}');
-      print('👆 Background notification body: ${message.notification?.body}');
-
-      // Use efficient refresh for background notification taps
-      _handleNotificationTripRefresh();
-    }, onError: (error) {
-      print('❌ Error in background message listener: $error');
-    });
-
-    // Handle initial notification when app is launched from notification
-    FirebaseMessaging.instance
-        .getInitialMessage()
-        .then((RemoteMessage? message) {
-      if (message != null) {
-        print('🚀 App launched from notification: ${message.data}');
-        print('🚀 Initial notification title: ${message.notification?.title}');
-        print('🚀 Initial notification body: ${message.notification?.body}');
-
-        // Use efficient refresh when app is launched from notification
-        _handleNotificationTripRefresh();
-      } else {
-        print('ℹ️ No initial message found');
-      }
-    }).catchError((error) {
-      print('❌ Error getting initial message: $error');
-    });
-
-    print('✅ Notification listener setup completed');
-  }
-
-  // Handle trip refresh triggered by notifications
-  Future<void> _handleNotificationTripRefresh() async {
-    try {
-      print('🔄 Notification-triggered trip refresh...');
-
-      // Quick refresh without showing loading state for better UX
-      final trips = await _apiService.getDriverTrips();
-      final waitingTrips =
-          trips.where((trip) => trip.status == 'USER_WAITING').toList();
-
-      if (mounted) {
-        setState(() {
-          _trips = waitingTrips;
-        });
-
-        print('✅ Trip list updated with ${waitingTrips.length} waiting trips');
-      }
-    } catch (e) {
-      print('❌ Error in notification-triggered trip refresh: $e');
-      // Don't show error to user for notification-triggered refreshes
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -553,7 +420,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
     if (_error != null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Waiting Trips'),
+          title: Text(getLocalizations(context).waitingTrips),
           elevation: 0,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -580,7 +447,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
               ElevatedButton.icon(
                 onPressed: () => _loadTrips(isRetry: true),
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: Text(getLocalizations(context).retry),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
@@ -595,7 +462,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
     if (_trips.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Waiting Trips'),
+          title: Text(getLocalizations(context).waitingTrips),
           elevation: 0,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -603,7 +470,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () => _loadTrips(),
-              tooltip: 'Refresh',
+              tooltip: getLocalizations(context).refresh,
             ),
           ],
         ),
@@ -625,7 +492,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'No waiting trips',
+                getLocalizations(context).noWaitingTrips,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: Colors.grey[800],
                       fontWeight: FontWeight.bold,
@@ -652,7 +519,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
                 const SizedBox(height: 12),
               ],
               Text(
-                'New trip requests will appear here automatically',
+                getLocalizations(context).newTripsWillAppearHere,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -660,7 +527,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'You\'ll receive notifications for new trips in your province',
+                getLocalizations(context).youWillReceiveNotifications,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[500],
                       fontSize: 12,
@@ -687,7 +554,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Province Filtering',
+                          getLocalizations(context).provinceFiltering,
                           style: TextStyle(
                             color: Colors.orange[700],
                             fontWeight: FontWeight.w600,
@@ -698,7 +565,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'You only see trips from users in the same province as you. This ensures better service quality and faster response times.',
+                      getLocalizations(context).provinceFilteringDescription,
                       style: TextStyle(
                         color: Colors.orange[700],
                         fontSize: 11,
@@ -714,8 +581,8 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
                 children: [
                   ElevatedButton.icon(
                     onPressed: () => _loadTrips(),
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Refresh'),
+                    icon: Icon(Icons.refresh),
+                    label: Text(getLocalizations(context).refresh),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
@@ -723,6 +590,9 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 24),
+              // Language switcher
+              LanguageSwitcher(),
             ],
           ),
         ),
@@ -731,45 +601,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Waiting Trips'),
-            if (_user?.province != null)
-              Text(
-                '📍 ${_user!.province}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.normal,
-                  color: Colors.grey,
-                ),
-              ),
-            // Budget display
-            if (_driverBudget != null)
-              Row(
-                children: [
-                  Icon(
-                    Icons.account_balance_wallet,
-                    size: 14,
-                    color: _driverBudget!['budget'] > 0
-                        ? Colors.green
-                        : Colors.red,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${_driverBudget!['budget']} IQD',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: _driverBudget!['budget'] > 0
-                          ? Colors.green
-                          : Colors.red,
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
+        title: Text(getLocalizations(context).waitingTrips),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -793,7 +625,7 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => _loadTrips(),
-            tooltip: 'Refresh',
+            tooltip: getLocalizations(context).refresh,
           ),
         ],
       ),

@@ -141,12 +141,11 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
         ),
       );
 
-      // Navigate to driver home screen
-      Navigator.of(context).pushAndRemoveUntil(
+      // Use pushReplacement for smoother transition
+      Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const DriverHomeScreen(),
         ),
-        (route) => false,
       );
     } catch (e) {
       if (!mounted) return;

@@ -13,6 +13,7 @@ import '../services/api_service.dart';
 import '../models/taxi_request_model.dart';
 import '../constants/app_constants.dart';
 import '../constants/api_keys.dart';
+import '../l10n/app_localizations.dart';
 
 class UserSelectTripScreen extends StatefulWidget {
   const UserSelectTripScreen({Key? key}) : super(key: key);
@@ -79,7 +80,9 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error getting current location')),
+          SnackBar(
+              content: Text(
+                  AppLocalizations.of(context)!.errorGettingCurrentLocation)),
         );
       }
     } finally {
@@ -200,11 +203,11 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error getting route: ${e.toString()}'),
+            content: Text(AppLocalizations.of(context)!.errorGettingRoute),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
-              label: 'Retry',
+              label: AppLocalizations.of(context)!.retry,
               textColor: Colors.white,
               onPressed: _updateRoute,
             ),
@@ -284,7 +287,9 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
           position: _pickupLocation!,
           icon:
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          infoWindow: InfoWindow(title: _pickupAddress ?? 'Pickup Location'),
+          infoWindow: InfoWindow(
+              title: _pickupAddress ??
+                  AppLocalizations.of(context)!.pickupLocation),
         ),
       );
     }
@@ -294,7 +299,9 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
           markerId: const MarkerId('dropoff'),
           position: _dropoffLocation!,
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          infoWindow: InfoWindow(title: _dropoffAddress ?? 'Dropoff Location'),
+          infoWindow: InfoWindow(
+              title: _dropoffAddress ??
+                  AppLocalizations.of(context)!.dropoffLocation),
         ),
       );
     }
@@ -306,8 +313,9 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
   Future<void> _createTrip() async {
     if (_pickupLocation == null || _dropoffLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Please select pickup and dropoff locations')),
+        SnackBar(
+            content: Text(AppLocalizations.of(context)!
+                .pleaseSelectPickupAndDropoffLocations)),
       );
       return;
     }
@@ -319,7 +327,7 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
 
       final user = await _authService.getCurrentUser();
       if (user == null) {
-        throw Exception('User not authenticated');
+        throw Exception(AppLocalizations.of(context)!.userNotAuthenticated);
       }
 
       // Check for any active trips
@@ -338,9 +346,9 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
       if (hasActiveTrip) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'You already have an active trip. Please wait for it to be completed or cancelled.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!
+                .youAlreadyHaveAnActiveTripPleaseWaitForItToBeCompletedOrCancelled),
             backgroundColor: Colors.orange,
             duration: Duration(seconds: 5),
           ),
@@ -354,13 +362,19 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
       final driverDeduction = fare * AppConstants.driverDeduction;
 
       // Ensure all required fields are present
-      final userFullName = user['fullName'] ?? user['name'] ?? 'Unknown';
-      final userPhone = user['phoneNumber'] ?? user['phone'] ?? 'Unknown';
-      final userProvince = user['province'] ?? 'Baghdad';
+      final userFullName = user['fullName'] ??
+          user['name'] ??
+          AppLocalizations.of(context)!.unknown;
+      final userPhone = user['phoneNumber'] ??
+          user['phone'] ??
+          AppLocalizations.of(context)!.unknown;
+      final userProvince =
+          user['province'] ?? AppLocalizations.of(context)!.baghdad;
 
-      if (userFullName == 'Unknown' || userPhone == 'Unknown') {
-        throw Exception(
-            'User profile is incomplete. Please update your profile with name and phone number.');
+      if (userFullName == AppLocalizations.of(context)!.unknown ||
+          userPhone == AppLocalizations.of(context)!.unknown) {
+        throw Exception(AppLocalizations.of(context)!
+            .userProfileIsIncompletePleaseUpdateYourProfileWithNameAndPhoneNumber);
       }
 
       final trip = await _tripService.createTrip({
@@ -390,21 +404,21 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Trip created successfully!',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.of(context)!.tripCreatedMessage,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Notifying available drivers...',
-                style: TextStyle(fontSize: 12),
+              Text(
+                AppLocalizations.of(context)!.notifyingAvailableDrivers,
+                style: const TextStyle(fontSize: 12),
               ),
             ],
           ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 4),
           action: SnackBarAction(
-            label: 'View Trip',
+            label: AppLocalizations.of(context)!.viewTrip,
             textColor: Colors.white,
             onPressed: () {
               // Navigate to trip status screen
@@ -420,7 +434,7 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error creating trip: $e'),
+          content: Text(AppLocalizations.of(context)!.errorCreatingTrip('')),
           backgroundColor: Colors.red,
         ),
       );
@@ -479,10 +493,11 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
             });
           }
         } else {
-          throw Exception(data['error_message'] ?? 'Failed to get predictions');
+          throw Exception(data['error_message'] ??
+              AppLocalizations.of(context)!.failedToGetPredictions);
         }
       } else {
-        throw Exception('Failed to get predictions');
+        throw Exception(AppLocalizations.of(context)!.failedToGetPredictions);
       }
     } catch (e) {
       print('Search error: $e');
@@ -546,12 +561,12 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                        'Location is too far from your current position. Please search for a closer location.'),
+                    content: Text(AppLocalizations.of(context)!
+                        .locationIsTooFarFromYourCurrentPositionPleaseSearchForACloserLocation),
                     backgroundColor: Colors.orange[400],
                     duration: const Duration(seconds: 5),
                     action: SnackBarAction(
-                      label: 'Use Anyway',
+                      label: AppLocalizations.of(context)!.useAnyway,
                       textColor: Colors.white,
                       onPressed: () {
                         _setDropoffLocation(latLng, formattedAddress);
@@ -566,17 +581,18 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
 
           _setDropoffLocation(latLng, formattedAddress);
         } else {
-          throw Exception(
-              data['error_message'] ?? 'Failed to get place details');
+          throw Exception(data['error_message'] ??
+              AppLocalizations.of(context)!.failedToGetPlaceDetails);
         }
       } else {
-        throw Exception('Failed to get place details');
+        throw Exception(AppLocalizations.of(context)!.failedToGetPlaceDetails);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error getting place details: ${e.toString()}'),
+            content:
+                Text(AppLocalizations.of(context)!.errorGettingPlaceDetails),
             backgroundColor: Colors.red,
           ),
         );
@@ -604,7 +620,7 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Destination set to: $address'),
+        content: Text(AppLocalizations.of(context)!.destinationSetTo),
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 2),
       ),
@@ -615,7 +631,7 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create New Trip'),
+        title: Text(AppLocalizations.of(context)!.createNewTrip),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -657,7 +673,7 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Trip Details',
+                        AppLocalizations.of(context)!.tripDetails,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 16),
@@ -697,7 +713,9 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
                                     )
                                   : const Icon(Icons.check),
                               label: Text(
-                                _isLoading ? 'Creating Trip...' : 'Book Trip',
+                                _isLoading
+                                    ? AppLocalizations.of(context)!.creatingTrip
+                                    : AppLocalizations.of(context)!.bookTrip,
                                 style: const TextStyle(fontSize: 16),
                               ),
                             ),
@@ -725,8 +743,8 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
                                 ),
                               ),
                               icon: const Icon(Icons.refresh),
-                              label: const Text(
-                                'Change Trip',
+                              label: Text(
+                                AppLocalizations.of(context)!.changeTrip,
                                 style: TextStyle(fontSize: 16),
                               ),
                             ),
@@ -755,21 +773,23 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Select Locations',
+                        AppLocalizations.of(context)!.selectLocations,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 16),
                       if (_pickupLocation != null)
                         _buildInfoRow(
-                            'Pickup',
-                            _pickupAddress ?? 'Current Location',
+                            AppLocalizations.of(context)!.pickup,
+                            _pickupAddress ??
+                                AppLocalizations.of(context)!.currentLocation,
                             Icons.location_on,
                             Colors.green),
                       if (_dropoffLocation != null) ...[
                         const SizedBox(height: 8),
                         _buildInfoRow(
-                            'Dropoff',
-                            _dropoffAddress ?? 'Selected Location',
+                            AppLocalizations.of(context)!.dropoff,
+                            _dropoffAddress ??
+                                AppLocalizations.of(context)!.selectedLocation,
                             Icons.location_on,
                             Colors.red),
                       ],
@@ -793,8 +813,8 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
                                 ),
                               ),
                               icon: const Icon(Icons.search),
-                              label: const Text(
-                                'Search Location',
+                              label: Text(
+                                AppLocalizations.of(context)!.searchLocation,
                                 style: TextStyle(fontSize: 16),
                               ),
                             ),
@@ -822,8 +842,8 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
                                 ),
                               ),
                               icon: const Icon(Icons.refresh),
-                              label: const Text(
-                                'Reset',
+                              label: Text(
+                                AppLocalizations.of(context)!.reset,
                                 style: TextStyle(fontSize: 16),
                               ),
                             ),
@@ -862,7 +882,8 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
                       controller: _placesController,
                       focusNode: _placesFocusNode,
                       decoration: InputDecoration(
-                        hintText: 'Search for destination...',
+                        hintText:
+                            AppLocalizations.of(context)!.searchForDestination,
                         border: InputBorder.none,
                         contentPadding:
                             const EdgeInsets.symmetric(vertical: 12),
@@ -909,7 +930,7 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
                       leading: const Icon(Icons.location_on),
                       title: Text(prediction['description'] ?? ''),
                       subtitle: Text(
-                        'Tap to set as destination',
+                        AppLocalizations.of(context)!.tapToSetAsDestination,
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
@@ -920,10 +941,11 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
                   },
                 ),
               ),
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
-                'Search for destinations within 50km of your current position',
+                AppLocalizations.of(context)!
+                    .searchForDestinationsWithin50kmOfYourCurrentPosition,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey,

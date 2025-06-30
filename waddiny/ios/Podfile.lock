@@ -34,6 +34,8 @@ PODS:
   - Flutter (1.0.0)
   - flutter_local_notifications (0.0.1):
     - Flutter
+  - flutter_native_splash (2.4.3):
+    - Flutter
   - flutter_secure_storage (6.0.0):
     - Flutter
   - geocoding_ios (1.0.5):
@@ -105,6 +107,7 @@ DEPENDENCIES:
   - firebase_messaging (from `.symlinks/plugins/firebase_messaging/ios`)
   - Flutter (from `Flutter`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
+  - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
   - geocoding_ios (from `.symlinks/plugins/geocoding_ios/ios`)
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
@@ -138,6 +141,8 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_local_notifications:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
+  flutter_native_splash:
+    :path: ".symlinks/plugins/flutter_native_splash/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
   geocoding_ios:
@@ -166,7 +171,8 @@ SPEC CHECKSUMS:
   FirebaseInstallations: 913cf60d0400ebd5d6b63a28b290372ab44590dd
   FirebaseMessaging: 88950ba9485052891ebe26f6c43a52bb62248952
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_local_notifications: ff50f8405aaa0ccdc7dcfb9022ca192e8ad9688f
+  flutter_local_notifications: 4cde75091f6327eb8517fa068a0a5950212d2086
+  flutter_native_splash: df59bb2e1421aa0282cb2e95618af4dcb0c56c29
   flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
   geocoding_ios: a389ea40f6f548de6e63006a2e31bf66ff80769a
   geolocator_apple: 66b711889fd333205763b83c9dcf0a57a28c7afd

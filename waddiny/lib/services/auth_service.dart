@@ -275,8 +275,61 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    try {
+      print('🚪 Logging out user...');
+
+      // Get current token before clearing
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      // Clear device token from server if we have a token
+      if (token != null) {
+        try {
+          await _clearDeviceTokenFromServer(token);
+        } catch (e) {
+          print('⚠️ Could not clear device token from server: $e');
+          // Continue with logout even if clearing device token fails
+        }
+      }
+
+      // Clear all local data
+      await prefs.clear();
+      _currentUser = null;
+
+      print('✅ Logout completed successfully');
+    } catch (e) {
+      print('❌ Error during logout: $e');
+      // Still clear local data even if server call fails
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      _currentUser = null;
+    }
+  }
+
+  // Clear device token from server
+  Future<void> _clearDeviceTokenFromServer(String token) async {
+    try {
+      print('🗑️ Clearing device token from server...');
+
+      final response = await http.delete(
+        Uri.parse('${ApiConstants.baseUrl}/users/device-token'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ Device token cleared from server successfully');
+      } else {
+        print(
+            '⚠️ Failed to clear device token from server: ${response.statusCode}');
+        print('Response: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error clearing device token from server: $e');
+      throw e;
+    }
   }
 
   Future<void> _saveUserData(Map<String, dynamic> data) async {
@@ -284,6 +337,13 @@ class AuthService {
     print('Saving token: ${data['token']}'); // Debug print
     await prefs.setString('token', data['token']);
     await prefs.setString('userData', json.encode(data['user']));
+
+    // Save user role for notification filtering
+    if (data['user'] != null && data['user']['role'] != null) {
+      await prefs.setString('user_role', data['user']['role']);
+      print('Saved user role: ${data['user']['role']}'); // Debug print
+    }
+
     print('Token saved successfully'); // Debug print
   }
 
@@ -470,10 +530,15 @@ class AuthService {
       // Determine platform
       final platform = Platform.isIOS ? 'ios' : 'android';
 
+      // Get user role
+      final prefs = await SharedPreferences.getInstance();
+      final userRole = prefs.getString('user_role') ?? 'USER';
+
       print('📱 Device Info:');
       print('- Token: ${deviceToken.substring(0, 20)}...');
       print('- Platform: $platform');
       print('- App Version: $appVersion');
+      print('- User Role: $userRole');
 
       // Send to server
       final response = await http.post(
@@ -486,11 +551,13 @@ class AuthService {
           'deviceToken': deviceToken,
           'platform': platform,
           'appVersion': appVersion,
+          'userRole': userRole, // Include user role for backend filtering
         }),
       );
 
       if (response.statusCode == 200) {
         print('✅ Device information updated successfully');
+        print('👤 Role associated: $userRole');
       } else {
         print('❌ Failed to update device information: ${response.statusCode}');
         print('Response: ${response.body}');

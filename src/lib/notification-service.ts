@@ -302,7 +302,62 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
 
     // Log driver details for debugging
     for (const driver of allActiveDrivers) {
-      console.log(`- Driver: ${driver.fullName} (${driver.id}) - Province: ${driver.province} - Status: ${driver.status} - Has Token: ${!!driver.deviceToken}`);
+      console.log(`- Driver: ${driver.fullName} (${driver.id}) - Province: ${driver.province} - Status: ${driver.status} - Role: ${driver.role} - Has Token: ${!!driver.deviceToken}`);
+    }
+
+    // Also check if there are any users with the same province (for debugging)
+    const allUsersInProvince = await prisma.user.findMany({
+      where: {
+        province: trip.userProvince,
+      },
+      select: {
+        id: true,
+        fullName: true,
+        role: true,
+        status: true,
+        deviceToken: !!true,
+      }
+    });
+
+    console.log(`\n🔍 DEBUG: All users in province ${trip.userProvince}:`);
+    for (const user of allUsersInProvince) {
+      console.log(`- User: ${user.fullName} (${user.id}) - Role: ${user.role} - Status: ${user.status} - Has Token: ${!!user.deviceToken}`);
+    }
+
+    // Test query to see if role filtering is working
+    console.log(`\n🧪 TESTING ROLE FILTERING:`);
+    const testDrivers = await prisma.user.findMany({
+      where: {
+        role: 'DRIVER',
+      },
+      select: {
+        id: true,
+        fullName: true,
+        role: true,
+        status: true,
+        province: true,
+      }
+    });
+    console.log(`Found ${testDrivers.length} total users with role DRIVER:`);
+    for (const driver of testDrivers) {
+      console.log(`- Driver: ${driver.fullName} (${driver.id}) - Role: ${driver.role} - Status: ${driver.status} - Province: ${driver.province}`);
+    }
+
+    const testUsers = await prisma.user.findMany({
+      where: {
+        role: 'USER',
+      },
+      select: {
+        id: true,
+        fullName: true,
+        role: true,
+        status: true,
+        province: true,
+      }
+    });
+    console.log(`Found ${testUsers.length} total users with role USER:`);
+    for (const user of testUsers) {
+      console.log(`- User: ${user.fullName} (${user.id}) - Role: ${user.role} - Status: ${user.status} - Province: ${user.province}`);
     }
 
     // Filter to only available drivers (those without active trips)

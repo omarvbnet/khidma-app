@@ -4,6 +4,7 @@ import '../services/trip_service.dart';
 import '../models/taxi_request_model.dart';
 import '../models/user_model.dart';
 import '../constants/app_constants.dart';
+import '../l10n/app_localizations.dart';
 
 class UserTripsScreen extends StatefulWidget {
   const UserTripsScreen({Key? key}) : super(key: key);
@@ -104,19 +105,19 @@ class _UserTripsScreenState extends State<UserTripsScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Cancel Trip'),
-          content: const Text('Are you sure you want to cancel this trip?'),
+          title: Text(AppLocalizations.of(context)!.cancelTripConfirmation),
+          content: Text(AppLocalizations.of(context)!.cancelTripMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('No'),
+              child: Text(AppLocalizations.of(context)!.no),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 _cancelTrip(tripId);
               },
-              child: const Text('Yes'),
+              child: Text(AppLocalizations.of(context)!.yes),
             ),
           ],
         );
@@ -137,7 +138,7 @@ class _UserTripsScreenState extends State<UserTripsScreen> {
     if (_user?.status != 'ACTIVE') {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('My Trips'),
+          title: Text(AppLocalizations.of(context)!.myTrips),
           elevation: 0,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -183,7 +184,7 @@ class _UserTripsScreenState extends State<UserTripsScreen> {
     if (_trips.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('My Trips'),
+          title: Text(AppLocalizations.of(context)!.myTrips),
           elevation: 0,
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -227,7 +228,7 @@ class _UserTripsScreenState extends State<UserTripsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Trips'),
+        title: Text(AppLocalizations.of(context)!.myTrips),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -254,7 +255,7 @@ class _UserTripsScreenState extends State<UserTripsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Trip #${trip['id'].substring(0, 8)}',
+                          '${AppLocalizations.of(context)!.trip} #${trip['id'].substring(0, 8)}',
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -265,28 +266,28 @@ class _UserTripsScreenState extends State<UserTripsScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildInfoRow(
-                      'From',
+                      AppLocalizations.of(context)!.from,
                       trip['pickupLocation'],
                       Icons.location_on,
                       Colors.green,
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
-                      'To',
+                      AppLocalizations.of(context)!.to,
                       trip['dropoffLocation'],
                       Icons.location_on,
                       Colors.red,
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
-                      'Date',
+                      AppLocalizations.of(context)!.date,
                       _formatDate(trip['createdAt']),
                       Icons.calendar_today,
                       Colors.blue,
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
-                      'Price',
+                      AppLocalizations.of(context)!.price,
                       '${trip['price']} SAR',
                       Icons.attach_money,
                       Colors.orange,
@@ -294,7 +295,7 @@ class _UserTripsScreenState extends State<UserTripsScreen> {
                     if (trip['driverName'] != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Driver',
+                        AppLocalizations.of(context)!.driver,
                         trip['driverName'],
                         Icons.person,
                         Colors.purple,
@@ -303,7 +304,7 @@ class _UserTripsScreenState extends State<UserTripsScreen> {
                     if (trip['driverPhone'] != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Driver Phone',
+                        AppLocalizations.of(context)!.driverPhone,
                         trip['driverPhone'],
                         Icons.phone,
                         Colors.teal,
@@ -312,7 +313,7 @@ class _UserTripsScreenState extends State<UserTripsScreen> {
                     if (trip['carType'] != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Car Type',
+                        AppLocalizations.of(context)!.carType,
                         trip['carType'],
                         Icons.directions_car,
                         Colors.blue,
@@ -321,7 +322,7 @@ class _UserTripsScreenState extends State<UserTripsScreen> {
                     if (trip['carId'] != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Car ID',
+                        AppLocalizations.of(context)!.carId,
                         trip['carId'],
                         Icons.confirmation_number,
                         Colors.indigo,
@@ -330,7 +331,7 @@ class _UserTripsScreenState extends State<UserTripsScreen> {
                     if (trip['driverRate'] != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Driver Rating',
+                        AppLocalizations.of(context)!.driverRating,
                         '${trip['driverRate'].toStringAsFixed(1)} ⭐',
                         Icons.star,
                         Colors.amber,
@@ -352,7 +353,8 @@ class _UserTripsScreenState extends State<UserTripsScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: const Text('Cancel Trip'),
+                            child:
+                                Text(AppLocalizations.of(context)!.cancelTrip),
                           ),
                         ),
                       ),

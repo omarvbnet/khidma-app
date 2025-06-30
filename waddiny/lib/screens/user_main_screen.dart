@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'user_home_screen.dart';
 import 'user_trips_screen.dart';
 import 'user_profile_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class UserMainScreen extends StatefulWidget {
   const UserMainScreen({Key? key}) : super(key: key);
@@ -43,21 +44,21 @@ class _UserMainScreenState extends State<UserMainScreen> {
         child: ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           child: BottomNavigationBar(
-            items: const <BottomNavigationBarItem>[
+            items: <BottomNavigationBarItem>[
               BottomNavigationBarItem(
                 icon: Icon(Icons.directions_car),
                 activeIcon: Icon(Icons.directions_car, color: Colors.blue),
-                label: 'Trip',
+                label: AppLocalizations.of(context)!.trip,
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.history),
                 activeIcon: Icon(Icons.history, color: Colors.blue),
-                label: 'Trips',
+                label: AppLocalizations.of(context)!.trips,
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.person),
                 activeIcon: Icon(Icons.person, color: Colors.blue),
-                label: 'Profile',
+                label: AppLocalizations.of(context)!.profile,
               ),
             ],
             currentIndex: _selectedIndex,

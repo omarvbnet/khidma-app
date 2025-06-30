@@ -7,6 +7,8 @@ import '../screens/driver_navigation_screen.dart';
 import '../screens/driver_trip_details_screen.dart';
 import '../screens/driver_home_screen.dart';
 import '../services/notification_service.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart'; // Import to use getLocalizations helper
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:convert';
 
@@ -24,6 +26,7 @@ class DriverAcceptedTripScreen extends StatefulWidget {
 class _DriverAcceptedTripScreenState extends State<DriverAcceptedTripScreen> {
   final _driverService = DriverService(ApiService());
   bool _isStarting = false;
+  bool _isLoading = true;
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
@@ -58,6 +61,7 @@ class _DriverAcceptedTripScreenState extends State<DriverAcceptedTripScreen> {
 
     setState(() {
       _markers = {pickupMarker, dropoffMarker};
+      _isLoading = false;
     });
   }
 
@@ -67,37 +71,30 @@ class _DriverAcceptedTripScreenState extends State<DriverAcceptedTripScreen> {
         _isStarting = true;
       });
 
+      print('🚀 Starting trip: ${widget.trip.id}');
       // Start the trip using the driver service
       final updatedTaxiRequest = await _driverService.startTrip(widget.trip.id);
-
-      // Convert to Trip model for navigation screen
-      final updatedTrip = Trip.fromJson(updatedTaxiRequest.toJson());
+      print('✅ Trip started successfully');
 
       if (!mounted) return;
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Trip started successfully!'),
+        SnackBar(
+          content: Text(getLocalizations(context).tripStartedSuccessfully),
           backgroundColor: Colors.green,
         ),
       );
 
-      // Navigate to navigation screen for pickup
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => DriverNavigationScreen(
-            trip: updatedTrip,
-            isPickup: true,
-            onTripStatusChanged: (_) {},
-          ),
-        ),
-      );
+      // Pop back to the main screen - it will automatically refresh and show the navigation screen
+      Navigator.pop(context);
     } catch (e) {
+      print('❌ Error starting trip: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error starting trip: $e'),
+          content:
+              Text(getLocalizations(context).errorStartingTrip(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -112,9 +109,19 @@ class _DriverAcceptedTripScreenState extends State<DriverAcceptedTripScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Only show map if trip data is loaded and coordinates are valid
+    if (_isLoading ||
+        widget.trip == null ||
+        widget.trip.pickupLat == 0.0 ||
+        widget.trip.dropoffLat == 0.0) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Trip Accepted'),
+        title: Text(getLocalizations(context).tripAcceptedTitle),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -181,28 +188,28 @@ class _DriverAcceptedTripScreenState extends State<DriverAcceptedTripScreen> {
               children: [
                 // Trip details
                 _buildInfoRow(
-                  'From',
+                  getLocalizations(context).fromLabel,
                   widget.trip.pickupLocation,
                   Icons.location_on,
                   Colors.green,
                 ),
                 const SizedBox(height: 12),
                 _buildInfoRow(
-                  'To',
+                  getLocalizations(context).toLabel,
                   widget.trip.dropoffLocation,
                   Icons.location_on,
                   Colors.red,
                 ),
                 const SizedBox(height: 12),
                 _buildInfoRow(
-                  'Price',
+                  getLocalizations(context).priceLabel,
                   '${widget.trip.fare} IQD',
                   Icons.attach_money,
                   Colors.orange,
                 ),
                 const SizedBox(height: 12),
                 _buildInfoRow(
-                  'Distance',
+                  getLocalizations(context).distance,
                   '${widget.trip.distance.toStringAsFixed(1)} km',
                   Icons.straighten,
                   Colors.purple,
@@ -210,7 +217,7 @@ class _DriverAcceptedTripScreenState extends State<DriverAcceptedTripScreen> {
                 if (widget.trip.userFullName != null) ...[
                   const SizedBox(height: 12),
                   _buildInfoRow(
-                    'User',
+                    getLocalizations(context).userLabel,
                     widget.trip.userFullName!,
                     Icons.person,
                     Colors.teal,
@@ -219,7 +226,7 @@ class _DriverAcceptedTripScreenState extends State<DriverAcceptedTripScreen> {
                 if (widget.trip.userPhone != null) ...[
                   const SizedBox(height: 12),
                   _buildInfoRow(
-                    'Phone',
+                    getLocalizations(context).phoneLabel,
                     widget.trip.userPhone!,
                     Icons.phone,
                     Colors.indigo,
@@ -248,9 +255,9 @@ class _DriverAcceptedTripScreenState extends State<DriverAcceptedTripScreen> {
                                   AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Text(
-                            'Start Trip',
-                            style: TextStyle(
+                        : Text(
+                            getLocalizations(context).startTripButton,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
