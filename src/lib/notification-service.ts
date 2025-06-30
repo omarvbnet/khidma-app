@@ -75,6 +75,17 @@ async function sendNotificationWithFallback(
   type: string
 ) {
   try {
+    // First, verify that the user exists
+    const userExists = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true }
+    });
+
+    if (!userExists) {
+      console.error(`❌ User not found for notification: ${userId}`);
+      throw new Error(`User not found: ${userId}`);
+    }
+
     // Create notification in database
     const notification = await prisma.notification.create({
       data: {
@@ -137,6 +148,17 @@ export async function sendTripStatusNotification(
   previousStatus: string,
   newStatus: string
 ) {
+  console.log('\n=== SENDING TRIP STATUS NOTIFICATION ===');
+  console.log('Trip ID:', trip.id);
+  console.log('Previous status:', previousStatus);
+  console.log('New status:', newStatus);
+  console.log('Trip data:', {
+    userId: trip.userId,
+    driverId: trip.driverId,
+    driver: trip.driver ? { id: trip.driver.id, userId: trip.driver.userId } : null,
+    user: trip.user ? { id: trip.user.id } : null
+  });
+
   const notificationData: NotificationData = {
     tripId: trip.id,
     previousStatus,
@@ -147,6 +169,8 @@ export async function sendTripStatusNotification(
 
   // Send notification to user
   if (trip.userId) {
+    console.log('📱 Sending notification to user:', trip.userId);
+    
     let userTitle = '';
     let userMessage = '';
     let userType = 'TRIP_STATUS_CHANGE';
@@ -188,6 +212,7 @@ export async function sendTripStatusNotification(
         break;
       
       default:
+        console.log('⚠️ No notification for user status:', newStatus);
         return; // Don't send notification for other statuses
     }
 
@@ -199,13 +224,18 @@ export async function sendTripStatusNotification(
         notificationData,
         userType
       );
+      console.log('✅ User notification sent successfully');
     } catch (error) {
-      console.error('Error sending notification to user:', error);
+      console.error('❌ Error sending notification to user:', error);
     }
+  } else {
+    console.log('⚠️ No userId found in trip data');
   }
 
   // Send notification to driver
   if (trip.driverId) {
+    console.log('📱 Sending notification to driver. Driver ID:', trip.driverId);
+    
     let driverTitle = '';
     let driverMessage = '';
     let driverType = 'TRIP_STATUS_CHANGE';
@@ -244,21 +274,40 @@ export async function sendTripStatusNotification(
         break;
       
       default:
+        console.log('⚠️ No notification for driver status:', newStatus);
         return; // Don't send notification for other statuses
     }
 
     try {
-      await sendNotificationWithFallback(
-        trip.driverId,
-        driverTitle,
-        driverMessage,
-        notificationData,
-        driverType
-      );
+      // Get the driver's user ID from the driver profile
+      const driverProfile = await prisma.driver.findUnique({
+        where: { id: trip.driverId },
+        select: { userId: true }
+      });
+
+      console.log('Driver profile lookup result:', driverProfile);
+
+      if (driverProfile && driverProfile.userId) {
+        console.log('📱 Sending notification to driver user ID:', driverProfile.userId);
+        await sendNotificationWithFallback(
+          driverProfile.userId,
+          driverTitle,
+          driverMessage,
+          notificationData,
+          driverType
+        );
+        console.log('✅ Driver notification sent successfully');
+      } else {
+        console.error('❌ Driver profile not found or missing userId:', trip.driverId);
+      }
     } catch (error) {
-      console.error('Error sending notification to driver:', error);
+      console.error('❌ Error sending notification to driver:', error);
     }
+  } else {
+    console.log('⚠️ No driverId found in trip data');
   }
+
+  console.log('=== TRIP STATUS NOTIFICATION COMPLETED ===\n');
 }
 
 export async function sendNewTripNotification(
