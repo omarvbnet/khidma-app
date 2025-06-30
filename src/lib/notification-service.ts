@@ -167,7 +167,7 @@ export async function sendTripStatusNotification(
     dropoffLocation: trip.dropoffLocation,
   };
 
-  // Send notification to user
+  // Send notification to USER only (driver should only receive "new trip available" notifications)
   if (trip.userId) {
     console.log('📱 Sending notification to user:', trip.userId);
     
@@ -232,80 +232,10 @@ export async function sendTripStatusNotification(
     console.log('⚠️ No userId found in trip data');
   }
 
-  // Send notification to driver
-  if (trip.driverId) {
-    console.log('📱 Sending notification to driver. Driver ID:', trip.driverId);
-    
-    let driverTitle = '';
-    let driverMessage = '';
-    let driverType = 'TRIP_STATUS_CHANGE';
-
-    switch (newStatus) {
-      case 'DRIVER_ACCEPTED':
-        driverTitle = 'Trip Accepted!';
-        driverMessage = 'You have successfully accepted the trip. Head to the pickup location.';
-        break;
-      
-      case 'DRIVER_IN_WAY':
-        driverTitle = 'Heading to Pickup';
-        driverMessage = 'You are on your way to pick up the passenger.';
-        break;
-      
-      case 'DRIVER_ARRIVED':
-        driverTitle = 'Arrived at Pickup';
-        driverMessage = 'You have arrived at the pickup location. Wait for the passenger.';
-        break;
-      
-      case 'USER_PICKED_UP':
-        driverTitle = 'Passenger Picked Up!';
-        driverMessage = 'The passenger has been picked up. Drive safely to the destination.';
-        break;
-      
-      case 'TRIP_COMPLETED':
-        driverTitle = 'Trip Completed!';
-        driverMessage = 'Trip completed successfully. You can now accept new trips.';
-        driverType = 'TRIP_COMPLETED';
-        break;
-      
-      case 'TRIP_CANCELLED':
-        driverTitle = 'Trip Cancelled';
-        driverMessage = 'The trip has been cancelled.';
-        driverType = 'TRIP_CANCELLED';
-        break;
-      
-      default:
-        console.log('⚠️ No notification for driver status:', newStatus);
-        return; // Don't send notification for other statuses
-    }
-
-    try {
-      // Get the driver's user ID from the driver profile
-      const driverProfile = await prisma.driver.findUnique({
-        where: { id: trip.driverId },
-        select: { userId: true }
-      });
-
-      console.log('Driver profile lookup result:', driverProfile);
-
-      if (driverProfile && driverProfile.userId) {
-        console.log('📱 Sending notification to driver user ID:', driverProfile.userId);
-        await sendNotificationWithFallback(
-          driverProfile.userId,
-          driverTitle,
-          driverMessage,
-          notificationData,
-          driverType
-        );
-        console.log('✅ Driver notification sent successfully');
-      } else {
-        console.error('❌ Driver profile not found or missing userId:', trip.driverId);
-      }
-    } catch (error) {
-      console.error('❌ Error sending notification to driver:', error);
-    }
-  } else {
-    console.log('⚠️ No driverId found in trip data');
-  }
+  // NOTE: Driver notifications are removed from here
+  // Drivers should only receive "new trip available" notifications when trips are created
+  // They don't need notifications for their own actions (accepting, heading to pickup, etc.)
+  console.log('ℹ️ Skipping driver notification - drivers only receive "new trip available" notifications');
 
   console.log('=== TRIP STATUS NOTIFICATION COMPLETED ===\n');
 }
