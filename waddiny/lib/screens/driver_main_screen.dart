@@ -15,6 +15,9 @@ import 'driver_navigation_screen.dart';
 import 'driver_accepted_trip_screen.dart';
 import 'driver_arrived_screen.dart';
 import 'dart:async';
+import '../services/location_service.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DriverMainScreen extends StatefulWidget {
   const DriverMainScreen({Key? key}) : super(key: key);
@@ -29,6 +32,7 @@ class _DriverMainScreenState extends State<DriverMainScreen> {
   Trip? _currentTrip;
   bool _isLoadingTrip = true;
   Timer? _refreshTimer;
+  final LocationService _locationService = LocationService();
 
   @override
   void initState() {
@@ -38,11 +42,35 @@ class _DriverMainScreenState extends State<DriverMainScreen> {
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (mounted) _loadCurrentTrip();
     });
+    _initializeProvinceChecking();
+  }
+
+  Future<void> _initializeProvinceChecking() async {
+    try {
+      // Initialize last known province from stored data
+      final prefs = await SharedPreferences.getInstance();
+      final userDataString = prefs.getString('userData');
+      if (userDataString != null) {
+        final userData = json.decode(userDataString);
+        final savedProvince = userData['province'];
+        if (savedProvince != null) {
+          _locationService.setLastKnownProvince(savedProvince);
+        }
+      }
+
+      // Start frequent province checking every 2 minutes
+      _locationService.startFrequentProvinceChecking();
+      print(
+          '✅ Started frequent province checking for driver (every 2 minutes)');
+    } catch (e) {
+      print('❌ Error initializing province checking: $e');
+    }
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _locationService.stopFrequentProvinceChecking();
     super.dispose();
   }
 

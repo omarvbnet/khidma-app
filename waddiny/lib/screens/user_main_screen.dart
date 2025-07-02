@@ -3,6 +3,10 @@ import 'user_home_screen.dart';
 import 'user_trips_screen.dart';
 import 'user_profile_screen.dart';
 import '../l10n/app_localizations.dart';
+import '../services/location_service.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 
 class UserMainScreen extends StatefulWidget {
   const UserMainScreen({Key? key}) : super(key: key);
@@ -13,12 +17,46 @@ class UserMainScreen extends StatefulWidget {
 
 class _UserMainScreenState extends State<UserMainScreen> {
   int _selectedIndex = 0;
+  final LocationService _locationService = LocationService();
 
   final List<Widget> _screens = [
     const UserHomeScreen(),
     const UserTripsScreen(),
     const UserProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeProvinceChecking();
+  }
+
+  Future<void> _initializeProvinceChecking() async {
+    try {
+      // Initialize last known province from stored data
+      final prefs = await SharedPreferences.getInstance();
+      final userDataString = prefs.getString('userData');
+      if (userDataString != null) {
+        final userData = json.decode(userDataString);
+        final savedProvince = userData['province'];
+        if (savedProvince != null) {
+          _locationService.setLastKnownProvince(savedProvince);
+        }
+      }
+
+      // Start frequent province checking every 2 minutes
+      _locationService.startFrequentProvinceChecking();
+      print('✅ Started frequent province checking for user (every 2 minutes)');
+    } catch (e) {
+      print('❌ Error initializing province checking: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _locationService.stopFrequentProvinceChecking();
+    super.dispose();
+  }
 
   void _onItemTapped(int index) {
     setState(() {

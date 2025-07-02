@@ -22,6 +22,9 @@ model User {
   platform     String?       // Platform (ios/android)
   appVersion   String?       // App version
   language     String?       // Preferred language (e.g., 'en', 'ar', 'ku', 'tr')
+  lastKnownLatitude  Float?  // Last known latitude for province tracking
+  lastKnownLongitude Float?  // Last known longitude for province tracking
+  lastLocationUpdate DateTime? // When the location was last updated
   driver       Driver?
   orders       Order[]
   taxiRequests TaxiRequest[]

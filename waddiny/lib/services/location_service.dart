@@ -13,7 +13,9 @@ class LocationService {
   static const Duration _timeout = Duration(seconds: 5);
   static const int _maxRetries = 2;
   StreamSubscription<Position>? _positionStreamSubscription;
+  Timer? _provinceCheckTimer;
   double _currentHeading = 0;
+  String? _lastKnownProvince;
 
   Future<bool> requestLocationPermission() async {
     try {
@@ -164,6 +166,7 @@ class LocationService {
 
   void dispose() {
     _positionStreamSubscription?.cancel();
+    _provinceCheckTimer?.cancel();
   }
 
   Future<String> getProvinceFromCoordinates(double lat, double lng) async {
@@ -249,5 +252,98 @@ class LocationService {
       print('Error getting address: $e');
       return 'Unknown location';
     }
+  }
+
+  /// Start frequent province checking every 2 minutes
+  void startFrequentProvinceChecking() {
+    _provinceCheckTimer?.cancel();
+    _provinceCheckTimer = Timer.periodic(const Duration(minutes: 2), (_) async {
+      await _checkAndUpdateProvince();
+    });
+
+    // Also check immediately when starting
+    _checkAndUpdateProvince();
+  }
+
+  /// Stop frequent province checking
+  void stopFrequentProvinceChecking() {
+    _provinceCheckTimer?.cancel();
+    _provinceCheckTimer = null;
+  }
+
+  /// Check current province and update if changed
+  Future<void> _checkAndUpdateProvince() async {
+    try {
+      print('🔄 Checking province every 2 minutes...');
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      final userDataString = prefs.getString('userData');
+
+      if (token == null || userDataString == null) {
+        print('❌ No token or user data found for province check');
+        return;
+      }
+
+      final userData = json.decode(userDataString);
+      final savedProvince = userData['province'];
+
+      // Get current location
+      final position = await getCurrentLocation();
+
+      // Use the new API endpoint to update location and province
+      final response = await http
+          .post(
+            Uri.parse('${ApiConstants.baseUrl}/users/location'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: json.encode({
+              'lat': position.latitude,
+              'lng': position.longitude,
+            }),
+          )
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final currentProvince = data['province'];
+
+        print('📍 Province Check:');
+        print('  - Saved province: $savedProvince');
+        print('  - Current province: $currentProvince');
+        print('  - Last known province: $_lastKnownProvince');
+
+        // Update if province has changed
+        if (currentProvince != savedProvince &&
+            currentProvince != _lastKnownProvince) {
+          print('🔄 Province changed from $savedProvince to $currentProvince');
+
+          // Update local storage
+          userData['province'] = currentProvince;
+          await prefs.setString('userData', json.encode(userData));
+
+          // Update last known province
+          _lastKnownProvince = currentProvince;
+
+          print('✅ Province updated successfully');
+        } else {
+          print('✅ Province unchanged');
+        }
+      } else {
+        print('❌ Failed to update location: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error checking province: $e');
+    }
+  }
+
+  /// Get the last known province
+  String? get lastKnownProvince => _lastKnownProvince;
+
+  /// Set the last known province (useful for initialization)
+  void setLastKnownProvince(String province) {
+    _lastKnownProvince = province;
   }
 }
