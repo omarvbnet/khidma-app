@@ -75,18 +75,23 @@ function startPeriodicProvinceChecking()
 
 The system uses coordinate-based province detection for Iraq and surrounding regions:
 
-| Province | Latitude Range | Longitude Range |
-|----------|----------------|-----------------|
-| Baghdad | 33.0 - 34.0 | 44.0 - 45.0 |
-| Erbil | 36.0 - 37.0 | 43.0 - 44.0 |
-| Duhok | 36.0 - 37.0 | 42.0 - 43.0 |
-| Sulaymaniyah | 35.0 - 36.0 | 45.0 - 46.0 |
-| Babil | 32.0 - 33.0 | 44.0 - 45.0 |
-| Karbala | 31.0 - 32.0 | 44.0 - 45.0 |
-| Wasit | 32.0 - 33.0 | 45.0 - 46.0 |
-| Basra | 30.0 - 31.0 | 47.0 - 48.0 |
-| Aleppo | 36.0 - 37.0 | 37.0 - 38.0 |
-| Damascus | 33.0 - 34.0 | 36.0 - 37.0 |
+| Province | Latitude Range | Longitude Range | Major Cities |
+|----------|----------------|-----------------|--------------|
+| Baghdad | 33.0 - 34.0 | 44.0 - 45.0 | Baghdad |
+| Erbil | 36.0 - 37.0 | 43.0 - 44.0 | Erbil |
+| Duhok | 36.0 - 37.0 | 42.0 - 42.5 | Duhok |
+| Sulaymaniyah | 35.0 - 36.0 | 45.0 - 46.0 | Sulaymaniyah |
+| Babil | 32.0 - 33.0 | 44.0 - 45.0 | Hillah |
+| Karbala | 31.0 - 32.0 | 44.0 - 45.0 | Karbala |
+| Wasit | 32.0 - 33.0 | 45.0 - 46.0 | Kut |
+| Basra | 30.0 - 31.0 | 47.0 - 48.0 | Basra |
+| Anbar | 33.0 - 34.0 | 43.0 - 44.0 | Ramadi, Fallujah |
+| Kirkuk | 35.0 - 36.0 | 43.5 - 44.5 | Kirkuk |
+| Diyala | 34.0 - 35.0 | 44.5 - 45.5 | Baqubah |
+| Salahaddin | 34.0 - 35.0 | 43.0 - 44.0 | Tikrit, Samarra |
+| Nineveh | 36.0 - 37.0 | 42.5 - 43.0 | Mosul |
+| Aleppo | 36.0 - 37.0 | 37.0 - 38.0 | Aleppo |
+| Damascus | 33.0 - 34.0 | 36.0 - 37.0 | Damascus |
 
 ## Database Schema
 

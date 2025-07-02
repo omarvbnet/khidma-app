@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       province = 'Baghdad';
     } else if (latitude >= 36.0 && latitude <= 37.0 && longitude >= 43.0 && longitude <= 44.0) {
       province = 'Erbil';
-    } else if (latitude >= 36.0 && latitude <= 37.0 && longitude >= 42.0 && longitude <= 43.0) {
+    } else if (latitude >= 36.0 && latitude <= 37.0 && longitude >= 42.0 && longitude <= 42.5) {
       province = 'Duhok';
     } else if (latitude >= 35.0 && latitude <= 36.0 && longitude >= 45.0 && longitude <= 46.0) {
       province = 'Sulaymaniyah';
@@ -64,6 +64,16 @@ export async function POST(request: NextRequest) {
       province = 'Wasit';
     } else if (latitude >= 30.0 && latitude <= 31.0 && longitude >= 47.0 && longitude <= 48.0) {
       province = 'Basra';
+    } else if (latitude >= 33.0 && latitude <= 34.0 && longitude >= 43.0 && longitude <= 44.0) {
+      province = 'Anbar';
+    } else if (latitude >= 35.0 && latitude <= 36.0 && longitude >= 43.5 && longitude <= 44.5) {
+      province = 'Kirkuk';
+    } else if (latitude >= 34.0 && latitude <= 35.0 && longitude >= 44.5 && longitude <= 45.5) {
+      province = 'Diyala';
+    } else if (latitude >= 34.0 && latitude <= 35.0 && longitude >= 43.0 && longitude <= 44.0) {
+      province = 'Salahaddin';
+    } else if (latitude >= 36.0 && latitude <= 37.0 && longitude >= 42.5 && longitude <= 43.0) {
+      province = 'Nineveh';
     } else if (latitude >= 36.0 && latitude <= 37.0 && longitude >= 37.0 && longitude <= 38.0) {
       province = 'Aleppo';
     } else if (latitude >= 33.0 && latitude <= 34.0 && longitude >= 36.0 && longitude <= 37.0) {

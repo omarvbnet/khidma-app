@@ -3,7 +3,7 @@ const axios = require('axios');
 
 const prisma = new PrismaClient();
 
-// Province mapping based on coordinates (simplified for Iraq)
+// Province mapping based on coordinates (comprehensive for Iraq)
 function getProvinceFromCoordinates(lat, lng) {
   const latitude = parseFloat(lat);
   const longitude = parseFloat(lng);
@@ -12,7 +12,7 @@ function getProvinceFromCoordinates(lat, lng) {
     return 'Baghdad';
   } else if (latitude >= 36.0 && latitude <= 37.0 && longitude >= 43.0 && longitude <= 44.0) {
     return 'Erbil';
-  } else if (latitude >= 36.0 && latitude <= 37.0 && longitude >= 42.0 && longitude <= 43.0) {
+  } else if (latitude >= 36.0 && latitude <= 37.0 && longitude >= 42.0 && longitude <= 42.5) {
     return 'Duhok';
   } else if (latitude >= 35.0 && latitude <= 36.0 && longitude >= 45.0 && longitude <= 46.0) {
     return 'Sulaymaniyah';
@@ -24,6 +24,16 @@ function getProvinceFromCoordinates(lat, lng) {
     return 'Wasit';
   } else if (latitude >= 30.0 && latitude <= 31.0 && longitude >= 47.0 && longitude <= 48.0) {
     return 'Basra';
+  } else if (latitude >= 33.0 && latitude <= 34.0 && longitude >= 43.0 && longitude <= 44.0) {
+    return 'Anbar';
+  } else if (latitude >= 35.0 && latitude <= 36.0 && longitude >= 43.5 && longitude <= 44.5) {
+    return 'Kirkuk';
+  } else if (latitude >= 34.0 && latitude <= 35.0 && longitude >= 44.5 && longitude <= 45.5) {
+    return 'Diyala';
+  } else if (latitude >= 34.0 && latitude <= 35.0 && longitude >= 43.0 && longitude <= 44.0) {
+    return 'Salahaddin';
+  } else if (latitude >= 36.0 && latitude <= 37.0 && longitude >= 42.5 && longitude <= 43.0) {
+    return 'Nineveh';
   } else if (latitude >= 36.0 && latitude <= 37.0 && longitude >= 37.0 && longitude <= 38.0) {
     return 'Aleppo';
   } else if (latitude >= 33.0 && latitude <= 34.0 && longitude >= 36.0 && longitude <= 37.0) {
