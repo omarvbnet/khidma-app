@@ -9,6 +9,8 @@ import '../services/map_service.dart';
 import '../services/location_service.dart';
 import '../models/trip_model.dart';
 import 'driver_navigation_screen.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart'; // Import to use getLocalizations helper
 
 class DriverArrivedScreen extends StatefulWidget {
   final TaxiRequest trip;
@@ -94,20 +96,21 @@ class _DriverArrivedScreenState extends State<DriverArrivedScreen> {
           markerId: const MarkerId('current'),
           position: _currentLocation ?? pickup,
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          infoWindow: const InfoWindow(title: 'Your Location'),
+          infoWindow:
+              InfoWindow(title: getLocalizations(context).yourLocationLabel),
         ),
         Marker(
           markerId: const MarkerId('pickup'),
           position: pickup,
           icon:
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          infoWindow: const InfoWindow(title: 'Pickup'),
+          infoWindow: InfoWindow(title: getLocalizations(context).pickupLabel),
         ),
         Marker(
           markerId: const MarkerId('dropoff'),
           position: dropoff,
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          infoWindow: const InfoWindow(title: 'Dropoff'),
+          infoWindow: InfoWindow(title: getLocalizations(context).dropoffLabel),
         ),
       };
 
@@ -170,8 +173,9 @@ class _DriverArrivedScreenState extends State<DriverArrivedScreen> {
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Passenger picked up successfully!'),
+        SnackBar(
+          content:
+              Text(getLocalizations(context).passengerPickedUpSuccessfully),
           backgroundColor: Colors.green,
         ),
       );
@@ -188,7 +192,8 @@ class _DriverArrivedScreenState extends State<DriverArrivedScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $e'),
+          content:
+              Text(getLocalizations(context).errorDuringPickup(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -217,7 +222,7 @@ class _DriverArrivedScreenState extends State<DriverArrivedScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pick up Passenger'),
+        title: Text(getLocalizations(context).pickupPassengerTitle),
         actions: [],
       ),
       body: Stack(children: [
@@ -265,7 +270,7 @@ class _DriverArrivedScreenState extends State<DriverArrivedScreen> {
                           backgroundColor: Colors.orange),
                       child: _isUpdating
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('User Picked Up'),
+                          : Text(getLocalizations(context).userPickedUpButton),
                     ),
                   )
                 ],

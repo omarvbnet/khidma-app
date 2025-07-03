@@ -6,6 +6,8 @@ import '../services/driver_service.dart';
 import '../services/api_service.dart';
 import '../screens/driver_home_screen.dart';
 import '../models/trip_model.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart'; // Import to use getLocalizations helper
 
 class DriverTripDetailsScreen extends StatefulWidget {
   final TaxiRequest trip;
@@ -135,8 +137,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Trip accepted successfully!'),
+        SnackBar(
+          content: Text(getLocalizations(context).tripAcceptedSuccessfully),
           backgroundColor: Colors.green,
         ),
       );
@@ -151,7 +153,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
       if (!mounted) return;
 
       // Show more detailed error message for budget issues
-      String errorMessage = 'Error accepting trip: $e';
+      String errorMessage =
+          getLocalizations(context).errorAcceptingTrip(e.toString());
       if (e.toString().contains('Insufficient budget')) {
         errorMessage = e.toString();
       }
@@ -162,7 +165,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 5),
           action: SnackBarAction(
-            label: 'View Budget',
+            label: getLocalizations(context).viewBudgetButton,
             textColor: Colors.white,
             onPressed: () => _showBudgetDetails(),
           ),
@@ -185,7 +188,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Budget Information'),
+          title: Text(getLocalizations(context).budgetInformationTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,8 +231,9 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
                     Expanded(
                       child: Text(
                         canAfford
-                            ? 'You can afford this trip'
-                            : 'Insufficient budget for this trip',
+                            ? getLocalizations(context).canAffordTripMessage
+                            : getLocalizations(context)
+                                .insufficientBudgetMessage,
                         style: TextStyle(
                           color: canAfford ? Colors.green : Colors.red,
                           fontWeight: FontWeight.w600,
@@ -244,7 +248,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+              child: Text(getLocalizations(context).okButton),
             ),
           ],
         ),
@@ -275,7 +279,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Trip Details'),
+        title: Text(getLocalizations(context).tripDetailsTitle),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -321,28 +325,28 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildInfoRow(
-                        'From',
+                        getLocalizations(context).fromLabel,
                         widget.trip.pickupLocation,
                         Icons.location_on,
                         Colors.green,
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'To',
+                        getLocalizations(context).toLabel,
                         widget.trip.dropoffLocation,
                         Icons.location_on,
                         Colors.red,
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Price',
+                        getLocalizations(context).priceLabel,
                         '${widget.trip.price} IQD',
                         Icons.attach_money,
                         Colors.orange,
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Distance',
+                        getLocalizations(context).distanceLabel,
                         '${widget.trip.distance.toStringAsFixed(1)} km',
                         Icons.straighten,
                         Colors.purple,
@@ -370,7 +374,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Budget Information',
+                                    getLocalizations(context).budgetInformation,
                                     style: TextStyle(
                                       color: Colors.orange[700],
                                       fontWeight: FontWeight.w600,
@@ -457,8 +461,10 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
                                     Text(
                                       _driverBudget!['budget'] >=
                                               (widget.trip.price * 0.12)
-                                          ? 'Can afford this trip'
-                                          : 'Insufficient budget',
+                                          ? getLocalizations(context)
+                                              .canAffordThisTripMessage
+                                          : getLocalizations(context)
+                                              .insufficientBudgetShortMessage,
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
@@ -478,7 +484,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
                       if (widget.trip.userFullName != null) ...[
                         const SizedBox(height: 12),
                         _buildInfoRow(
-                          'User',
+                          getLocalizations(context).userLabel,
                           widget.trip.userFullName!,
                           Icons.person,
                           Colors.teal,
@@ -487,7 +493,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
                       if (widget.trip.userPhone != null) ...[
                         const SizedBox(height: 12),
                         _buildInfoRow(
-                          'Phone',
+                          getLocalizations(context).phoneLabel,
                           widget.trip.userPhone!,
                           Icons.phone,
                           Colors.indigo,
@@ -528,8 +534,10 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
                                   (_driverBudget != null &&
                                           _driverBudget!['budget'] <
                                               (widget.trip.price * 0.12))
-                                      ? 'Insufficient Budget'
-                                      : 'Accept Trip',
+                                      ? getLocalizations(context)
+                                          .insufficientBudgetButton
+                                      : getLocalizations(context)
+                                          .acceptTripButton,
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,

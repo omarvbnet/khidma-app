@@ -459,7 +459,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String errorCreatingTrip(Object error) {
-    return 'Error creating trip';
+    return 'Error creating trip: $error';
   }
 
   @override
@@ -1012,7 +1012,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get insufficientBudgetMessage => 'Insufficient budget';
+  String get insufficientBudgetMessage => 'Insufficient budget for this trip';
 
   @override
   String get viewBudgetButton => 'View Budget';
@@ -1021,8 +1021,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get budgetInformationTitle => 'Budget Information';
 
   @override
-  String currentBudgetLabel(Object amount) {
-    return 'Current Budget: $amount IQD';
+  String currentBudgetLabel(Object amount, Object budget) {
+    return 'Current Budget: $budget IQD';
   }
 
   @override
@@ -1049,13 +1049,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String deductionLabel(Object amount) {
-    return 'Deduction: $amount IQD (12%)';
+  String deductionLabel(Object amount, Object deduction) {
+    return 'Deduction (12%): $deduction IQD';
   }
 
   @override
   String yourBudgetLabel(Object budget) {
-    return 'Your budget: $budget IQD';
+    return 'Your Budget:';
   }
 
   @override
@@ -1133,7 +1133,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusWaitingLabel => 'Waiting';
 
   @override
-  String get driverLabel => 'Driver';
+  String driverLabel(Object driverName) {
+    return 'Driver: $driverName';
+  }
 
   @override
   String get driverPhoneLabel => 'Driver Phone';
@@ -1365,7 +1367,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get iHaveArrivedButton => 'I have arrived';
 
   @override
-  String get userPickedUpButton => 'User picked up';
+  String get userPickedUpButton => 'User Picked Up';
 
   @override
   String get confirmPickedUpButton => 'Confirm picked up';
@@ -1820,4 +1822,101 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationDriverInProgressMessage => 'Your driver is taking you to your destination.';
+
+  @override
+  String get tripDetailsTitle => 'Trip Details';
+
+  @override
+  String get distanceLabel => 'Distance';
+
+  @override
+  String get insufficientBudgetButton => 'Insufficient Budget';
+
+  @override
+  String get tripAcceptedSuccessfully => 'Trip accepted successfully!';
+
+  @override
+  String tripPriceLabel(Object price) {
+    return 'Trip Price: $price IQD';
+  }
+
+  @override
+  String get canAffordTripMessage => 'You can afford this trip';
+
+  @override
+  String get deductionPercentLabel => 'Deduction (12%):';
+
+  @override
+  String get canAffordThisTripMessage => 'Can afford this trip';
+
+  @override
+  String get insufficientBudgetShortMessage => 'Insufficient budget';
+
+  @override
+  String get pickupPassengerTitle => 'Pick up Passenger';
+
+  @override
+  String get yourLocationLabel => 'Your Location';
+
+  @override
+  String get pickupLabel => 'Pickup';
+
+  @override
+  String get dropoffLabel => 'Dropoff';
+
+  @override
+  String get passengerPickedUpSuccessfully => 'Passenger picked up successfully!';
+
+  @override
+  String errorDuringPickup(Object error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get createNewTripTitle => 'Create New Trip';
+
+  @override
+  String get selectLocationsTitle => 'Select Locations';
+
+  @override
+  String get searchForDestinationsWithin50km => 'Search for destinations within 50km of your current position';
+
+  @override
+  String get selectedLocationLabel => 'Selected Location';
+
+  @override
+  String get searchLocationButton => 'Search Location';
+
+  @override
+  String get changeTripButton => 'Change Trip';
+
+  @override
+  String get bookTripButton => 'Book Trip';
+
+  @override
+  String get creatingTripMessage => 'Creating Trip...';
+
+  @override
+  String get youAlreadyHaveAnActiveTrip => 'You already have an active trip. Please wait for it to be completed or cancelled.';
+
+  @override
+  String get userProfileIsIncomplete => 'User profile is incomplete. Please update your profile with name and phone number.';
+
+  @override
+  String get locationIsTooFar => 'Location is too far from your current position. Please search for a closer location.';
+
+  @override
+  String get useAnywayButton => 'Use Anyway';
+
+  @override
+  String get tripInProgressTitle => 'Trip in Progress';
+
+  @override
+  String get driverLocationLabel => 'Driver Location';
+
+  @override
+  String get driverIsHereMessage => 'Your driver is here';
+
+  @override
+  String get driverIsNearMessage => 'Driver is near!';
 }

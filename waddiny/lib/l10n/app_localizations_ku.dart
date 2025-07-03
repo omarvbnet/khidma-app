@@ -258,7 +258,7 @@ class AppLocalizationsKu extends AppLocalizations {
   String get testBudget => 'تاقیکردنەوەی بودیجە';
 
   @override
-  String get budgetInformation => 'زانیاری بودیجە';
+  String get budgetInformation => 'زانیاری بودجە';
 
   @override
   String currentBudget(Object amount) {
@@ -1001,7 +1001,7 @@ class AppLocalizationsKu extends AppLocalizations {
   String get waitingTime => 'کاتی چاوەڕوانی';
 
   @override
-  String get acceptTripButton => 'گەشتەکە قبوڵ بکە';
+  String get acceptTripButton => 'قبوڵکردنی گەشت';
 
   @override
   String get viewTripButton => 'گەشتەکە ببینە';
@@ -1012,17 +1012,17 @@ class AppLocalizationsKu extends AppLocalizations {
   }
 
   @override
-  String get insufficientBudgetMessage => 'بودجە بەس نییە';
+  String get insufficientBudgetMessage => 'بودجە بۆ ئەم گەشتە نەماوە';
 
   @override
-  String get viewBudgetButton => 'بودجە ببینە';
+  String get viewBudgetButton => 'بینینی بودجە';
 
   @override
   String get budgetInformationTitle => 'زانیاری بودجە';
 
   @override
-  String currentBudgetLabel(Object amount) {
-    return 'بودجەی ئێستا: $amount دینار';
+  String currentBudgetLabel(Object amount, Object budget) {
+    return 'بودجەی ئێستا: $budget دینار';
   }
 
   @override
@@ -1049,13 +1049,13 @@ class AppLocalizationsKu extends AppLocalizations {
   }
 
   @override
-  String deductionLabel(Object amount) {
-    return 'کەمکردنەوە: $amount دینار (١٢٪)';
+  String deductionLabel(Object amount, Object deduction) {
+    return 'کەمکردنەوە (12%): $deduction دینار';
   }
 
   @override
   String yourBudgetLabel(Object budget) {
-    return 'بودجەکەت: $budget دینار';
+    return 'بودجەکەت:';
   }
 
   @override
@@ -1133,7 +1133,9 @@ class AppLocalizationsKu extends AppLocalizations {
   String get statusWaitingLabel => 'چاوەڕوانە';
 
   @override
-  String get driverLabel => 'شۆفێر';
+  String driverLabel(Object driverName) {
+    return 'شۆفێر: $driverName';
+  }
 
   @override
   String get driverPhoneLabel => 'تەلەفۆنی شۆفێر';
@@ -1353,7 +1355,7 @@ class AppLocalizationsKu extends AppLocalizations {
   String get movementLabel => 'جووڵە';
 
   @override
-  String get resetButton => 'ڕێکخستنەوە';
+  String get resetButton => 'سڕینەوە';
 
   @override
   String get northLabel => 'باکوور';
@@ -1425,7 +1427,7 @@ class AppLocalizationsKu extends AppLocalizations {
   String get driverNearMessage => 'شۆفێر لە نزیکدایە!';
 
   @override
-  String get driverApproachingMessage => 'شۆفێرەکەت لە نزیک شوێنەکەتە';
+  String get driverApproachingMessage => 'شۆفێر لە نزیک شوێنەکەتە';
 
   @override
   String get tripCancelledMessage => 'گەشتەکە هەڵوەشێندرایەوە';
@@ -1685,7 +1687,7 @@ class AppLocalizationsKu extends AppLocalizations {
   String get userLabel => 'بەکارهێنەر';
 
   @override
-  String get phoneLabel => 'تەلەفۆن';
+  String get phoneLabel => 'مۆبایل';
 
   @override
   String get startTripButton => 'گەشتەکە دەستپێبکە';
@@ -1820,4 +1822,101 @@ class AppLocalizationsKu extends AppLocalizations {
 
   @override
   String get notificationDriverInProgressMessage => 'شۆفێرەکەت دەتات بەرەو ئامانجەکەت.';
+
+  @override
+  String get tripDetailsTitle => 'وردەکاری گەشت';
+
+  @override
+  String get distanceLabel => 'دووری';
+
+  @override
+  String get insufficientBudgetButton => 'بودجە نەماوە';
+
+  @override
+  String get tripAcceptedSuccessfully => 'گەشتەکە بە سەرکەوتوویی قبوڵکرا!';
+
+  @override
+  String tripPriceLabel(Object price) {
+    return 'نرخی گەشت: $price دینار';
+  }
+
+  @override
+  String get canAffordTripMessage => 'دەتوانیت نرخی ئەم گەشتە بدەیت';
+
+  @override
+  String get deductionPercentLabel => 'کەمکردنەوە (12%):';
+
+  @override
+  String get canAffordThisTripMessage => 'دەتوانرێت ئەم گەشتە بدەدرێت';
+
+  @override
+  String get insufficientBudgetShortMessage => 'بودجە نەماوە';
+
+  @override
+  String get pickupPassengerTitle => 'وەرگرتنی سەرنشین';
+
+  @override
+  String get yourLocationLabel => 'شوێنەکەت';
+
+  @override
+  String get pickupLabel => 'شوێنی وەرگرتن';
+
+  @override
+  String get dropoffLabel => 'شوێنی دانان';
+
+  @override
+  String get passengerPickedUpSuccessfully => 'سەرنشین بە سەرکەوتوویی وەرگیرا!';
+
+  @override
+  String errorDuringPickup(Object error) {
+    return 'هەڵە: $error';
+  }
+
+  @override
+  String get createNewTripTitle => 'گەشتی نوێ دروست بکە';
+
+  @override
+  String get selectLocationsTitle => 'شوێنەکان هەڵبژێرە';
+
+  @override
+  String get searchForDestinationsWithin50km => 'گەڕان بۆ ئامانجەکان لە ناو ٥٠ کم لە شوێنی ئێستای تۆدا';
+
+  @override
+  String get selectedLocationLabel => 'شوێنی هەڵبژێراو';
+
+  @override
+  String get searchLocationButton => 'گەڕان بۆ شوێن';
+
+  @override
+  String get changeTripButton => 'گۆڕینی گەشت';
+
+  @override
+  String get bookTripButton => 'گەشت بکە';
+
+  @override
+  String get creatingTripMessage => 'گەشت دروست دەکرێت...';
+
+  @override
+  String get youAlreadyHaveAnActiveTrip => 'تۆ پێشتر گەشتی چالاکت هەیە. تکایە چاوەڕێ بکە تا تەواو بێت یان هەڵوەشێندرێت.';
+
+  @override
+  String get userProfileIsIncomplete => 'پڕۆفایلی بەکارهێنەر تەواو نییە. تکایە ناو و ژمارەی تەلەفۆن زیاد بکە.';
+
+  @override
+  String get locationIsTooFar => 'شوێن زۆر دوورە لە شوێنی ئێستای تۆ. تکایە شوێنێکی نزیکتر بگەڕێوە.';
+
+  @override
+  String get useAnywayButton => 'بەهەر حالێک بەکارهێنە';
+
+  @override
+  String get tripInProgressTitle => 'گەشت لە پڕۆسەدایە';
+
+  @override
+  String get driverLocationLabel => 'شوێنی شۆفێر';
+
+  @override
+  String get driverIsHereMessage => 'شۆفێر لێرەیە';
+
+  @override
+  String get driverIsNearMessage => 'شۆفێر لە نزیکدایە!';
 }

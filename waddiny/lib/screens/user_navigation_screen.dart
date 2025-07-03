@@ -9,6 +9,8 @@ import '../services/location_service.dart';
 import '../services/notification_service.dart';
 import 'dart:math';
 import '../constants/app_constants.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart'; // Import to use getLocalizations helper
 
 class UserNavigationScreen extends StatefulWidget {
   final Trip trip;
@@ -162,14 +164,14 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Driver is near!',
+                    getLocalizations(context).driverIsNearMessage,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
                   Text(
-                    'Your driver is approaching your location',
+                    getLocalizations(context).driverApproachingMessage,
                     style: TextStyle(fontSize: 14),
                   ),
                 ],
@@ -185,7 +187,7 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         action: SnackBarAction(
-          label: 'OK',
+          label: getLocalizations(context).okButton,
           textColor: Colors.white,
           onPressed: () {},
         ),
@@ -202,7 +204,8 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
         markerId: const MarkerId('current'),
         position: _currentLocation!,
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-        infoWindow: const InfoWindow(title: 'Your Location'),
+        infoWindow:
+            InfoWindow(title: getLocalizations(context).yourLocationLabel),
       ),
       // Dropoff location marker
       Marker(
@@ -210,7 +213,7 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
         position: LatLng(widget.trip.dropoffLat, widget.trip.dropoffLng),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
         infoWindow: InfoWindow(
-          title: 'Dropoff Location',
+          title: getLocalizations(context).dropoffLocationLabel,
           snippet: widget.trip.dropoffLocation,
         ),
       ),
@@ -224,9 +227,9 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
           position: _driverLocation!,
           icon:
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          infoWindow: const InfoWindow(
-            title: 'Driver Location',
-            snippet: 'Your driver is here',
+          infoWindow: InfoWindow(
+            title: getLocalizations(context).driverLocationLabel,
+            snippet: getLocalizations(context).driverIsHereMessage,
           ),
         ),
       );
@@ -389,7 +392,7 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Trip in Progress'),
+        title: Text(getLocalizations(context).tripInProgressTitle),
         backgroundColor: Colors.blue,
         actions: [],
       ),

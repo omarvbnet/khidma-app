@@ -852,7 +852,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorCreatingTrip.
   ///
   /// In en, this message translates to:
-  /// **'Error creating trip'**
+  /// **'Error creating trip: {error}'**
   String errorCreatingTrip(Object error);
 
   /// No description provided for @driverNavigation.
@@ -1932,7 +1932,7 @@ abstract class AppLocalizations {
   /// No description provided for @insufficientBudgetMessage.
   ///
   /// In en, this message translates to:
-  /// **'Insufficient budget'**
+  /// **'Insufficient budget for this trip'**
   String get insufficientBudgetMessage;
 
   /// No description provided for @viewBudgetButton.
@@ -1950,8 +1950,8 @@ abstract class AppLocalizations {
   /// No description provided for @currentBudgetLabel.
   ///
   /// In en, this message translates to:
-  /// **'Current Budget: {amount} IQD'**
-  String currentBudgetLabel(Object amount);
+  /// **'Current Budget: {budget} IQD'**
+  String currentBudgetLabel(Object amount, Object budget);
 
   /// No description provided for @driverNameLabel.
   ///
@@ -1986,13 +1986,13 @@ abstract class AppLocalizations {
   /// No description provided for @deductionLabel.
   ///
   /// In en, this message translates to:
-  /// **'Deduction: {amount} IQD (12%)'**
-  String deductionLabel(Object amount);
+  /// **'Deduction (12%): {deduction} IQD'**
+  String deductionLabel(Object amount, Object deduction);
 
   /// No description provided for @yourBudgetLabel.
   ///
   /// In en, this message translates to:
-  /// **'Your budget: {budget} IQD'**
+  /// **'Your Budget:'**
   String yourBudgetLabel(Object budget);
 
   /// No description provided for @insufficientBudgetLabel.
@@ -2142,8 +2142,8 @@ abstract class AppLocalizations {
   /// No description provided for @driverLabel.
   ///
   /// In en, this message translates to:
-  /// **'Driver'**
-  String get driverLabel;
+  /// **'Driver: {driverName}'**
+  String driverLabel(Object driverName);
 
   /// No description provided for @driverPhoneLabel.
   ///
@@ -2562,7 +2562,7 @@ abstract class AppLocalizations {
   /// No description provided for @userPickedUpButton.
   ///
   /// In en, this message translates to:
-  /// **'User picked up'**
+  /// **'User Picked Up'**
   String get userPickedUpButton;
 
   /// No description provided for @confirmPickedUpButton.
@@ -3464,6 +3464,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your driver is taking you to your destination.'**
   String get notificationDriverInProgressMessage;
+
+  /// No description provided for @tripDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip Details'**
+  String get tripDetailsTitle;
+
+  /// No description provided for @distanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get distanceLabel;
+
+  /// No description provided for @insufficientBudgetButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient Budget'**
+  String get insufficientBudgetButton;
+
+  /// No description provided for @tripAcceptedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip accepted successfully!'**
+  String get tripAcceptedSuccessfully;
+
+  /// No description provided for @tripPriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip Price: {price} IQD'**
+  String tripPriceLabel(Object price);
+
+  /// No description provided for @canAffordTripMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You can afford this trip'**
+  String get canAffordTripMessage;
+
+  /// No description provided for @deductionPercentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Deduction (12%):'**
+  String get deductionPercentLabel;
+
+  /// No description provided for @canAffordThisTripMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Can afford this trip'**
+  String get canAffordThisTripMessage;
+
+  /// No description provided for @insufficientBudgetShortMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient budget'**
+  String get insufficientBudgetShortMessage;
+
+  /// No description provided for @pickupPassengerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick up Passenger'**
+  String get pickupPassengerTitle;
+
+  /// No description provided for @yourLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Location'**
+  String get yourLocationLabel;
+
+  /// No description provided for @pickupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup'**
+  String get pickupLabel;
+
+  /// No description provided for @dropoffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dropoff'**
+  String get dropoffLabel;
+
+  /// No description provided for @passengerPickedUpSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Passenger picked up successfully!'**
+  String get passengerPickedUpSuccessfully;
+
+  /// No description provided for @errorDuringPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String errorDuringPickup(Object error);
+
+  /// No description provided for @createNewTripTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Trip'**
+  String get createNewTripTitle;
+
+  /// No description provided for @selectLocationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Locations'**
+  String get selectLocationsTitle;
+
+  /// No description provided for @searchForDestinationsWithin50km.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for destinations within 50km of your current position'**
+  String get searchForDestinationsWithin50km;
+
+  /// No description provided for @selectedLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected Location'**
+  String get selectedLocationLabel;
+
+  /// No description provided for @searchLocationButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Location'**
+  String get searchLocationButton;
+
+  /// No description provided for @changeTripButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Trip'**
+  String get changeTripButton;
+
+  /// No description provided for @bookTripButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Trip'**
+  String get bookTripButton;
+
+  /// No description provided for @creatingTripMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating Trip...'**
+  String get creatingTripMessage;
+
+  /// No description provided for @youAlreadyHaveAnActiveTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have an active trip. Please wait for it to be completed or cancelled.'**
+  String get youAlreadyHaveAnActiveTrip;
+
+  /// No description provided for @userProfileIsIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'User profile is incomplete. Please update your profile with name and phone number.'**
+  String get userProfileIsIncomplete;
+
+  /// No description provided for @locationIsTooFar.
+  ///
+  /// In en, this message translates to:
+  /// **'Location is too far from your current position. Please search for a closer location.'**
+  String get locationIsTooFar;
+
+  /// No description provided for @useAnywayButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Anyway'**
+  String get useAnywayButton;
+
+  /// No description provided for @tripInProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip in Progress'**
+  String get tripInProgressTitle;
+
+  /// No description provided for @driverLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Location'**
+  String get driverLocationLabel;
+
+  /// No description provided for @driverIsHereMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your driver is here'**
+  String get driverIsHereMessage;
+
+  /// No description provided for @driverIsNearMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver is near!'**
+  String get driverIsNearMessage;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

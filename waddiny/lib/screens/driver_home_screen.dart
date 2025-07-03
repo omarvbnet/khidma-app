@@ -49,12 +49,14 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
 
   Future<void> _loadCurrentTrip() async {
     try {
+      print('\n=== LOADING CURRENT TRIP ===');
       final trips = await _apiService.getDriverTrips();
-      print('\nLoaded ${trips.length} trips');
+      print('Loaded ${trips.length} trips');
 
       // Find the most recent active trip
       TaxiRequest? activeTrip;
       for (final trip in trips) {
+        print('Checking trip ${trip.id}: ${trip.status}');
         if ([
           'DRIVER_ACCEPTED',
           'DRIVER_IN_WAY',
@@ -64,23 +66,31 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
           'DRIVER_ARRIVED_DROPOFF',
         ].contains(trip.status.toUpperCase())) {
           activeTrip = trip;
+          print('Found active trip: ${trip.id} with status: ${trip.status}');
           break;
         }
       }
 
       if (mounted) {
+        final newTrip =
+            activeTrip != null ? Trip.fromJson(activeTrip.toJson()) : null;
+        final oldTripId = _currentTrip?.id;
+        final newTripId = newTrip?.id;
+
         setState(() {
-          _currentTrip =
-              activeTrip != null ? Trip.fromJson(activeTrip.toJson()) : null;
+          _currentTrip = newTrip;
           _isLoading = false;
         });
-        print('\nState updated with trip:');
-        if (_currentTrip != null) {
-          print('- ID: ${_currentTrip!.id}');
-          print('- Status: ${_currentTrip!.status}');
-          print('- Driver ID: ${_currentTrip!.driverId}');
-        } else {
-          print('No trip set');
+
+        print('\nState updated:');
+        print('- Old trip ID: $oldTripId');
+        print('- New trip ID: $newTripId');
+        print('- New trip status: ${newTrip?.status}');
+
+        // If we had a trip before but now we don't, it might have been completed
+        if (oldTripId != null && newTripId == null) {
+          print(
+              '⚠️ Trip $oldTripId was completed or cancelled - showing waiting screen');
         }
       }
 
@@ -175,7 +185,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         return DriverNavigationScreen(
           trip: _currentTrip!,
           isPickup: true,
-          onTripStatusChanged: (String status) => _loadCurrentTrip(),
+          onTripStatusChanged: (String status) {
+            print('🔄 Trip status changed to: $status');
+            _loadCurrentTrip();
+          },
         );
 
       case 'DRIVER_ARRIVED':
@@ -189,7 +202,13 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         return DriverNavigationScreen(
           trip: _currentTrip!,
           isPickup: false,
-          onTripStatusChanged: (String status) => _loadCurrentTrip(),
+          onTripStatusChanged: (String status) {
+            print('🔄 Trip status changed to: $status');
+            if (status == 'TRIP_COMPLETED') {
+              print('✅ Trip completed - will refresh to show waiting screen');
+            }
+            _loadCurrentTrip();
+          },
         );
 
       case 'DRIVER_ARRIVED_DROPOFF':

@@ -257,11 +257,9 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(getLocalizations(context)
-                  .currentBudgetLabel(_driverBudget!['budget'])),
+              Text('Current Budget: ${_driverBudget!['budget']} IQD'),
               const SizedBox(height: 8),
-              Text(getLocalizations(context)
-                  .driverNameLabel(_driverBudget!['driverName'])),
+              Text('Driver: ${_driverBudget!['driverName']}'),
               const SizedBox(height: 16),
               Text(
                 getLocalizations(context).budgetDeductionNote,
@@ -779,9 +777,9 @@ class _DriverWaitingTripsScreenState extends State<DriverWaitingTripsScreen> {
                       child: ElevatedButton.icon(
                         onPressed: () => _showTripDetails(trip),
                         icon: const Icon(Icons.visibility),
-                        label: const Text(
-                          'View Trip',
-                          style: TextStyle(
+                        label: Text(
+                          getLocalizations(context).viewTripButton,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),

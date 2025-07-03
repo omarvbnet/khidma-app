@@ -252,7 +252,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get testBudget => 'اختبار الرصيد';
 
   @override
-  String get budgetInformation => 'معلومات الرصيد';
+  String get budgetInformation => 'معلومات الميزانية';
 
   @override
   String currentBudget(Object amount) {
@@ -453,7 +453,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String errorCreatingTrip(Object error) {
-    return 'خطأ في إنشاء الرحلة';
+    return 'خطأ في إنشاء الرحلة: $error';
   }
 
   @override
@@ -1006,7 +1006,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get insufficientBudgetMessage => 'الميزانية غير كافية';
+  String get insufficientBudgetMessage => 'الميزانية غير كافية لهذه الرحلة';
 
   @override
   String get viewBudgetButton => 'عرض الميزانية';
@@ -1015,8 +1015,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get budgetInformationTitle => 'معلومات الميزانية';
 
   @override
-  String currentBudgetLabel(Object amount) {
-    return 'الميزانية الحالية: $amount دينار';
+  String currentBudgetLabel(Object amount, Object budget) {
+    return 'الميزانية الحالية: $budget دينار عراقي';
   }
 
   @override
@@ -1043,13 +1043,13 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String deductionLabel(Object amount) {
-    return 'الخصم: $amount دينار (12%)';
+  String deductionLabel(Object amount, Object deduction) {
+    return 'الخصم (12%): $deduction دينار عراقي';
   }
 
   @override
   String yourBudgetLabel(Object budget) {
-    return 'ميزانيتك: $budget دينار';
+    return 'ميزانيتك:';
   }
 
   @override
@@ -1127,7 +1127,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get statusWaitingLabel => 'في الانتظار';
 
   @override
-  String get driverLabel => 'السائق';
+  String driverLabel(Object driverName) {
+    return 'السائق: $driverName';
+  }
 
   @override
   String get driverPhoneLabel => 'هاتف السائق';
@@ -1419,7 +1421,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get driverNearMessage => 'السائق قريب!';
 
   @override
-  String get driverApproachingMessage => 'سائقك يقترب من موقعك';
+  String get driverApproachingMessage => 'السائق يقترب من موقعك';
 
   @override
   String get tripCancelledMessage => 'تم إلغاء الرحلة';
@@ -1814,4 +1816,101 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get notificationDriverInProgressMessage => 'سائقك يأخذك إلى وجهتك.';
+
+  @override
+  String get tripDetailsTitle => 'تفاصيل الرحلة';
+
+  @override
+  String get distanceLabel => 'المسافة';
+
+  @override
+  String get insufficientBudgetButton => 'الميزانية غير كافية';
+
+  @override
+  String get tripAcceptedSuccessfully => 'تم قبول الرحلة بنجاح!';
+
+  @override
+  String tripPriceLabel(Object price) {
+    return 'سعر الرحلة: $price دينار عراقي';
+  }
+
+  @override
+  String get canAffordTripMessage => 'يمكنك تحمل تكلفة هذه الرحلة';
+
+  @override
+  String get deductionPercentLabel => 'الخصم (12%):';
+
+  @override
+  String get canAffordThisTripMessage => 'يمكن تحمل هذه الرحلة';
+
+  @override
+  String get insufficientBudgetShortMessage => 'الميزانية غير كافية';
+
+  @override
+  String get pickupPassengerTitle => 'استلام الراكب';
+
+  @override
+  String get yourLocationLabel => 'موقعك';
+
+  @override
+  String get pickupLabel => 'نقطة الاستلام';
+
+  @override
+  String get dropoffLabel => 'نقطة النزول';
+
+  @override
+  String get passengerPickedUpSuccessfully => 'تم استلام الراكب بنجاح!';
+
+  @override
+  String errorDuringPickup(Object error) {
+    return 'خطأ: $error';
+  }
+
+  @override
+  String get createNewTripTitle => 'إنشاء رحلة جديدة';
+
+  @override
+  String get selectLocationsTitle => 'اختر المواقع';
+
+  @override
+  String get searchForDestinationsWithin50km => 'ابحث عن وجهات ضمن 50 كم من موقعك الحالي';
+
+  @override
+  String get selectedLocationLabel => 'الموقع المحدد';
+
+  @override
+  String get searchLocationButton => 'بحث عن موقع';
+
+  @override
+  String get changeTripButton => 'تغيير الرحلة';
+
+  @override
+  String get bookTripButton => 'احجز الرحلة';
+
+  @override
+  String get creatingTripMessage => 'جاري إنشاء الرحلة...';
+
+  @override
+  String get youAlreadyHaveAnActiveTrip => 'لديك بالفعل رحلة نشطة. يرجى الانتظار حتى تكتمل أو تُلغى.';
+
+  @override
+  String get userProfileIsIncomplete => 'ملف المستخدم غير مكتمل. يرجى تحديث ملفك بالاسم ورقم الهاتف.';
+
+  @override
+  String get locationIsTooFar => 'الموقع بعيد جدًا عن موقعك الحالي. يرجى البحث عن موقع أقرب.';
+
+  @override
+  String get useAnywayButton => 'استخدم على أي حال';
+
+  @override
+  String get tripInProgressTitle => 'الرحلة قيد التنفيذ';
+
+  @override
+  String get driverLocationLabel => 'موقع السائق';
+
+  @override
+  String get driverIsHereMessage => 'السائق هنا';
+
+  @override
+  String get driverIsNearMessage => 'السائق قريب!';
 }

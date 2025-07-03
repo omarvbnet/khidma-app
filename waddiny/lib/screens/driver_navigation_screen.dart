@@ -464,6 +464,8 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
         // Call the callback to notify the main screen about the status change
         // This will trigger the home screen to refresh and show the appropriate screen
         if (widget.onTripStatusChanged != null) {
+          // Add a small delay to ensure the status update is processed
+          await Future.delayed(const Duration(milliseconds: 500));
           widget.onTripStatusChanged!(newStatus);
         }
       }
