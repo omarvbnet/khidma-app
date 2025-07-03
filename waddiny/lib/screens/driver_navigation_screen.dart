@@ -453,11 +453,6 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
           newStatus: newStatus,
         );
 
-        // Call the callback to notify the main screen about the status change
-        if (widget.onTripStatusChanged != null) {
-          widget.onTripStatusChanged!(newStatus);
-        }
-
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -466,9 +461,10 @@ class _DriverNavigationScreenState extends State<DriverNavigationScreen> {
           ),
         );
 
-        // Navigate back to home screen if trip is completed
-        if (newStatus == 'TRIP_COMPLETED') {
-          Navigator.of(context).pop();
+        // Call the callback to notify the main screen about the status change
+        // This will trigger the home screen to refresh and show the appropriate screen
+        if (widget.onTripStatusChanged != null) {
+          widget.onTripStatusChanged!(newStatus);
         }
       }
     } catch (e) {
