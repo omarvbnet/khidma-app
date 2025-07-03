@@ -45,12 +45,12 @@ flutter:
     - assets/images/
     - assets/icons/
     - .env 
-    - assets/images/car_marker.png
+    - assets/images/car_marker.png 
     - assets/images/waddiny.png
 
 flutter_native_splash:
-  color: "#000000"
-  image: assets/images/waddiny.png
+  color: "#ffffff"
+  image: assets/images/appicon.png
   android: true
   ios: true
   web: false
@@ -60,6 +60,9 @@ flutter_native_splash:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/images/waddiny.png"
-  adaptive_icon_background: "#000000"
-  adaptive_icon_foreground: "assets/images/waddiny.png" 
+  image_path: "assets/images/appicon.png"
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/images/appicon.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
+  ios_content_mode: center 

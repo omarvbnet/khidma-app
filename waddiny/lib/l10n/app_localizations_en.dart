@@ -12,6 +12,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'Waddiny';
 
   @override
+  String get appSubtitle => 'Smart Transportation Service';
+
+  @override
   String get welcomeBack => 'Welcome Back';
 
   @override

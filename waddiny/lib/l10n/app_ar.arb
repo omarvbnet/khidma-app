@@ -5,6 +5,12 @@
     "description": "The title of the application"
   },
 
+  "appSubtitle": "خدمة النقل الذكية",
+  
+  "@appSubtitle": {
+    "description": "The subtitle shown on the splash screen"
+  },
+
   "welcomeBack": "مرحبًا بعودتك",
   "login": "تسجيل الدخول",
   "register": "تسجيل جديد",

@@ -12,6 +12,9 @@ class AppLocalizationsKu extends AppLocalizations {
   String get appTitle => 'وەدینی';
 
   @override
+  String get appSubtitle => 'خزمەتگوزاری گواستنەوەی زیرەک';
+
+  @override
   String get welcomeBack => 'بەخێربێیتەوە';
 
   @override

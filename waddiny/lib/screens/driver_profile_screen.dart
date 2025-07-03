@@ -192,6 +192,24 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             const SizedBox(height: 16),
             // Language Switcher
             LanguageSwitcher(),
+            const SizedBox(height: 24),
+            // Logout Button
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: _logout,
+                icon: const Icon(Icons.logout),
+                label: Text(getLocalizations(context).logout),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

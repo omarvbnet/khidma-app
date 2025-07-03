@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/otp_service.dart';
 import '../services/auth_service.dart';
 import '../l10n/app_localizations.dart';
+import '../services/location_service.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   const OTPVerificationScreen({Key? key}) : super(key: key);
@@ -68,8 +69,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
           _phoneNumber, _otpController.text);
 
       if (isVerified) {
+        Map<String, dynamic>? regResponse;
         if (_isDriver) {
-          await _authService.registerDriver(
+          regResponse = await _authService.registerDriver(
             phoneNumber: _phoneNumber,
             password: _registrationData['password'],
             fullName: _registrationData['fullName'],
@@ -78,13 +80,41 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             licenseId: _registrationData['licenseId'],
           );
         } else {
-          await _authService.registerUser(
+          regResponse = await _authService.registerUser(
             phoneNumber: _phoneNumber,
             password: _registrationData['password'],
             fullName: _registrationData['fullName'],
           );
         }
 
+        // After registration, update province and log in automatically
+        if (regResponse != null) {
+          final userData = regResponse['user'];
+          final token = regResponse['token'];
+          if (userData != null && token != null) {
+            try {
+              final locationService = LocationService();
+              final position = await locationService.getCurrentLocation();
+              final province = await locationService.getProvinceFromCoordinates(
+                position.latitude,
+                position.longitude,
+              );
+              await locationService.updateUserProvince(token, province);
+              // Optionally update local user data province here
+            } catch (e) {
+              print('Error updating province after registration: $e');
+            }
+            if (mounted) {
+              if (userData['role'] == 'DRIVER') {
+                Navigator.pushReplacementNamed(context, '/driver-main');
+              } else {
+                Navigator.pushReplacementNamed(context, '/user-main');
+              }
+              return;
+            }
+          }
+        }
+        // fallback
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/login');
         }

@@ -12,6 +12,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get appTitle => 'وديني';
 
   @override
+  String get appSubtitle => 'خدمة النقل الذكية';
+
+  @override
   String get welcomeBack => 'مرحبًا بعودتك';
 
   @override

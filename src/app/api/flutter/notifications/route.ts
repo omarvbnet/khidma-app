@@ -92,7 +92,7 @@ export async function PATCH(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+} 
 
 // Send notification to drivers for new trip
 export async function POST(req: NextRequest) {

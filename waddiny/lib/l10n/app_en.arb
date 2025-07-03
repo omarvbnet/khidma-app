@@ -5,6 +5,12 @@
     "description": "The title of the application"
   },
 
+  "appSubtitle": "Smart Transportation Service",
+  
+  "@appSubtitle": {
+    "description": "The subtitle shown on the splash screen"
+  },
+
   "welcomeBack": "Welcome Back",
   "login": "Login",
   "register": "Register",

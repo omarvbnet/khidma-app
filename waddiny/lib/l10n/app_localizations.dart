@@ -105,6 +105,12 @@ abstract class AppLocalizations {
   /// **'Waddiny'**
   String get appTitle;
 
+  /// The subtitle shown on the splash screen
+  ///
+  /// In en, this message translates to:
+  /// **'Smart Transportation Service'**
+  String get appSubtitle;
+
   /// No description provided for @welcomeBack.
   ///
   /// In en, this message translates to:

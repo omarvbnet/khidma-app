@@ -12,6 +12,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get appTitle => 'Waddiny';
 
   @override
+  String get appSubtitle => 'Akıllı Ulaşım Hizmeti';
+
+  @override
   String get welcomeBack => 'Tekrar Hoş Geldiniz';
 
   @override

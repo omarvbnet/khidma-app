@@ -81,10 +81,10 @@ export class NotificationLocalizationService {
           message: 'A driver has accepted your trip request. They will be on their way soon.'
         };
 
-      case 'DRIVER_IN_WAY':
+      case 'TRIP_STATUS_CHANGE':
         return {
-          title: 'Driver is on the Way!',
-          message: 'Your driver is heading to your pickup location.'
+          title: 'Trip Status Updated!',
+          message: 'Your trip status has been updated. Check the app for details.'
         };
 
       case 'DRIVER_ARRIVED':
@@ -99,17 +99,7 @@ export class NotificationLocalizationService {
           message: 'You have been picked up. Enjoy your ride!'
         };
 
-      case 'DRIVER_IN_PROGRESS':
-        return {
-          title: 'On the Way to Destination',
-          message: 'Your driver is taking you to your destination.'
-        };
 
-      case 'DRIVER_ARRIVED_DROPOFF':
-        return {
-          title: 'Arrived at Destination',
-          message: 'You have arrived at your destination.'
-        };
 
       case 'TRIP_COMPLETED':
         return {
@@ -157,10 +147,10 @@ export class NotificationLocalizationService {
           message: 'قبل سائق طلب رحلتك. سيكون في الطريق قريباً.'
         };
 
-      case 'DRIVER_IN_WAY':
+      case 'TRIP_STATUS_CHANGE':
         return {
-          title: 'السائق في الطريق!',
-          message: 'سائقك متجه إلى موقع الاستلام.'
+          title: 'تم تحديث حالة الرحلة!',
+          message: 'تم تحديث حالة رحلتك. تحقق من التطبيق للتفاصيل.'
         };
 
       case 'DRIVER_ARRIVED':
@@ -175,17 +165,7 @@ export class NotificationLocalizationService {
           message: 'تم استلامك. استمتع برحلتك!'
         };
 
-      case 'DRIVER_IN_PROGRESS':
-        return {
-          title: 'في الطريق إلى الوجهة',
-          message: 'سائقك يأخذك إلى وجهتك.'
-        };
 
-      case 'DRIVER_ARRIVED_DROPOFF':
-        return {
-          title: 'وصل إلى الوجهة',
-          message: 'وصلت إلى وجهتك.'
-        };
 
       case 'TRIP_COMPLETED':
         return {
@@ -233,10 +213,10 @@ export class NotificationLocalizationService {
           message: 'شۆفێرێک داواکاری گەشتەکەت قبوڵی کرد. بەم زووانە لە ڕێگەدا دەبێت.'
         };
 
-      case 'DRIVER_IN_WAY':
+      case 'TRIP_STATUS_CHANGE':
         return {
-          title: 'شۆفێر لە ڕێگەدایە!',
-          message: 'شۆفێرەکەت بەرەو شوێنی وەرگرتن دەڕوات.'
+          title: 'دۆخی گەشتەکە نوێکرایەوە!',
+          message: 'دۆخی گەشتەکەت نوێکرایەوە. سەیری ئەپەکە بکە بۆ وردەکاری.'
         };
 
       case 'DRIVER_ARRIVED':
@@ -251,17 +231,7 @@ export class NotificationLocalizationService {
           message: 'وەرگیرایت. چێژ لە گەشتەکەت وەربگرە!'
         };
 
-      case 'DRIVER_IN_PROGRESS':
-        return {
-          title: 'لە ڕێگەدا بۆ ئامانج',
-          message: 'شۆفێرەکەت دەتات بەرەو ئامانجەکەت.'
-        };
 
-      case 'DRIVER_ARRIVED_DROPOFF':
-        return {
-          title: 'گەیشت بۆ ئامانج',
-          message: 'گەیشتیت بۆ ئامانجەکەت.'
-        };
 
       case 'TRIP_COMPLETED':
         return {
@@ -309,10 +279,10 @@ export class NotificationLocalizationService {
           message: 'Bir sürücü yolculuk talebinizi kabul etti. Yakında yolda olacaklar.'
         };
 
-      case 'DRIVER_IN_WAY':
+      case 'TRIP_STATUS_CHANGE':
         return {
-          title: 'Sürücü Yolda!',
-          message: 'Sürücünüz alış noktanıza doğru yolda.'
+          title: 'Yolculuk Durumu Güncellendi!',
+          message: 'Yolculuk durumunuz güncellendi. Detaylar için uygulamayı kontrol edin.'
         };
 
       case 'DRIVER_ARRIVED':
@@ -327,17 +297,7 @@ export class NotificationLocalizationService {
           message: 'Alındınız. Yolculuğunuzun tadını çıkarın!'
         };
 
-      case 'DRIVER_IN_PROGRESS':
-        return {
-          title: 'Hedefe Giderken',
-          message: 'Sürücünüz sizi hedefinize götürüyor.'
-        };
 
-      case 'DRIVER_ARRIVED_DROPOFF':
-        return {
-          title: 'Hedefe Vardı',
-          message: 'Hedefinize vardınız.'
-        };
 
       case 'TRIP_COMPLETED':
         return {

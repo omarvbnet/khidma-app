@@ -5,6 +5,12 @@
     "description": "The title of the application"
   },
 
+  "appSubtitle": "خزمەتگوزاری گواستنەوەی زیرەک",
+  
+  "@appSubtitle": {
+    "description": "The subtitle shown on the splash screen"
+  },
+
   "welcomeBack": "بەخێربێیتەوە",
   "login": "چوونەژوورەوە",
   "register": "تۆمارکردن",

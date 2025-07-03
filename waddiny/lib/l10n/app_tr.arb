@@ -5,6 +5,12 @@
     "description": "The title of the application"
   },
 
+  "appSubtitle": "Akıllı Ulaşım Hizmeti",
+  
+  "@appSubtitle": {
+    "description": "The subtitle shown on the splash screen"
+  },
+
   "welcomeBack": "Tekrar Hoş Geldiniz",
   "login": "Giriş Yap",
   "register": "Kayıt Ol",

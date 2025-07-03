@@ -189,7 +189,7 @@ export async function sendTripStatusNotification(
         userType = 'DRIVER_ACCEPTED';
         break;
       case 'DRIVER_IN_WAY':
-        userType = 'DRIVER_IN_WAY';
+        userType = 'TRIP_STATUS_CHANGE'; // Map to existing notification type
         break;
       case 'DRIVER_ARRIVED':
         userType = 'DRIVER_ARRIVED';
@@ -198,10 +198,7 @@ export async function sendTripStatusNotification(
         userType = 'USER_PICKED_UP';
         break;
       case 'DRIVER_IN_PROGRESS':
-        userType = 'DRIVER_IN_PROGRESS';
-        break;
-      case 'DRIVER_ARRIVED_DROPOFF':
-        userType = 'DRIVER_ARRIVED_DROPOFF';
+        userType = 'TRIP_STATUS_CHANGE'; // Map to existing notification type
         break;
       case 'TRIP_COMPLETED':
         userType = 'TRIP_COMPLETED';
@@ -504,7 +501,7 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     // Send batch push notification if we have device tokens
     if (deviceTokens.length > 0) {
       try {
-        // Convert all data values to strings for Firebase compatibility
+          // Convert all data values to strings for Firebase compatibility
         const stringData = convertDataToStrings({
           ...notificationData,
           type,
@@ -513,7 +510,7 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
         await sendMulticastNotification({
           tokens: deviceTokens,
           title,
-          body: message,
+              body: message,
           data: stringData,
         });
         console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers`);
