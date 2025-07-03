@@ -38,15 +38,10 @@ export async function GET(req: NextRequest) {
 
     const requests = (await prisma.taxiRequest.findMany({
       where: {
-        OR: [
-          { status: TaxiRequest_status.USER_WAITING },
-          { status: TaxiRequest_status.DRIVER_ACCEPTED },
-          { status: TaxiRequest_status.DRIVER_IN_WAY },
-          { status: TaxiRequest_status.DRIVER_ARRIVED },
-          { status: TaxiRequest_status.USER_PICKED_UP },
-          { status: TaxiRequest_status.DRIVER_IN_PROGRESS },
-        ],
         userId: userId,
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
       include: {
         user: {
