@@ -81,16 +81,22 @@ export class NotificationLocalizationService {
           message: 'A driver has accepted your trip request. They will be on their way soon.'
         };
 
-      case 'TRIP_STATUS_CHANGE':
+      case 'DRIVER_IN_WAY':
         return {
-          title: 'Trip Status Updated!',
-          message: 'Your trip status has been updated. Check the app for details.'
+          title: 'Driver is on the Way!',
+          message: 'Your driver is heading to your pickup location.'
         };
 
       case 'DRIVER_ARRIVED':
         return {
           title: 'Driver Has Arrived!',
           message: 'Your driver has arrived at the pickup location.'
+        };
+
+      case 'DRIVER_IN_PROGRESS':
+        return {
+          title: 'On the Way to Destination',
+          message: 'Your driver is taking you to your destination.'
         };
 
       case 'USER_PICKED_UP':
@@ -147,16 +153,22 @@ export class NotificationLocalizationService {
           message: 'قبل سائق طلب رحلتك. سيكون في الطريق قريباً.'
         };
 
-      case 'TRIP_STATUS_CHANGE':
+      case 'DRIVER_IN_WAY':
         return {
-          title: 'تم تحديث حالة الرحلة!',
-          message: 'تم تحديث حالة رحلتك. تحقق من التطبيق للتفاصيل.'
+          title: 'السائق في الطريق!',
+          message: 'سائقك متجه إلى موقع الاستلام.'
         };
 
       case 'DRIVER_ARRIVED':
         return {
           title: 'وصل السائق!',
           message: 'وصل سائقك إلى موقع الاستلام.'
+        };
+
+      case 'DRIVER_IN_PROGRESS':
+        return {
+          title: 'في الطريق إلى الوجهة',
+          message: 'سائقك يأخذك إلى وجهتك.'
         };
 
       case 'USER_PICKED_UP':
@@ -213,16 +225,22 @@ export class NotificationLocalizationService {
           message: 'شۆفێرێک داواکاری گەشتەکەت قبوڵی کرد. بەم زووانە لە ڕێگەدا دەبێت.'
         };
 
-      case 'TRIP_STATUS_CHANGE':
+      case 'DRIVER_IN_WAY':
         return {
-          title: 'دۆخی گەشتەکە نوێکرایەوە!',
-          message: 'دۆخی گەشتەکەت نوێکرایەوە. سەیری ئەپەکە بکە بۆ وردەکاری.'
+          title: 'شۆفێر لە ڕێگەدایە!',
+          message: 'شۆفێرەکەت بەرەو شوێنی وەرگرتن دەڕوات.'
         };
 
       case 'DRIVER_ARRIVED':
         return {
           title: 'شۆفێر هات!',
           message: 'شۆفێرەکەت گەیشت بۆ شوێنی وەرگرتن.'
+        };
+
+      case 'DRIVER_IN_PROGRESS':
+        return {
+          title: 'لە ڕێگەدا بۆ ئامانج',
+          message: 'شۆفێرەکەت دەتات بەرەو ئامانجەکەت.'
         };
 
       case 'USER_PICKED_UP':
@@ -279,16 +297,22 @@ export class NotificationLocalizationService {
           message: 'Bir sürücü yolculuk talebinizi kabul etti. Yakında yolda olacaklar.'
         };
 
-      case 'TRIP_STATUS_CHANGE':
+      case 'DRIVER_IN_WAY':
         return {
-          title: 'Yolculuk Durumu Güncellendi!',
-          message: 'Yolculuk durumunuz güncellendi. Detaylar için uygulamayı kontrol edin.'
+          title: 'Sürücü Yolda!',
+          message: 'Sürücünüz alış noktanıza doğru yolda.'
         };
 
       case 'DRIVER_ARRIVED':
         return {
           title: 'Sürücü Vardı!',
           message: 'Sürücünüz alış noktasına vardı.'
+        };
+
+      case 'DRIVER_IN_PROGRESS':
+        return {
+          title: 'Hedefe Giderken',
+          message: 'Sürücünüz sizi hedefinize götürüyor.'
         };
 
       case 'USER_PICKED_UP':
