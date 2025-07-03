@@ -520,8 +520,6 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
       userProvince: trip.userProvince, // Include province in notification data
     };
 
-    const title = 'New Trip Available!';
-    const message = `A new trip request is available in ${trip.userProvince}. Tap to view details.`;
     const type = 'NEW_TRIP_AVAILABLE';
 
     // Collect device tokens for batch notification
@@ -541,58 +539,46 @@ export async function notifyAvailableDriversAboutNewTrip(trip: any) {
     console.log(`Drivers with tokens: ${deviceTokens.length}`);
     console.log(`Drivers without tokens: ${driversWithoutTokens.length}`);
 
-    // Send batch push notification if we have device tokens
-    if (deviceTokens.length > 0) {
-      try {
-          // Convert all data values to strings for Firebase compatibility
-        const stringData = convertDataToStrings({
-          ...notificationData,
-          type,
-        });
-        
-        await sendMulticastNotification({
-          tokens: deviceTokens,
-          title,
-              body: message,
-          data: stringData,
-        });
-        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers`);
-      } catch (firebaseError) {
-        console.error('❌ Batch Firebase notification failed:', firebaseError);
-        // Fall back to individual notifications
-        for (const driver of availableDrivers) {
-          if (driver.deviceToken) {
-            try {
-              await sendNotificationWithFallback(
-                driver.id,
-                title,
-                message,
-                notificationData,
-                type
-              );
-            } catch (error) {
-              console.error(`❌ Failed to send notification to driver ${driver.id}:`, error);
-            }
-          }
-        }
-      }
-    }
-
-    // Create database notifications for ALL drivers (with or without device tokens)
-    console.log('Creating database notifications for all available drivers...');
+    // Send localized notifications to each driver individually
+    console.log('Creating localized notifications for all available drivers...');
     for (const driver of availableDrivers) {
       try {
-        console.log(`Creating database notification for driver ${driver.fullName} (${driver.id})`);
+        console.log(`Creating localized notification for driver ${driver.fullName} (${driver.id})`);
+        
+        // Get driver's language preference
+        const driverLanguage = NotificationLocalizationService.getUserLanguage(driver);
+        console.log(`🌍 Driver ${driver.fullName} language preference: ${driverLanguage}`);
+        
+        // Get localized notification message
+        const localizedNotification = NotificationLocalizationService.getLocalizedNotification(
+          type,
+          driverLanguage,
+          {
+            province: trip.userProvince,
+            pickupLocation: trip.pickupLocation,
+            dropoffLocation: trip.dropoffLocation,
+            price: trip.price,
+            distance: trip.distance,
+            userFullName: trip.userFullName,
+            userPhone: trip.userPhone,
+          }
+        );
+
+        console.log(`🌍 Localized notification for ${driver.fullName} (${driverLanguage}):`, {
+          title: localizedNotification.title,
+          message: localizedNotification.message
+        });
+
         await sendNotificationWithFallback(
           driver.id,
-          title,
-          message,
+          localizedNotification.title,
+          localizedNotification.message,
           notificationData,
           type
         );
-        console.log(`✅ Database notification created for driver ${driver.fullName}`);
+        console.log(`✅ Localized notification created for driver ${driver.fullName}`);
       } catch (error) {
-        console.error(`❌ Failed to create database notification for driver ${driver.id}:`, error);
+        console.error(`❌ Failed to create localized notification for driver ${driver.id}:`, error);
       }
     }
 
@@ -646,8 +632,6 @@ export async function notifyAllDriversInProvinceAboutNewTrip(trip: any) {
       userProvince: trip.userProvince,
     };
 
-    const title = 'New Trip Available!';
-    const message = `A new trip request is available in ${trip.userProvince}. Tap to view details.`;
     const type = 'NEW_TRIP_AVAILABLE';
 
     // Collect device tokens for batch notification
@@ -665,52 +649,46 @@ export async function notifyAllDriversInProvinceAboutNewTrip(trip: any) {
     console.log(`Drivers with tokens: ${deviceTokens.length}`);
     console.log(`Drivers without tokens: ${driversWithoutTokens.length}`);
 
-    // Send batch push notification if we have device tokens
-    if (deviceTokens.length > 0) {
-      try {
-        await sendMulticastNotification({
-          tokens: deviceTokens,
-          title,
-          body: message,
-          data: {
-            ...notificationData,
-            type,
-          },
-        });
-        console.log(`✅ Batch push notification sent to ${deviceTokens.length} drivers`);
-      } catch (firebaseError) {
-        console.error('❌ Batch Firebase notification failed:', firebaseError);
-        // Fall back to individual notifications
-        for (const driver of allDrivers) {
-          if (driver.deviceToken) {
-            try {
-              await sendNotificationWithFallback(
-                driver.id,
-                title,
-                message,
-                notificationData,
-                type
-              );
-            } catch (error) {
-              console.error(`❌ Failed to send notification to driver ${driver.id}:`, error);
-            }
-          }
-        }
-      }
-    }
-
-    // Create database notifications for ALL drivers
+    // Send localized notifications to each driver individually
+    console.log('Creating localized notifications for all drivers in province...');
     for (const driver of allDrivers) {
       try {
+        console.log(`Creating localized notification for driver ${driver.fullName} (${driver.id})`);
+        
+        // Get driver's language preference
+        const driverLanguage = NotificationLocalizationService.getUserLanguage(driver);
+        console.log(`🌍 Driver ${driver.fullName} language preference: ${driverLanguage}`);
+        
+        // Get localized notification message
+        const localizedNotification = NotificationLocalizationService.getLocalizedNotification(
+          type,
+          driverLanguage,
+          {
+            province: trip.userProvince,
+            pickupLocation: trip.pickupLocation,
+            dropoffLocation: trip.dropoffLocation,
+            price: trip.price,
+            distance: trip.distance,
+            userFullName: trip.userFullName,
+            userPhone: trip.userPhone,
+          }
+        );
+
+        console.log(`🌍 Localized notification for ${driver.fullName} (${driverLanguage}):`, {
+          title: localizedNotification.title,
+          message: localizedNotification.message
+        });
+
         await sendNotificationWithFallback(
           driver.id,
-          title,
-          message,
+          localizedNotification.title,
+          localizedNotification.message,
           notificationData,
           type
         );
+        console.log(`✅ Localized notification created for driver ${driver.fullName}`);
       } catch (error) {
-        console.error(`❌ Failed to create database notification for driver ${driver.id}:`, error);
+        console.error(`❌ Failed to create localized notification for driver ${driver.id}:`, error);
       }
     }
 

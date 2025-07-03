@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verify } from 'jsonwebtoken';
+import { NotificationLocalizationService } from '@/lib/notification-localization';
 
 // Middleware to verify JWT token
 async function verifyToken(req: NextRequest) {
@@ -26,11 +27,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { userId: targetUserId, type, title, message, data } = await req.json();
+    const { userId: targetUserId, type, data } = await req.json();
 
-    if (!targetUserId || !type || !title || !message) {
+    if (!targetUserId || !type) {
       return NextResponse.json(
-        { error: 'Missing required fields: userId, type, title, message' },
+        { error: 'Missing required fields: userId, type' },
         { status: 400 }
       );
     }
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
     // Verify the target user exists
     const targetUser = await prisma.user.findUnique({
       where: { id: targetUserId },
+      select: { id: true, language: true, phoneNumber: true, fullName: true }
     });
 
     if (!targetUser) {
@@ -47,22 +49,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Localize notification
+    const userLanguage = NotificationLocalizationService.getUserLanguage(targetUser);
+    const localized = NotificationLocalizationService.getLocalizedNotification(
+      type,
+      userLanguage,
+      data || {}
+    );
+
     // Create notification in database
     const notification = await prisma.notification.create({
       data: {
         userId: targetUserId,
         type: type as any, // Cast to NotificationType enum
-        title,
-        message,
+        title: localized.title,
+        message: localized.message,
         data: data || {},
       },
     });
 
     console.log(`Notification sent to user ${targetUserId}:`, {
       type,
-      title,
-      message,
+      title: localized.title,
+      message: localized.message,
       notificationId: notification.id,
+      language: userLanguage,
     });
 
     return NextResponse.json({
