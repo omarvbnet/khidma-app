@@ -252,8 +252,8 @@ export async function POST(req: NextRequest) {
       await notifyAvailableDriversAboutNewTrip(taxiRequest);
       console.log('✅ All available drivers notified about new trip');
       
-      // Start periodic notifications every 30 seconds
-      console.log('Starting periodic notifications...');
+      // Start periodic notifications every 2 minutes (reduced from 30 seconds to prevent spam)
+      console.log('Starting periodic notifications (every 2 minutes)...');
       await startPeriodicNotificationsForTrip(taxiRequest);
       console.log('✅ Periodic notifications started for new trip');
       

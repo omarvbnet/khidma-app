@@ -353,20 +353,42 @@ export class NotificationLocalizationService {
    * Get user's preferred language
    */
   static getUserLanguage(user: any): string {
+    console.log('🔍 Getting user language for:', {
+      userId: user?.id,
+      language: user?.language,
+      phoneNumber: user?.phoneNumber
+    });
+
     // First check if user has a language field set
     if (user?.language && typeof user.language === 'string') {
-      const lang = user.language.toLowerCase();
+      const lang = user.language.toLowerCase().trim();
+      console.log(`🌍 User has explicit language setting: ${lang}`);
+      
       if (this.SUPPORTED_LANGUAGES.includes(lang)) {
+        console.log(`✅ Using user's language preference: ${lang}`);
         return lang;
+      } else {
+        console.log(`⚠️ User's language '${lang}' is not supported, falling back to phone number heuristic`);
       }
     }
 
     // Fallback to phone number heuristic for Iraqi users
     if (user?.phoneNumber && user.phoneNumber.startsWith('+964')) {
+      console.log('🇮🇶 Iraqi phone number detected, using Arabic');
       return 'ar'; // Arabic for Iraqi phone numbers
     }
 
+    // Check for Kurdish phone numbers (Iraqi Kurdistan)
+    if (user?.phoneNumber && (
+      user.phoneNumber.startsWith('+9647') || // Mobile numbers in Kurdistan
+      user.phoneNumber.startsWith('+9646')    // Mobile numbers in Kurdistan
+    )) {
+      console.log('🇰🇷 Kurdish region phone number detected, using Kurdish');
+      return 'ku'; // Kurdish for Kurdish region phone numbers
+    }
+
     // Default to English
+    console.log('🇺🇸 No language preference detected, using English as default');
     return this.DEFAULT_LANGUAGE;
   }
 } 

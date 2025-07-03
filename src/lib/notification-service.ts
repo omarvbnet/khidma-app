@@ -67,6 +67,42 @@ async function cleanupInvalidDeviceToken(userId: string, error: any) {
   }
 }
 
+// Helper function to check for recent duplicate notifications
+async function checkForRecentDuplicate(
+  userId: string,
+  type: string,
+  title: string,
+  message: string,
+  data: any
+): Promise<boolean> {
+  try {
+    // Check for duplicate notifications in the last 2 minutes
+    const recentDuplicate = await prisma.notification.findFirst({
+      where: {
+        userId,
+        type: type as any,
+        title,
+        message,
+        createdAt: {
+          gte: new Date(Date.now() - 2 * 60 * 1000) // Last 2 minutes
+        }
+      }
+    });
+
+    if (recentDuplicate) {
+      console.log(`⚠️ Duplicate notification detected for user ${userId}, type ${type}`);
+      console.log(`   Recent notification ID: ${recentDuplicate.id}`);
+      console.log(`   Created: ${recentDuplicate.createdAt}`);
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('Error checking for duplicate notifications:', error);
+    return false; // Allow notification if check fails
+  }
+}
+
 // Helper function to send push notification with fallback
 async function sendNotificationWithFallback(
   userId: string,
@@ -85,6 +121,13 @@ async function sendNotificationWithFallback(
     if (!userExists) {
       console.error(`❌ User not found for notification: ${userId}`);
       throw new Error(`User not found: ${userId}`);
+    }
+
+    // Check for recent duplicates
+    const isDuplicate = await checkForRecentDuplicate(userId, type, title, message, data);
+    if (isDuplicate) {
+      console.log(`⏭️ Skipping duplicate notification for user ${userId}, type ${type}`);
+      return null;
     }
 
     // Create notification in database
@@ -798,6 +841,7 @@ export async function startPeriodicNotificationsForTrip(trip: any) {
     console.log('User Province:', trip.userProvince);
 
     // Store the interval ID so we can stop it later
+    // Send periodic notifications every 2 minutes instead of 30 seconds to reduce spam
     const intervalId = setInterval(async () => {
       try {
         console.log(`\n🔄 Sending periodic notification for trip ${trip.id}...`);
@@ -1021,7 +1065,7 @@ export async function startPeriodicNotificationsForTrip(trip: any) {
       } catch (error) {
         console.error('❌ Error in periodic notification:', error);
       }
-    }, 30000); // 30 seconds
+    }, 2 * 60 * 1000); // 2 minutes (reduced from 30 seconds to prevent spam)
 
     // Store the interval ID in a global map so we can stop it later
     if (!global.periodicNotificationIntervals) {
