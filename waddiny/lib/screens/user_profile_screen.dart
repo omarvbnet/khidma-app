@@ -6,6 +6,7 @@ import '../models/user_model.dart';
 import '../components/language_switcher.dart';
 import '../l10n/app_localizations.dart';
 import 'login_screen.dart';
+import 'create_report_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({Key? key}) : super(key: key);
@@ -143,6 +144,24 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 _buildInfoRow(AppLocalizations.of(context)!.memberSince,
                     _formatDate(_user!.createdAt)),
               ],
+            ),
+            const SizedBox(height: 16),
+            // Report Button
+            Card(
+              elevation: 2,
+              child: ListTile(
+                leading: const Icon(Icons.report, color: Colors.orange),
+                title: Text(AppLocalizations.of(context)!.reports),
+                subtitle: Text(AppLocalizations.of(context)!.createReport),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CreateReportScreen(),
+                    ),
+                  );
+                },
+              ),
             ),
             const SizedBox(height: 16),
             // Language Switcher

@@ -31,6 +31,7 @@ model User {
   changedLogs  UserLog[]     @relation("ChangedBy")
   userLogs     UserLog[]     @relation("User")
   notifications Notification[]
+  reports      Report[]
 }
 
 model Driver {
@@ -134,6 +135,23 @@ model Notification {
   user      User             @relation(fields: [userId], references: [id])
 }
 
+model Report {
+  id          String      @id @default(cuid())
+  userId      String
+  type        ReportType
+  title       String
+  description String
+  status      ReportStatus @default(PENDING)
+  priority    ReportPriority @default(MEDIUM)
+  category    String?
+  attachments Json?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  user        User        @relation(fields: [userId], references: [id])
+}
+
 model OTP {
   id          String   @id @default(cuid())
   phoneNumber String   @unique
@@ -184,4 +202,27 @@ enum NotificationType {
   NEW_TRIP_AVAILABLE
   TRIP_CANCELLED
   SYSTEM_MESSAGE
+}
+
+enum ReportType {
+  BUG_REPORT
+  FEATURE_REQUEST
+  COMPLAINT
+  SUGGESTION
+  TECHNICAL_ISSUE
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum ReportPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }

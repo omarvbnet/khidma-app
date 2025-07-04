@@ -1989,4 +1989,76 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shortest => 'En Kısa';
+
+  @override
+  String get reports => 'Raporlar';
+
+  @override
+  String get createReport => 'Rapor Oluştur';
+
+  @override
+  String get reportTitle => 'Rapor Başlığı';
+
+  @override
+  String get reportDescription => 'Rapor Açıklaması';
+
+  @override
+  String get reportType => 'Rapor Türü';
+
+  @override
+  String get reportPriority => 'Öncelik';
+
+  @override
+  String get reportCategory => 'Kategori';
+
+  @override
+  String get submitReport => 'Raporu Gönder';
+
+  @override
+  String get reportSubmitted => 'Rapor başarıyla gönderildi';
+
+  @override
+  String get errorSubmittingReport => 'Rapor gönderilirken hata oluştu';
+
+  @override
+  String get bugReport => 'Hata Raporu';
+
+  @override
+  String get featureRequest => 'Özellik Talebi';
+
+  @override
+  String get complaint => 'Şikayet';
+
+  @override
+  String get suggestion => 'Öneri';
+
+  @override
+  String get technicalIssue => 'Teknik Sorun';
+
+  @override
+  String get other => 'Diğer';
+
+  @override
+  String get low => 'Düşük';
+
+  @override
+  String get medium => 'Orta';
+
+  @override
+  String get high => 'Yüksek';
+
+  @override
+  String get urgent => 'Acil';
+
+  @override
+  String get pending => 'Beklemede';
+
+  @override
+  String get inProgress => 'İşlemde';
+
+  @override
+  String get resolved => 'Çözüldü';
+
+  @override
+  String get closed => 'Kapalı';
 }

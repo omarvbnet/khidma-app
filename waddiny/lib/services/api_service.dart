@@ -5,6 +5,7 @@ import '../constants/api_constants.dart';
 import '../models/user_model.dart';
 import '../models/taxi_request_model.dart';
 import '../models/driver_model.dart';
+import '../models/report_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
@@ -602,5 +603,48 @@ class ApiService {
     final data = await _handleResponse(response);
     print('Debug data: $data');
     return data;
+  }
+
+  // Report functionality
+  Future<List<Report>> getUserReports() async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    final response = await _client.get(
+      Uri.parse('${ApiConstants.baseUrl}/reports'),
+      headers: ApiConstants.getHeaders(token),
+    );
+
+    final data = await _handleResponse(response);
+    final List<dynamic> reports = data['reports'] ?? [];
+    return reports.map((json) => Report.fromJson(json)).toList();
+  }
+
+  Future<Report> createReport({
+    required String type,
+    required String title,
+    required String description,
+    String priority = 'MEDIUM',
+    String? category,
+    Map<String, dynamic>? attachments,
+  }) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    final response = await _client.post(
+      Uri.parse('${ApiConstants.baseUrl}/reports'),
+      headers: ApiConstants.getHeaders(token),
+      body: json.encode({
+        'type': type,
+        'title': title,
+        'description': description,
+        'priority': priority,
+        'category': category,
+        'attachments': attachments,
+      }),
+    );
+
+    final data = await _handleResponse(response);
+    return Report.fromJson(data['report']);
   }
 }

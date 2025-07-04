@@ -1989,4 +1989,76 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortest => 'Shortest';
+
+  @override
+  String get reports => 'Reports';
+
+  @override
+  String get createReport => 'Create Report';
+
+  @override
+  String get reportTitle => 'Report Title';
+
+  @override
+  String get reportDescription => 'Report Description';
+
+  @override
+  String get reportType => 'Report Type';
+
+  @override
+  String get reportPriority => 'Priority';
+
+  @override
+  String get reportCategory => 'Category';
+
+  @override
+  String get submitReport => 'Submit Report';
+
+  @override
+  String get reportSubmitted => 'Report submitted successfully';
+
+  @override
+  String get errorSubmittingReport => 'Error submitting report';
+
+  @override
+  String get bugReport => 'Bug Report';
+
+  @override
+  String get featureRequest => 'Feature Request';
+
+  @override
+  String get complaint => 'Complaint';
+
+  @override
+  String get suggestion => 'Suggestion';
+
+  @override
+  String get technicalIssue => 'Technical Issue';
+
+  @override
+  String get other => 'Other';
+
+  @override
+  String get low => 'Low';
+
+  @override
+  String get medium => 'Medium';
+
+  @override
+  String get high => 'High';
+
+  @override
+  String get urgent => 'Urgent';
+
+  @override
+  String get pending => 'Pending';
+
+  @override
+  String get inProgress => 'In Progress';
+
+  @override
+  String get resolved => 'Resolved';
+
+  @override
+  String get closed => 'Closed';
 }

@@ -3794,6 +3794,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shortest'**
   String get shortest;
+
+  /// No description provided for @reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get reports;
+
+  /// No description provided for @createReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Report'**
+  String get createReport;
+
+  /// No description provided for @reportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Title'**
+  String get reportTitle;
+
+  /// No description provided for @reportDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Description'**
+  String get reportDescription;
+
+  /// No description provided for @reportType.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Type'**
+  String get reportType;
+
+  /// No description provided for @reportPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get reportPriority;
+
+  /// No description provided for @reportCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get reportCategory;
+
+  /// No description provided for @submitReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Report'**
+  String get submitReport;
+
+  /// No description provided for @reportSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Report submitted successfully'**
+  String get reportSubmitted;
+
+  /// No description provided for @errorSubmittingReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Error submitting report'**
+  String get errorSubmittingReport;
+
+  /// No description provided for @bugReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Bug Report'**
+  String get bugReport;
+
+  /// No description provided for @featureRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Feature Request'**
+  String get featureRequest;
+
+  /// No description provided for @complaint.
+  ///
+  /// In en, this message translates to:
+  /// **'Complaint'**
+  String get complaint;
+
+  /// No description provided for @suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestion'**
+  String get suggestion;
+
+  /// No description provided for @technicalIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical Issue'**
+  String get technicalIssue;
+
+  /// No description provided for @other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get other;
+
+  /// No description provided for @low.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get low;
+
+  /// No description provided for @medium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get medium;
+
+  /// No description provided for @high.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get high;
+
+  /// No description provided for @urgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get urgent;
+
+  /// No description provided for @pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get pending;
+
+  /// No description provided for @inProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In Progress'**
+  String get inProgress;
+
+  /// No description provided for @resolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get resolved;
+
+  /// No description provided for @closed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get closed;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

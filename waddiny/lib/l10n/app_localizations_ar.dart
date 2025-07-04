@@ -1983,4 +1983,76 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shortest => 'الأقصر';
+
+  @override
+  String get reports => 'التقارير';
+
+  @override
+  String get createReport => 'إنشاء تقرير';
+
+  @override
+  String get reportTitle => 'عنوان التقرير';
+
+  @override
+  String get reportDescription => 'وصف التقرير';
+
+  @override
+  String get reportType => 'نوع التقرير';
+
+  @override
+  String get reportPriority => 'الأولوية';
+
+  @override
+  String get reportCategory => 'الفئة';
+
+  @override
+  String get submitReport => 'إرسال التقرير';
+
+  @override
+  String get reportSubmitted => 'تم إرسال التقرير بنجاح';
+
+  @override
+  String get errorSubmittingReport => 'خطأ في إرسال التقرير';
+
+  @override
+  String get bugReport => 'تقرير خطأ';
+
+  @override
+  String get featureRequest => 'طلب ميزة';
+
+  @override
+  String get complaint => 'شكوى';
+
+  @override
+  String get suggestion => 'اقتراح';
+
+  @override
+  String get technicalIssue => 'مشكلة تقنية';
+
+  @override
+  String get other => 'أخرى';
+
+  @override
+  String get low => 'منخفضة';
+
+  @override
+  String get medium => 'متوسطة';
+
+  @override
+  String get high => 'عالية';
+
+  @override
+  String get urgent => 'عاجلة';
+
+  @override
+  String get pending => 'قيد الانتظار';
+
+  @override
+  String get inProgress => 'قيد المعالجة';
+
+  @override
+  String get resolved => 'تم الحل';
+
+  @override
+  String get closed => 'مغلق';
 }

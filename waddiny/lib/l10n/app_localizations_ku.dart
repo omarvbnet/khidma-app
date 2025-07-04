@@ -1989,4 +1989,76 @@ class AppLocalizationsKu extends AppLocalizations {
 
   @override
   String get shortest => 'کورترین';
+
+  @override
+  String get reports => 'ڕاپۆرتەکان';
+
+  @override
+  String get createReport => 'دروستکردنی ڕاپۆرت';
+
+  @override
+  String get reportTitle => 'ناونیشانی ڕاپۆرت';
+
+  @override
+  String get reportDescription => 'وەسفی ڕاپۆرت';
+
+  @override
+  String get reportType => 'جۆری ڕاپۆرت';
+
+  @override
+  String get reportPriority => 'پێشەنگی';
+
+  @override
+  String get reportCategory => 'پۆل';
+
+  @override
+  String get submitReport => 'ناردنی ڕاپۆرت';
+
+  @override
+  String get reportSubmitted => 'ڕاپۆرت بە سەرکەوتوویی نەدرا';
+
+  @override
+  String get errorSubmittingReport => 'هەڵە لە ناردنی ڕاپۆرت';
+
+  @override
+  String get bugReport => 'ڕاپۆرتی هەڵە';
+
+  @override
+  String get featureRequest => 'داواکاری تایبەتمەندی';
+
+  @override
+  String get complaint => 'سکاڵا';
+
+  @override
+  String get suggestion => 'پێشنیار';
+
+  @override
+  String get technicalIssue => 'کێشەی تەکنیکی';
+
+  @override
+  String get other => 'هی تر';
+
+  @override
+  String get low => 'نزم';
+
+  @override
+  String get medium => 'ناوەڕاست';
+
+  @override
+  String get high => 'بەرز';
+
+  @override
+  String get urgent => 'خێرا';
+
+  @override
+  String get pending => 'چاوەڕوان';
+
+  @override
+  String get inProgress => 'لە پڕۆسەدایە';
+
+  @override
+  String get resolved => 'چارەسەرکرا';
+
+  @override
+  String get closed => 'داخراوە';
 }
