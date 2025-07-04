@@ -581,4 +581,26 @@ class ApiService {
     print('Test data: $data');
     return data;
   }
+
+  // Debug budget functionality
+  Future<Map<String, dynamic>> debugBudget() async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    print('\n=== DEBUGGING BUDGET ===');
+    print('Token: ${token.substring(0, 20)}...');
+    print('URL: ${ApiConstants.baseUrl}/debug/budget');
+
+    final response = await _client.get(
+      Uri.parse('${ApiConstants.baseUrl}/debug/budget'),
+      headers: ApiConstants.getHeaders(token),
+    );
+
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
+    final data = await _handleResponse(response);
+    print('Debug data: $data');
+    return data;
+  }
 }

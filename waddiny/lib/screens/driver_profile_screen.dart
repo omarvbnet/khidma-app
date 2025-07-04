@@ -32,6 +32,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
       print('Loading user data...'); // Debug print
       final userData = await _authService.getCurrentUser();
       print('User data loaded: $userData'); // Debug print
+      print('User budget from API: ${userData?['budget']}'); // Debug print
       setState(() {
         _userData = userData;
       });
@@ -76,6 +77,30 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           'rate': 0,
         };
       });
+    }
+  }
+
+  Future<void> _debugBudget() async {
+    try {
+      final debugData = await _apiService.debugBudget();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Debug: Budget = ${debugData['user']['budget']}'),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Debug Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -209,6 +234,22 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             // Language Switcher
             LanguageSwitcher(),
             const SizedBox(height: 24),
+            // Debug Button (temporary)
+            ElevatedButton.icon(
+              onPressed: _debugBudget,
+              icon: const Icon(Icons.bug_report),
+              label: const Text('Debug Budget'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             // Logout Button
             Center(
               child: ElevatedButton.icon(

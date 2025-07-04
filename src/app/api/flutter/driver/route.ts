@@ -46,6 +46,10 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    console.log('Driver found:', user.driver.id);
+    console.log('Driver budget:', user.budget);
+    console.log('Full driver data:', JSON.stringify(user, null, 2));
+
     return NextResponse.json({
       id: user.driver.id,
       fullName: user.driver.fullName,
@@ -55,6 +59,7 @@ export async function GET(req: NextRequest) {
       licenseId: user.driver.licenseId,
       rate: user.driver.rate,
       status: user.status,
+      budget: user.budget,
     });
   } catch (error) {
     console.error('Error in driver profile route:', error);
@@ -196,6 +201,7 @@ export async function PUT(req: NextRequest) {
       licenseId: user.driver.licenseId,
       rate: user.driver.rate,
       status: user.status,
+      budget: user.budget,
     });
   } catch (error) {
     console.error('Error in driver profile update route:', error);

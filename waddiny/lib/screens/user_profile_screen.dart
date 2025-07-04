@@ -29,6 +29,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Future<void> _loadUserData() async {
     try {
       final user = await _apiService.getUserProfile();
+      print('User profile loaded: ${user.toJson()}'); // Debug print
+      print('User budget from API: ${user.budget}'); // Debug print
       setState(() {
         _user = user;
         _isLoading = false;

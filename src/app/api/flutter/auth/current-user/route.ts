@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
         province: true,
         role: true,
         status: true,
+        budget: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -55,6 +56,8 @@ export async function GET(req: NextRequest) {
     }
 
     console.log('User found:', user.id);
+    console.log('User budget:', user.budget);
+    console.log('Full user data:', JSON.stringify(user, null, 2));
     return NextResponse.json({
       user: {
         id: user.id,
@@ -63,6 +66,7 @@ export async function GET(req: NextRequest) {
         role: user.role,
         status: user.status,
         province: user.province,
+        budget: user.budget,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       }
