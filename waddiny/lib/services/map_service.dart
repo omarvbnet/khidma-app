@@ -75,35 +75,56 @@ class MapService {
           };
         }
 
+        // Get multiple route alternatives to find the shortest one
         final url =
             Uri.parse('https://maps.googleapis.com/maps/api/directions/json'
                 '?origin=${origin.latitude},${origin.longitude}'
                 '&destination=${destination.latitude},${destination.longitude}'
                 '&key=$_apiKey'
                 '&mode=driving'
-                '&alternatives=false'
+                '&alternatives=true'
                 '&language=en'
                 '&units=metric'
-                '&region=iq');
+                '&region=iq'
+                '&avoid=tolls|highways');
 
         final response = await http.get(url);
         final data = json.decode(response.body);
 
         if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
-          final route = data['routes'][0];
-          final leg = route['legs'][0];
+          // Find the shortest route among alternatives
+          Map<String, dynamic> shortestRoute = data['routes'][0];
+          double shortestDistance = double.infinity;
+
+          for (final route in data['routes']) {
+            final leg = route['legs'][0];
+            final distanceText = leg['distance']['text'];
+            final distanceValue =
+                leg['distance']['value']; // Distance in meters
+
+            if (distanceValue < shortestDistance) {
+              shortestDistance = distanceValue.toDouble();
+              shortestRoute = route;
+            }
+          }
+
+          final leg = shortestRoute['legs'][0];
           final distance = leg['distance']['text'];
           final duration = leg['duration']['text'];
-          final polyline = route['overview_polyline']['points'];
+          final polyline = shortestRoute['overview_polyline']['points'];
 
           // Decode the polyline points
           final points = _decodePolyline(polyline);
+
+          print(
+              'Selected shortest route: $distance (${shortestDistance.toStringAsFixed(0)} meters)');
 
           return {
             'distance': distance,
             'duration': duration,
             'polyline': polyline,
             'points': points,
+            'distanceInMeters': shortestDistance,
           };
         }
 
@@ -342,6 +363,102 @@ class MapService {
       throw Exception('No places found');
     } catch (e) {
       throw Exception('Error searching places: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getMultipleRouteOptions(
+    LatLng origin,
+    LatLng destination,
+  ) async {
+    try {
+      // Validate coordinates
+      if (!_isValidCoordinate(origin) || !_isValidCoordinate(destination)) {
+        throw Exception('Invalid coordinates provided');
+      }
+
+      // Check if coordinates are too close to each other
+      final distance = Geolocator.distanceBetween(
+        origin.latitude,
+        origin.longitude,
+        destination.latitude,
+        destination.longitude,
+      );
+
+      if (distance < 10) {
+        // If less than 10 meters apart, return a direct route
+        final points = [origin, destination];
+        final encodedPolyline = _encodePolyline(points);
+        return [
+          {
+            'distance': '0.01 km',
+            'duration': '1 min',
+            'polyline': encodedPolyline,
+            'points': points,
+            'distanceInMeters': 10.0,
+            'isShortest': true,
+          }
+        ];
+      }
+
+      final url =
+          Uri.parse('https://maps.googleapis.com/maps/api/directions/json'
+              '?origin=${origin.latitude},${origin.longitude}'
+              '&destination=${destination.latitude},${destination.longitude}'
+              '&key=$_apiKey'
+              '&mode=driving'
+              '&alternatives=true'
+              '&language=en'
+              '&units=metric'
+              '&region=iq');
+
+      final response = await http.get(url);
+      final data = json.decode(response.body);
+
+      if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
+        List<Map<String, dynamic>> routeOptions = [];
+        double shortestDistance = double.infinity;
+
+        // First pass: find the shortest distance
+        for (final route in data['routes']) {
+          final leg = route['legs'][0];
+          final distanceValue = leg['distance']['value'];
+          if (distanceValue < shortestDistance) {
+            shortestDistance = distanceValue.toDouble();
+          }
+        }
+
+        // Second pass: build route options
+        for (int i = 0; i < data['routes'].length; i++) {
+          final route = data['routes'][i];
+          final leg = route['legs'][0];
+          final distance = leg['distance']['text'];
+          final duration = leg['duration']['text'];
+          final polyline = route['overview_polyline']['points'];
+          final distanceValue = leg['distance']['value'];
+          final points = _decodePolyline(polyline);
+
+          routeOptions.add({
+            'index': i,
+            'distance': distance,
+            'duration': duration,
+            'polyline': polyline,
+            'points': points,
+            'distanceInMeters': distanceValue.toDouble(),
+            'isShortest': distanceValue == shortestDistance,
+            'summary': leg['summary'] ?? 'Route ${i + 1}',
+          });
+        }
+
+        // Sort by distance (shortest first)
+        routeOptions.sort(
+            (a, b) => a['distanceInMeters'].compareTo(b['distanceInMeters']));
+
+        return routeOptions;
+      }
+
+      throw Exception('No valid routes found between the locations');
+    } catch (e) {
+      throw Exception('Error getting route options: $e');
     }
   }
 

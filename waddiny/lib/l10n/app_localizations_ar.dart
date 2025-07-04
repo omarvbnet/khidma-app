@@ -246,6 +246,69 @@ class AppLocalizationsAr extends AppLocalizations {
   String get goToLogin => 'اذهب إلى تسجيل الدخول';
 
   @override
+  String get notAvailable => 'غير متاح';
+
+  @override
+  String get rateDriverTitle => 'قيّم سائقك';
+
+  @override
+  String get rateDriverSubtitle => 'كيف كانت تجربة رحلتك؟';
+
+  @override
+  String get rateDriverDescription => 'ملاحظاتك تساعد في تحسين خدمتنا';
+
+  @override
+  String get rateDriverButton => 'إرسال التقييم';
+
+  @override
+  String get skipRatingButton => 'تخطي التقييم';
+
+  @override
+  String get reportDriverTitle => 'الإبلاغ عن السائق';
+
+  @override
+  String get reportDriverSubtitle => 'أبلغ عن أي مشاكل مع هذا السائق';
+
+  @override
+  String get reportDriverDescription => 'سيتم مراجعة بلاغك من قبل فريقنا';
+
+  @override
+  String get reportDriverButton => 'إرسال البلاغ';
+
+  @override
+  String get cancelReportButton => 'إلغاء';
+
+  @override
+  String get reportReasonLabel => 'سبب البلاغ';
+
+  @override
+  String get reportDetailsLabel => 'تفاصيل إضافية';
+
+  @override
+  String get reportReasonUnsafeDriving => 'قيادة غير آمنة';
+
+  @override
+  String get reportReasonRudeBehavior => 'سلوك وقح';
+
+  @override
+  String get reportReasonVehicleCondition => 'حالة سيئة للمركبة';
+
+  @override
+  String get reportReasonOvercharging => 'فرض رسوم زائدة';
+
+  @override
+  String get reportReasonOther => 'أخرى';
+
+  @override
+  String get reportSubmittedSuccessfully => 'تم إرسال البلاغ بنجاح';
+
+  @override
+  String get ratingSubmittedSuccessfully => 'تم إرسال التقييم بنجاح';
+
+  @override
+  String get thankYouForFeedback => 'شكراً لك على ملاحظاتك!';
+
+  @override
   String get budget => 'الرصيد';
 
   @override
@@ -1127,9 +1190,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get statusWaitingLabel => 'في الانتظار';
 
   @override
-  String driverLabel(Object driverName) {
-    return 'السائق: $driverName';
-  }
+  String get driverLabel => 'السائق';
 
   @override
   String get driverPhoneLabel => 'هاتف السائق';
@@ -1824,6 +1885,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get distanceLabel => 'المسافة';
 
   @override
+  String get carLabel => 'السيارة';
+
+  @override
   String get insufficientBudgetButton => 'الميزانية غير كافية';
 
   @override
@@ -1913,4 +1977,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get driverIsNearMessage => 'السائق قريب!';
+
+  @override
+  String get routeOptions => 'خيارات المسار';
+
+  @override
+  String get shortest => 'الأقصر';
 }

@@ -477,19 +477,19 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildInfoColumn(
-                          'Distance',
+                          getLocalizations(context).distance,
                           '${widget.trip.distance.toStringAsFixed(1)} km',
                           Icons.route,
                           Colors.blue,
                         ),
                         _buildInfoColumn(
-                          'Time',
+                          getLocalizations(context).time,
                           _estimatedTime,
                           Icons.timer,
                           Colors.orange,
                         ),
                         _buildInfoColumn(
-                          'Price',
+                          getLocalizations(context).price,
                           '${widget.trip.fare} IQD',
                           Icons.attach_money,
                           Colors.green,
@@ -518,14 +518,14 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildInfoRow(
-                      'From',
+                      getLocalizations(context).fromLabel,
                       widget.trip.pickupLocation,
                       Icons.location_on,
                       Colors.green,
                     ),
                     const SizedBox(height: 12),
                     _buildInfoRow(
-                      'To',
+                      getLocalizations(context).toLabel,
                       widget.trip.dropoffLocation,
                       Icons.location_on,
                       Colors.red,
@@ -533,7 +533,7 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
                     if (widget.trip.driverName != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Driver',
+                        getLocalizations(context).driverLabel,
                         widget.trip.driverName!,
                         Icons.person,
                         Colors.blue,
@@ -542,7 +542,7 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
                     if (widget.trip.driverPhone != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Phone',
+                        getLocalizations(context).phoneLabel,
                         widget.trip.driverPhone!,
                         Icons.phone,
                         Colors.orange,
@@ -551,7 +551,7 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
                     if (widget.trip.carType != null) ...[
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Car',
+                        getLocalizations(context).carLabel,
                         widget.trip.carType!,
                         Icons.directions_car,
                         Colors.purple,
@@ -573,35 +573,35 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
     switch (status.toUpperCase()) {
       case 'DRIVER_ACCEPTED':
         color = Colors.blue;
-        displayStatus = 'Driver Accepted';
+        displayStatus = getLocalizations(context).driverAccepted;
         break;
       case 'DRIVER_IN_WAY':
         color = Colors.orange;
-        displayStatus = 'On The Way';
+        displayStatus = getLocalizations(context).statusDriverInWay;
         break;
       case 'DRIVER_ARRIVED':
         color = Colors.green;
-        displayStatus = 'Arrived';
+        displayStatus = getLocalizations(context).driverArrived;
         break;
       case 'USER_PICKED_UP':
         color = Colors.purple;
-        displayStatus = 'Picked Up';
+        displayStatus = getLocalizations(context).userPickedUp;
         break;
       case 'DRIVER_IN_PROGRESS':
         color = Colors.blue;
-        displayStatus = 'In Progress';
+        displayStatus = getLocalizations(context).statusDriverInProgress;
         break;
       case 'TRIP_COMPLETED':
         color = Colors.green;
-        displayStatus = 'Completed';
+        displayStatus = getLocalizations(context).tripCompleted;
         break;
       case 'TRIP_CANCELLED':
         color = Colors.red;
-        displayStatus = 'Cancelled';
+        displayStatus = getLocalizations(context).tripCancelled;
         break;
       case 'USER_WAITING':
         color = Colors.orangeAccent;
-        displayStatus = 'Waiting';
+        displayStatus = getLocalizations(context).statusUserWaiting;
         break;
       default:
         color = Colors.grey;

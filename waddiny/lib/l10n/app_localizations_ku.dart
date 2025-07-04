@@ -252,6 +252,69 @@ class AppLocalizationsKu extends AppLocalizations {
   String get goToLogin => 'بڕۆ بۆ چوونەژوورەوە';
 
   @override
+  String get notAvailable => 'بەردەست نییە';
+
+  @override
+  String get rateDriverTitle => 'هەڵسەنگاندنی شۆفێرەکەت';
+
+  @override
+  String get rateDriverSubtitle => 'سەفەرەکەت چۆن بوو؟';
+
+  @override
+  String get rateDriverDescription => 'ڕاپۆرتەکەت یارمەتی باشترکردنی خزمەتگوزاریەکان دەدات';
+
+  @override
+  String get rateDriverButton => 'ناردنی هەڵسەنگاندن';
+
+  @override
+  String get skipRatingButton => 'پشتگوێخستنی هەڵسەنگاندن';
+
+  @override
+  String get reportDriverTitle => 'ڕاپۆرتکردنی شۆفێر';
+
+  @override
+  String get reportDriverSubtitle => 'هەر کێشەیەک لەگەڵ ئەم شۆفێرە ڕاپۆرت بکە';
+
+  @override
+  String get reportDriverDescription => 'ڕاپۆرتەکەت لەلایەن تیمەکەمانەوە پێداچوونەوەی تێدا دەکرێت';
+
+  @override
+  String get reportDriverButton => 'ناردنی ڕاپۆرت';
+
+  @override
+  String get cancelReportButton => 'هەڵوەشاندنەوە';
+
+  @override
+  String get reportReasonLabel => 'هۆکاری ڕاپۆرت';
+
+  @override
+  String get reportDetailsLabel => 'وردەکاری زیاتر';
+
+  @override
+  String get reportReasonUnsafeDriving => 'شۆفێری نەگونجاو';
+
+  @override
+  String get reportReasonRudeBehavior => 'ڕەفتاری نەگونجاو';
+
+  @override
+  String get reportReasonVehicleCondition => 'دۆخی هەڵەمی ئۆتۆمبێل';
+
+  @override
+  String get reportReasonOvercharging => 'بڕینی زیاتر';
+
+  @override
+  String get reportReasonOther => 'هی تر';
+
+  @override
+  String get reportSubmittedSuccessfully => 'ڕاپۆرت بە سەرکەوتوویی نەدرا';
+
+  @override
+  String get ratingSubmittedSuccessfully => 'هەڵسەنگاندن بە سەرکەوتوویی نەدرا';
+
+  @override
+  String get thankYouForFeedback => 'سوپاس بۆ ڕاپۆرتەکەت!';
+
+  @override
   String get budget => 'بودیجە';
 
   @override
@@ -1133,9 +1196,7 @@ class AppLocalizationsKu extends AppLocalizations {
   String get statusWaitingLabel => 'چاوەڕوانە';
 
   @override
-  String driverLabel(Object driverName) {
-    return 'شۆفێر: $driverName';
-  }
+  String get driverLabel => 'شۆفێر';
 
   @override
   String get driverPhoneLabel => 'تەلەفۆنی شۆفێر';
@@ -1830,6 +1891,9 @@ class AppLocalizationsKu extends AppLocalizations {
   String get distanceLabel => 'دووری';
 
   @override
+  String get carLabel => 'ئۆتۆمبێل';
+
+  @override
   String get insufficientBudgetButton => 'بودجە نەماوە';
 
   @override
@@ -1919,4 +1983,10 @@ class AppLocalizationsKu extends AppLocalizations {
 
   @override
   String get driverIsNearMessage => 'شۆفێر لە نزیکدایە!';
+
+  @override
+  String get routeOptions => 'بژاردەکانی ڕێگە';
+
+  @override
+  String get shortest => 'کورترین';
 }

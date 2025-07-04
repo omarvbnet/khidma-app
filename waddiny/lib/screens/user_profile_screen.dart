@@ -39,7 +39,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading user data: $e')),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .errorLoadingUserData(e.toString()))),
         );
       }
     }
@@ -57,7 +59,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error logging out: $e')),
+          SnackBar(
+              content: Text(
+                  AppLocalizations.of(context)!.errorLoggingOut(e.toString()))),
         );
       }
     }
@@ -79,13 +83,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('No user data found'),
+              Text(AppLocalizations.of(context)!.noUserDataFound),
               ElevatedButton(
                 onPressed: () => Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => const LoginScreen()),
                 ),
-                child: const Text('Go to Login'),
+                child: Text(AppLocalizations.of(context)!.goToLogin),
               ),
             ],
           ),
@@ -116,20 +120,26 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             _buildInfoCard(
               title: AppLocalizations.of(context)!.personalInformation,
               children: [
-                _buildInfoRow('Full Name', _user!.fullName),
-                _buildInfoRow('Phone Number', _user!.phoneNumber),
-                _buildInfoRow('Province', _user!.province),
+                _buildInfoRow(
+                    AppLocalizations.of(context)!.fullName, _user!.fullName),
+                _buildInfoRow(AppLocalizations.of(context)!.phoneNumber,
+                    _user!.phoneNumber),
+                _buildInfoRow(
+                    AppLocalizations.of(context)!.province, _user!.province),
               ],
             ),
             const SizedBox(height: 16),
             _buildInfoCard(
               title: AppLocalizations.of(context)!.accountInformation,
               children: [
-                _buildInfoRow('Account Type', _user!.role),
-                _buildInfoRow('Status', _user!.status),
                 _buildInfoRow(
-                    'Budget', '${_user!.budget.toStringAsFixed(2)} IQD'),
-                _buildInfoRow('Member Since', _formatDate(_user!.createdAt)),
+                    AppLocalizations.of(context)!.accountType, _user!.role),
+                _buildInfoRow(
+                    AppLocalizations.of(context)!.accountStatus, _user!.status),
+                _buildInfoRow(AppLocalizations.of(context)!.budget,
+                    '${_user!.budget.toStringAsFixed(2)} ${AppLocalizations.of(context)!.currencyLabel}'),
+                _buildInfoRow(AppLocalizations.of(context)!.memberSince,
+                    _formatDate(_user!.createdAt)),
               ],
             ),
             const SizedBox(height: 16),

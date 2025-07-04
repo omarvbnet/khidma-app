@@ -252,6 +252,69 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goToLogin => 'Go to Login';
 
   @override
+  String get notAvailable => 'Not Available';
+
+  @override
+  String get rateDriverTitle => 'Rate Your Driver';
+
+  @override
+  String get rateDriverSubtitle => 'How was your trip experience?';
+
+  @override
+  String get rateDriverDescription => 'Your feedback helps improve our service';
+
+  @override
+  String get rateDriverButton => 'Submit Rating';
+
+  @override
+  String get skipRatingButton => 'Skip Rating';
+
+  @override
+  String get reportDriverTitle => 'Report Driver';
+
+  @override
+  String get reportDriverSubtitle => 'Report any issues with this driver';
+
+  @override
+  String get reportDriverDescription => 'Your report will be reviewed by our team';
+
+  @override
+  String get reportDriverButton => 'Submit Report';
+
+  @override
+  String get cancelReportButton => 'Cancel';
+
+  @override
+  String get reportReasonLabel => 'Reason for Report';
+
+  @override
+  String get reportDetailsLabel => 'Additional Details';
+
+  @override
+  String get reportReasonUnsafeDriving => 'Unsafe Driving';
+
+  @override
+  String get reportReasonRudeBehavior => 'Rude Behavior';
+
+  @override
+  String get reportReasonVehicleCondition => 'Poor Vehicle Condition';
+
+  @override
+  String get reportReasonOvercharging => 'Overcharging';
+
+  @override
+  String get reportReasonOther => 'Other';
+
+  @override
+  String get reportSubmittedSuccessfully => 'Report submitted successfully';
+
+  @override
+  String get ratingSubmittedSuccessfully => 'Rating submitted successfully';
+
+  @override
+  String get thankYouForFeedback => 'Thank you for your feedback!';
+
+  @override
   String get budget => 'Budget';
 
   @override
@@ -1133,9 +1196,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusWaitingLabel => 'Waiting';
 
   @override
-  String driverLabel(Object driverName) {
-    return 'Driver: $driverName';
-  }
+  String get driverLabel => 'Driver';
 
   @override
   String get driverPhoneLabel => 'Driver Phone';
@@ -1830,6 +1891,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get distanceLabel => 'Distance';
 
   @override
+  String get carLabel => 'Car';
+
+  @override
   String get insufficientBudgetButton => 'Insufficient Budget';
 
   @override
@@ -1919,4 +1983,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverIsNearMessage => 'Driver is near!';
+
+  @override
+  String get routeOptions => 'Route Options';
+
+  @override
+  String get shortest => 'Shortest';
 }

@@ -62,15 +62,17 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
       print('Error loading car info: $e'); // Debug print
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading car info: $e')),
+          SnackBar(
+              content: Text(
+                  getLocalizations(context).errorLoadingCarInfo(e.toString()))),
         );
       }
       // Set default values if car info fails to load
       setState(() {
         _carInfo = {
-          'carId': 'N/A',
-          'carType': 'N/A',
-          'licenseId': 'N/A',
+          'carId': getLocalizations(context).notAvailable,
+          'carType': getLocalizations(context).notAvailable,
+          'licenseId': getLocalizations(context).notAvailable,
           'rate': 0,
         };
       });
@@ -86,7 +88,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error logging out: $e')),
+          SnackBar(
+              content: Text(
+                  getLocalizations(context).errorLoggingOut(e.toString()))),
         );
       }
     }
@@ -123,11 +127,13 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    _userData?['fullName'] ?? 'N/A',
+                    _userData?['fullName'] ??
+                        getLocalizations(context).notAvailable,
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   Text(
-                    _userData?['phoneNumber'] ?? 'N/A',
+                    _userData?['phoneNumber'] ??
+                        getLocalizations(context).notAvailable,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ],
@@ -150,12 +156,18 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
-                    _buildInfoRow(getLocalizations(context).carId,
-                        _carInfo?['carId'] ?? 'N/A'),
-                    _buildInfoRow(getLocalizations(context).carType,
-                        _carInfo?['carType'] ?? 'N/A'),
-                    _buildInfoRow(getLocalizations(context).licenseId,
-                        _carInfo?['licenseId'] ?? 'N/A'),
+                    _buildInfoRow(
+                        getLocalizations(context).carId,
+                        _carInfo?['carId'] ??
+                            getLocalizations(context).notAvailable),
+                    _buildInfoRow(
+                        getLocalizations(context).carType,
+                        _carInfo?['carType'] ??
+                            getLocalizations(context).notAvailable),
+                    _buildInfoRow(
+                        getLocalizations(context).licenseId,
+                        _carInfo?['licenseId'] ??
+                            getLocalizations(context).notAvailable),
                     _buildInfoRow(getLocalizations(context).rating,
                         '${_carInfo?['rate'] ?? 0}'),
                   ],
@@ -181,10 +193,14 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     const SizedBox(height: 16),
                     _buildInfoRow(getLocalizations(context).budget,
                         '${_userData?['budget']?.toStringAsFixed(2) ?? '0.00'} IQD'),
-                    _buildInfoRow(getLocalizations(context).province,
-                        _userData?['province'] ?? 'N/A'),
-                    _buildInfoRow(getLocalizations(context).accountStatus,
-                        _userData?['status'] ?? 'N/A'),
+                    _buildInfoRow(
+                        getLocalizations(context).province,
+                        _userData?['province'] ??
+                            getLocalizations(context).notAvailable),
+                    _buildInfoRow(
+                        getLocalizations(context).accountStatus,
+                        _userData?['status'] ??
+                            getLocalizations(context).notAvailable),
                   ],
                 ),
               ),

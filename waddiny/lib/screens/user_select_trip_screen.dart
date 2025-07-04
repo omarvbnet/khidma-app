@@ -37,12 +37,15 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
   String? _dropoffAddress;
   bool _isLoading = false;
   Map<String, dynamic>? _routeInfo;
+  List<Map<String, dynamic>> _routeOptions = [];
+  int _selectedRouteIndex = 0;
   final _placesController = TextEditingController();
   final _placesFocusNode = FocusNode();
   final String _googleApiKey = ApiKeys.googleMapsApiKey;
   List<Map<String, dynamic>> _predictions = [];
   bool _isLoadingPredictions = false;
   bool _isSearching = false;
+  bool _showRouteOptions = false;
 
   @override
   void initState() {
@@ -168,7 +171,8 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
           _isLoading = true;
         });
 
-        final routeDetails = await _mapService.getRouteDetails(
+        // Get multiple route options
+        final routeOptions = await _mapService.getMultipleRouteOptions(
           _pickupLocation!,
           _dropoffLocation!,
         );
@@ -176,17 +180,19 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
         if (!mounted) return;
 
         setState(() {
-          _routeInfo = routeDetails;
-          _polylines = _mapService.decodePolyline(routeDetails['polyline']);
+          _routeOptions = routeOptions;
+          _selectedRouteIndex = 0; // Select the shortest route by default
+          _routeInfo = routeOptions[0];
+          _polylines = _mapService.decodePolyline(routeOptions[0]['polyline']);
         });
 
         // Calculate price based on distance
-        final distance = routeDetails['distance'] as String;
+        final distance = routeOptions[0]['distance'] as String;
         final distanceInKm = double.parse(distance.replaceAll(' km', ''));
         final fare = _calculatePrice(distanceInKm);
         setState(() {
           _routeInfo = {
-            ...routeDetails,
+            ...routeOptions[0],
             'fare': fare,
           };
         });
@@ -204,11 +210,11 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.errorGettingRoute),
+            content: Text(getLocalizations(context).errorGettingRoute),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
-              label: AppLocalizations.of(context)!.retry,
+              label: getLocalizations(context).retry,
               textColor: Colors.white,
               onPressed: _updateRoute,
             ),
@@ -253,6 +259,38 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
     }
     // If distance is greater than the maximum range but less than 90km
     return AppConstants.tripCosts.values.last.toDouble();
+  }
+
+  void _selectRoute(int index) {
+    if (index >= 0 && index < _routeOptions.length) {
+      setState(() {
+        _selectedRouteIndex = index;
+        _routeInfo = _routeOptions[index];
+        _polylines =
+            _mapService.decodePolyline(_routeOptions[index]['polyline']);
+      });
+
+      // Recalculate price based on new route distance
+      final distance = _routeOptions[index]['distance'] as String;
+      final distanceInKm = double.parse(distance.replaceAll(' km', ''));
+      final fare = _calculatePrice(distanceInKm);
+      setState(() {
+        _routeInfo = {
+          ..._routeOptions[index],
+          'fare': fare,
+        };
+      });
+
+      // Update map to show selected route
+      if (_mapController != null) {
+        final bounds = _getBoundsForRoute();
+        if (bounds != null) {
+          _mapController!.animateCamera(
+            CameraUpdate.newLatLngBounds(bounds, 50.0),
+          );
+        }
+      }
+    }
   }
 
   LatLngBounds? _getBoundsForRoute() {
@@ -671,19 +709,153 @@ class _UserSelectTripScreenState extends State<UserSelectTripScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        AppLocalizations.of(context)!.tripDetails,
-                        style: Theme.of(context).textTheme.titleLarge,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            getLocalizations(context).tripDetails,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          if (_routeOptions.length > 1)
+                            TextButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _showRouteOptions = !_showRouteOptions;
+                                });
+                              },
+                              icon: Icon(_showRouteOptions
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down),
+                              label:
+                                  Text(getLocalizations(context).routeOptions),
+                            ),
+                        ],
                       ),
+                      if (_showRouteOptions && _routeOptions.length > 1) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 120,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _routeOptions.length,
+                            itemBuilder: (context, index) {
+                              final route = _routeOptions[index];
+                              final isSelected = index == _selectedRouteIndex;
+                              final isShortest = route['isShortest'] as bool;
+
+                              return Container(
+                                width: 200,
+                                margin: const EdgeInsets.only(right: 12),
+                                child: Card(
+                                  color: isSelected
+                                      ? Colors.blue[50]
+                                      : Colors.white,
+                                  child: InkWell(
+                                    onTap: () => _selectRoute(index),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                'Route ${index + 1}',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: isSelected
+                                                      ? Colors.blue
+                                                      : Colors.black,
+                                                ),
+                                              ),
+                                              if (isShortest) ...[
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.green,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                  ),
+                                                  child: Text(
+                                                    getLocalizations(context)
+                                                        .shortest,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            route['distance'],
+                                            style:
+                                                const TextStyle(fontSize: 14),
+                                          ),
+                                          Text(
+                                            route['duration'],
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
-                      _buildInfoRow('Distance', _routeInfo!['distance'],
-                          Icons.route, Colors.blue),
-                      const SizedBox(height: 8),
-                      _buildInfoRow('Duration', _routeInfo!['duration'],
-                          Icons.timer, Colors.orange),
-                      const SizedBox(height: 8),
-                      _buildInfoRow('Price', '${_routeInfo!['fare']} IQD',
-                          Icons.attach_money, Colors.green),
+                      _buildInfoRow(
+                        getLocalizations(context).from,
+                        _pickupAddress ??
+                            getLocalizations(context).currentLocationLabel,
+                        Icons.location_on,
+                        Colors.green,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        getLocalizations(context).to,
+                        _dropoffAddress ??
+                            getLocalizations(context).selectedLocationLabel,
+                        Icons.location_on,
+                        Colors.red,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        getLocalizations(context).distance,
+                        _routeInfo!['distance'],
+                        Icons.straighten,
+                        Colors.purple,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        getLocalizations(context).duration,
+                        _routeInfo!['duration'],
+                        Icons.access_time,
+                        Colors.blue,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        getLocalizations(context).price,
+                        '${_routeInfo!['fare']} IQD',
+                        Icons.attach_money,
+                        Colors.orange,
+                      ),
                       const SizedBox(height: 16),
                       Row(
                         children: [

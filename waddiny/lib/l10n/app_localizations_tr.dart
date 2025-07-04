@@ -252,6 +252,69 @@ class AppLocalizationsTr extends AppLocalizations {
   String get goToLogin => 'Giriş Sayfasına Git';
 
   @override
+  String get notAvailable => 'Mevcut Değil';
+
+  @override
+  String get rateDriverTitle => 'Sürücünüzü Değerlendirin';
+
+  @override
+  String get rateDriverSubtitle => 'Yolculuk deneyiminiz nasıldı?';
+
+  @override
+  String get rateDriverDescription => 'Geri bildiriminiz hizmetimizi iyileştirmemize yardımcı olur';
+
+  @override
+  String get rateDriverButton => 'Değerlendirmeyi Gönder';
+
+  @override
+  String get skipRatingButton => 'Değerlendirmeyi Atla';
+
+  @override
+  String get reportDriverTitle => 'Sürücüyü Bildir';
+
+  @override
+  String get reportDriverSubtitle => 'Bu sürücü ile ilgili sorunları bildirin';
+
+  @override
+  String get reportDriverDescription => 'Bildiriminiz ekibimiz tarafından incelenecektir';
+
+  @override
+  String get reportDriverButton => 'Bildirimi Gönder';
+
+  @override
+  String get cancelReportButton => 'İptal';
+
+  @override
+  String get reportReasonLabel => 'Bildirim Nedeni';
+
+  @override
+  String get reportDetailsLabel => 'Ek Detaylar';
+
+  @override
+  String get reportReasonUnsafeDriving => 'Güvensiz Sürüş';
+
+  @override
+  String get reportReasonRudeBehavior => 'Kaba Davranış';
+
+  @override
+  String get reportReasonVehicleCondition => 'Kötü Araç Durumu';
+
+  @override
+  String get reportReasonOvercharging => 'Aşırı Ücretlendirme';
+
+  @override
+  String get reportReasonOther => 'Diğer';
+
+  @override
+  String get reportSubmittedSuccessfully => 'Bildirim başarıyla gönderildi';
+
+  @override
+  String get ratingSubmittedSuccessfully => 'Değerlendirme başarıyla gönderildi';
+
+  @override
+  String get thankYouForFeedback => 'Geri bildiriminiz için teşekkürler!';
+
+  @override
   String get budget => 'Bütçe';
 
   @override
@@ -1133,9 +1196,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get statusWaitingLabel => 'Bekliyor';
 
   @override
-  String driverLabel(Object driverName) {
-    return 'Sürücü';
-  }
+  String get driverLabel => 'Sürücü';
 
   @override
   String get driverPhoneLabel => 'Sürücü Telefonu';
@@ -1824,99 +1885,108 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notificationDriverInProgressMessage => 'Sürücünüz sizi hedefinize götürüyor.';
 
   @override
-  String get tripDetailsTitle => 'Trip Details';
+  String get tripDetailsTitle => 'Yolculuk Detayları';
 
   @override
-  String get distanceLabel => 'Distance';
+  String get distanceLabel => 'Mesafe';
 
   @override
-  String get insufficientBudgetButton => 'Insufficient Budget';
+  String get carLabel => 'Araba';
 
   @override
-  String get tripAcceptedSuccessfully => 'Trip accepted successfully!';
+  String get insufficientBudgetButton => 'Yetersiz Bütçe';
+
+  @override
+  String get tripAcceptedSuccessfully => 'Yolculuk başarıyla kabul edildi!';
 
   @override
   String tripPriceLabel(Object price) {
-    return 'Trip Price: $price IQD';
+    return 'Yolculuk Fiyatı: $price IQD';
   }
 
   @override
-  String get canAffordTripMessage => 'You can afford this trip';
+  String get canAffordTripMessage => 'Bu yolculuğun fiyatını karşılayabilirsiniz';
 
   @override
-  String get deductionPercentLabel => 'Deduction (12%):';
+  String get deductionPercentLabel => 'Kesinti (12%):';
 
   @override
-  String get canAffordThisTripMessage => 'Can afford this trip';
+  String get canAffordThisTripMessage => 'Bu yolculuk karşılanabilir';
 
   @override
-  String get insufficientBudgetShortMessage => 'Insufficient budget';
+  String get insufficientBudgetShortMessage => 'Yetersiz bütçe';
 
   @override
-  String get pickupPassengerTitle => 'Pick up Passenger';
+  String get pickupPassengerTitle => 'Yolcu Alma';
 
   @override
-  String get yourLocationLabel => 'Your Location';
+  String get yourLocationLabel => 'Konumunuz';
 
   @override
-  String get pickupLabel => 'Pickup';
+  String get pickupLabel => 'Alış Konumu';
 
   @override
-  String get dropoffLabel => 'Dropoff';
+  String get dropoffLabel => 'Bırakış Konumu';
 
   @override
-  String get passengerPickedUpSuccessfully => 'Passenger picked up successfully!';
+  String get passengerPickedUpSuccessfully => 'Yolcu başarıyla alındı!';
 
   @override
   String errorDuringPickup(Object error) {
-    return 'Error: $error';
+    return 'Hata: $error';
   }
 
   @override
-  String get createNewTripTitle => 'Create New Trip';
+  String get createNewTripTitle => 'Yeni Yolculuk Oluştur';
 
   @override
-  String get selectLocationsTitle => 'Select Locations';
+  String get selectLocationsTitle => 'Konumları Seç';
 
   @override
-  String get searchForDestinationsWithin50km => 'Search for destinations within 50km of your current position';
+  String get searchForDestinationsWithin50km => 'Mevcut konumunuzdan 50km içinde hedefler arayın';
 
   @override
-  String get selectedLocationLabel => 'Selected Location';
+  String get selectedLocationLabel => 'Seçilen Konum';
 
   @override
-  String get searchLocationButton => 'Search Location';
+  String get searchLocationButton => 'Konum Ara';
 
   @override
-  String get changeTripButton => 'Change Trip';
+  String get changeTripButton => 'Yolculuğu Değiştir';
 
   @override
-  String get bookTripButton => 'Book Trip';
+  String get bookTripButton => 'Yolculuk Yap';
 
   @override
-  String get creatingTripMessage => 'Creating Trip...';
+  String get creatingTripMessage => 'Yolculuk oluşturuluyor...';
 
   @override
-  String get youAlreadyHaveAnActiveTrip => 'You already have an active trip. Please wait for it to be completed or cancelled.';
+  String get youAlreadyHaveAnActiveTrip => 'Zaten aktif bir yolculuğunuz var. Lütfen tamamlanmasını veya iptal edilmesini bekleyin.';
 
   @override
-  String get userProfileIsIncomplete => 'User profile is incomplete. Please update your profile with name and phone number.';
+  String get userProfileIsIncomplete => 'Kullanıcı profili eksik. Lütfen adınızı ve telefon numaranızı güncelleyin.';
 
   @override
-  String get locationIsTooFar => 'Location is too far from your current position. Please search for a closer location.';
+  String get locationIsTooFar => 'Konum mevcut konumunuzdan çok uzakta. Lütfen daha yakın bir konum arayın.';
 
   @override
-  String get useAnywayButton => 'Use Anyway';
+  String get useAnywayButton => 'Yine de kullan';
 
   @override
-  String get tripInProgressTitle => 'Trip in Progress';
+  String get tripInProgressTitle => 'Yolculuk Devam Ediyor';
 
   @override
-  String get driverLocationLabel => 'Driver Location';
+  String get driverLocationLabel => 'Sürücü Konumu';
 
   @override
-  String get driverIsHereMessage => 'Your driver is here';
+  String get driverIsHereMessage => 'Sürücü burada';
 
   @override
-  String get driverIsNearMessage => 'Driver is near!';
+  String get driverIsNearMessage => 'Sürücü yakın!';
+
+  @override
+  String get routeOptions => 'Rota Seçenekleri';
+
+  @override
+  String get shortest => 'En Kısa';
 }

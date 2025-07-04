@@ -501,6 +501,132 @@ abstract class AppLocalizations {
   /// **'Go to Login'**
   String get goToLogin;
 
+  /// No description provided for @notAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Available'**
+  String get notAvailable;
+
+  /// No description provided for @rateDriverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Your Driver'**
+  String get rateDriverTitle;
+
+  /// No description provided for @rateDriverSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How was your trip experience?'**
+  String get rateDriverSubtitle;
+
+  /// No description provided for @rateDriverDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your feedback helps improve our service'**
+  String get rateDriverDescription;
+
+  /// No description provided for @rateDriverButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Rating'**
+  String get rateDriverButton;
+
+  /// No description provided for @skipRatingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip Rating'**
+  String get skipRatingButton;
+
+  /// No description provided for @reportDriverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Driver'**
+  String get reportDriverTitle;
+
+  /// No description provided for @reportDriverSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report any issues with this driver'**
+  String get reportDriverSubtitle;
+
+  /// No description provided for @reportDriverDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your report will be reviewed by our team'**
+  String get reportDriverDescription;
+
+  /// No description provided for @reportDriverButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Report'**
+  String get reportDriverButton;
+
+  /// No description provided for @cancelReportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelReportButton;
+
+  /// No description provided for @reportReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason for Report'**
+  String get reportReasonLabel;
+
+  /// No description provided for @reportDetailsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Details'**
+  String get reportDetailsLabel;
+
+  /// No description provided for @reportReasonUnsafeDriving.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsafe Driving'**
+  String get reportReasonUnsafeDriving;
+
+  /// No description provided for @reportReasonRudeBehavior.
+  ///
+  /// In en, this message translates to:
+  /// **'Rude Behavior'**
+  String get reportReasonRudeBehavior;
+
+  /// No description provided for @reportReasonVehicleCondition.
+  ///
+  /// In en, this message translates to:
+  /// **'Poor Vehicle Condition'**
+  String get reportReasonVehicleCondition;
+
+  /// No description provided for @reportReasonOvercharging.
+  ///
+  /// In en, this message translates to:
+  /// **'Overcharging'**
+  String get reportReasonOvercharging;
+
+  /// No description provided for @reportReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get reportReasonOther;
+
+  /// No description provided for @reportSubmittedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Report submitted successfully'**
+  String get reportSubmittedSuccessfully;
+
+  /// No description provided for @ratingSubmittedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating submitted successfully'**
+  String get ratingSubmittedSuccessfully;
+
+  /// No description provided for @thankYouForFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for your feedback!'**
+  String get thankYouForFeedback;
+
   /// No description provided for @budget.
   ///
   /// In en, this message translates to:
@@ -2142,8 +2268,8 @@ abstract class AppLocalizations {
   /// No description provided for @driverLabel.
   ///
   /// In en, this message translates to:
-  /// **'Driver: {driverName}'**
-  String driverLabel(Object driverName);
+  /// **'Driver'**
+  String get driverLabel;
 
   /// No description provided for @driverPhoneLabel.
   ///
@@ -3477,6 +3603,12 @@ abstract class AppLocalizations {
   /// **'Distance'**
   String get distanceLabel;
 
+  /// No description provided for @carLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Car'**
+  String get carLabel;
+
   /// No description provided for @insufficientBudgetButton.
   ///
   /// In en, this message translates to:
@@ -3650,6 +3782,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Driver is near!'**
   String get driverIsNearMessage;
+
+  /// No description provided for @routeOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Route Options'**
+  String get routeOptions;
+
+  /// No description provided for @shortest.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortest'**
+  String get shortest;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
