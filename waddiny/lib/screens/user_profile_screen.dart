@@ -135,10 +135,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             _buildInfoCard(
               title: AppLocalizations.of(context)!.accountInformation,
               children: [
-                _buildInfoRow(
-                    AppLocalizations.of(context)!.accountType, _user!.role),
-                _buildInfoRow(
-                    AppLocalizations.of(context)!.accountStatus, _user!.status),
+                _buildInfoRow(AppLocalizations.of(context)!.accountType,
+                    _getLocalizedRole(_user!.role)),
+                _buildInfoRow(AppLocalizations.of(context)!.accountStatus,
+                    _getLocalizedStatus(_user!.status)),
                 _buildInfoRow(AppLocalizations.of(context)!.budget,
                     '${_user!.budget.toStringAsFixed(2)} ${AppLocalizations.of(context)!.currencyLabel}'),
                 _buildInfoRow(AppLocalizations.of(context)!.memberSince,
@@ -174,6 +174,34 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _getLocalizedRole(String role) {
+    switch (role.toUpperCase()) {
+      case 'USER':
+        return AppLocalizations.of(context)!.userRole;
+      case 'DRIVER':
+        return AppLocalizations.of(context)!.driverRole;
+      case 'ADMIN':
+        return AppLocalizations.of(context)!.adminRole;
+      default:
+        return role;
+    }
+  }
+
+  String _getLocalizedStatus(String status) {
+    switch (status.toUpperCase()) {
+      case 'ACTIVE':
+        return AppLocalizations.of(context)!.activeStatus;
+      case 'PENDING':
+        return AppLocalizations.of(context)!.pendingStatus;
+      case 'SUSPENDED':
+        return AppLocalizations.of(context)!.suspendedStatus;
+      case 'BLOCKED':
+        return AppLocalizations.of(context)!.blockedStatus;
+      default:
+        return status;
+    }
   }
 
   Widget _buildInfoCard({

@@ -2061,4 +2061,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get closed => 'Closed';
+
+  @override
+  String get userRole => 'User';
+
+  @override
+  String get driverRole => 'Driver';
+
+  @override
+  String get adminRole => 'Admin';
+
+  @override
+  String get activeStatus => 'Active';
+
+  @override
+  String get pendingStatus => 'Pending';
+
+  @override
+  String get suspendedStatus => 'Suspended';
+
+  @override
+  String get blockedStatus => 'Blocked';
 }

@@ -2061,4 +2061,25 @@ class AppLocalizationsKu extends AppLocalizations {
 
   @override
   String get closed => 'داخراوە';
+
+  @override
+  String get userRole => 'بەکارهێنەر';
+
+  @override
+  String get driverRole => 'شۆفێر';
+
+  @override
+  String get adminRole => 'بەڕێوەبەر';
+
+  @override
+  String get activeStatus => 'چالاک';
+
+  @override
+  String get pendingStatus => 'چاوەڕوان';
+
+  @override
+  String get suspendedStatus => 'هەڵوەشێندراوە';
+
+  @override
+  String get blockedStatus => 'بلۆککراوە';
 }

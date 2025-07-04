@@ -744,5 +744,12 @@
   "pending": "Pending",
   "inProgress": "In Progress",
   "resolved": "Resolved",
-  "closed": "Closed"
+  "closed": "Closed",
+  "userRole": "User",
+  "driverRole": "Driver",
+  "adminRole": "Admin",
+  "activeStatus": "Active",
+  "pendingStatus": "Pending",
+  "suspendedStatus": "Suspended",
+  "blockedStatus": "Blocked"
 }

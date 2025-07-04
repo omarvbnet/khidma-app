@@ -2061,4 +2061,25 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get closed => 'Kapalı';
+
+  @override
+  String get userRole => 'Kullanıcı';
+
+  @override
+  String get driverRole => 'Sürücü';
+
+  @override
+  String get adminRole => 'Yönetici';
+
+  @override
+  String get activeStatus => 'Aktif';
+
+  @override
+  String get pendingStatus => 'Beklemede';
+
+  @override
+  String get suspendedStatus => 'Askıya Alınmış';
+
+  @override
+  String get blockedStatus => 'Engellenmiş';
 }

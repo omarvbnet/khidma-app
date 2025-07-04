@@ -744,5 +744,12 @@
   "pending": "قيد الانتظار",
   "inProgress": "قيد المعالجة",
   "resolved": "تم الحل",
-  "closed": "مغلق"
+  "closed": "مغلق",
+  "userRole": "مستخدم",
+  "driverRole": "سائق",
+  "adminRole": "مدير",
+  "activeStatus": "نشط",
+  "pendingStatus": "في الانتظار",
+  "suspendedStatus": "معلق",
+  "blockedStatus": "محظور"
 } 

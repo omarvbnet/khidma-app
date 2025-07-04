@@ -707,5 +707,12 @@
   "pending": "Beklemede",
   "inProgress": "İşlemde",
   "resolved": "Çözüldü",
-  "closed": "Kapalı"
+  "closed": "Kapalı",
+  "userRole": "Kullanıcı",
+  "driverRole": "Sürücü",
+  "adminRole": "Yönetici",
+  "activeStatus": "Aktif",
+  "pendingStatus": "Beklemede",
+  "suspendedStatus": "Askıya Alınmış",
+  "blockedStatus": "Engellenmiş"
 } 

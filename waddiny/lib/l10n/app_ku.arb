@@ -744,5 +744,12 @@
   "pending": "چاوەڕوان",
   "inProgress": "لە پڕۆسەدایە",
   "resolved": "چارەسەرکرا",
-  "closed": "داخراوە"
+  "closed": "داخراوە",
+  "userRole": "بەکارهێنەر",
+  "driverRole": "شۆفێر",
+  "adminRole": "بەڕێوەبەر",
+  "activeStatus": "چالاک",
+  "pendingStatus": "چاوەڕوان",
+  "suspendedStatus": "هەڵوەشێندراوە",
+  "blockedStatus": "بلۆککراوە"
 } 

@@ -2055,4 +2055,25 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get closed => 'مغلق';
+
+  @override
+  String get userRole => 'مستخدم';
+
+  @override
+  String get driverRole => 'سائق';
+
+  @override
+  String get adminRole => 'مدير';
+
+  @override
+  String get activeStatus => 'نشط';
+
+  @override
+  String get pendingStatus => 'في الانتظار';
+
+  @override
+  String get suspendedStatus => 'معلق';
+
+  @override
+  String get blockedStatus => 'محظور';
 }

@@ -3938,6 +3938,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Closed'**
   String get closed;
+
+  /// No description provided for @userRole.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get userRole;
+
+  /// No description provided for @driverRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver'**
+  String get driverRole;
+
+  /// No description provided for @adminRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get adminRole;
+
+  /// No description provided for @activeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get activeStatus;
+
+  /// No description provided for @pendingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get pendingStatus;
+
+  /// No description provided for @suspendedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspended'**
+  String get suspendedStatus;
+
+  /// No description provided for @blockedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get blockedStatus;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
